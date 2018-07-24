@@ -1,0 +1,34 @@
+# Modeling US Census data
+
+
+
+## Indices of segregation and diversity
+
+
+
+## Regression modeling with US Census data
+
+
+
+## Spatial regression
+
+
+
+## Geographically weighted regression
+
+
+
+## Geodemographic classification
+
+
+
+## Machine learning and spatial data science
+
+```{r}
+
+library(tidycensus)
+
+
+
+```
+

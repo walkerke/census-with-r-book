@@ -1,0 +1,4 @@
+book_filename: "censusbook"
+language:
+  ui:
+    chapter_name: "Chapter "

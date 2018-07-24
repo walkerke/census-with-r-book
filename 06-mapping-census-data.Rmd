@@ -1,0 +1,69 @@
+# Mapping Census data with R
+
+## Using geometry in tidycensus
+
+## Map-making with ggplot2 and geom_sf
+
+```{r}
+library(tidycensus)
+library(ggplot2)
+library(viridis)
+
+
+
+```
+
+
+## Map-making with tmap
+
+## Merging tabular Census data to Census geographic data
+
+## Interactive mapping with leaflet
+
+## Web mapping applications with shiny
+
+## Linked views without Shiny using plotly
+
+```{r}
+library(tidycensus)
+library(plotly)
+library(ggplot2)
+library(crosstalk)
+library(htmltools)
+
+tx <- get_acs(geography = "county", 
+              variables = c(pctcollege = "DP02_0067P", 
+                            hhincome = "DP03_0062"), 
+              state = "TX", 
+              geometry = TRUE, 
+              output = "wide")
+
+
+```
+
+
+```{r}
+
+tx_shared <- SharedData$new(tx, key = ~NAME)
+
+scatter <- ggplot(tx_shared, aes(x = pctcollegeE, y = hhincomeE, label = NAME)) + 
+  geom_point() + 
+  labs(x = "Percent over 25 with a bachelor's degree or higher", 
+       y = "Median household income", 
+       title = "Counties in Texas (2012-2016 ACS)")
+
+map <- ggplot(tx_shared, aes(label = NAME)) + 
+  geom_sf(fill = "grey", color = "black") + 
+  coord_sf(crs = 3083) # http://spatialreference.org/ref/epsg/nad83-texas-centric-albers-equal-area/
+
+scatterly <- ggplotly(scatter, tooltip = "NAME") %>%
+  layout(dragmode = "lasso") %>%
+  highlight("plotly_selected", color = "red")
+
+maply <- ggplotly(map, tooltip = "NAME") %>%
+  highlight("plotly_selected", color = "red")
+
+bscols(scatterly, maply)
+
+```
+

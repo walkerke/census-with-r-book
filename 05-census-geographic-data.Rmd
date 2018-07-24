@@ -1,0 +1,24 @@
+# Census geographic data and applications in R
+
+As discussed in Chapters 1 and 3, Census and ACS data are associated with _geographies_, which are units at which the data are aggregated.  These defined geographies are represented in the US Census Bureau's TIGER/Line database.  The TIGER/Line database includes geometric representations of Census Bureau geographies made available as _shapefiles_, a common format for encoding geographic data. 
+
+The TIGER/Line shapefiles include three general types of data: 
+
+* _Legal entities_, which are geographies that have official legal standing in the United States.  These include states and counties.  
+* _Statistical entities_, which are geographies defined by the Census Bureau for purposes of data collection and dissemination.  Examples of statistical entities include Census tracts and block groups.  
+* _Geographic features_, which are geographic datasets that are not linked with aggregate demographic data from the Census Bureau.  These datasets include roads and water features.  
+
+Traditionally, TIGER/Line shapefiles are downloaded from a web interface as zipped folders, then unzipped for use in a Geographic Information System (GIS) or other software that can work with geographic data.  However, the R package __tigris__ allows R users to access these datasets directly from their R sessions without having to go through these steps.  
+
+This chapter will cover the core functionality of the tigris package for working with Census geographic data in R.  In doing so, it will highlight the new __sf__ package (Pebesma 2017) for representing spatial data as R objects.  
+
+## Basic usage of tigris
+
+
+## Tigris and simple features
+
+
+## Cartographic boundary shapefiles
+
+
+## Plotting data 

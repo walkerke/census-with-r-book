@@ -1,0 +1,186 @@
+# R, the tidyverse, and tidy tools for Census data
+
+{intro here}
+
+## R
+
+* Basics of R
+* Benefits of R
+* RStudio
+
+
+## The __tidyverse__
+
+* General discussion
+* Core packages
+* Core functionality
+
+
+## Accessing Census and ACS data with __tidycensus__
+
+The __tidycensus__ package, first released in 2017, replicates some of the functionality of the aforementioned packages but with two distinct goals.  First, tidycensus aims to make Census data available to R users in a tidyverse-friendly format.  Second, R users can obtain feature geometry via __tigris__ pre-joined with tabular Census data in a single tidycensus function call.  As such, tidycensus is designed to streamline the process of Census data access and manipulation for R users who are committed to tidyverse-based workflows.  
+
+To get started with tidycensus, users should load the package along with the __tidyverse__ package and set their Census API key with the `census_api_key()` function.  API keys can be obtained at https://api.census.gov/data/key_signup.html.  Declaring `install = TRUE` when calling `census_api_key()` will install the key for use in future R sessions, which may be convenient for many users.  
+
+```{r}
+library(tidycensus)
+library(tidyverse)
+# census_api_key("YOUR KEY GOES HERE", install = TRUE)
+```
+
+Once an API key is installed, users can obtain decennial Census or ACS data with a single function call.  The function `get_decennial()` is used to access decennial Census data from the 1990, 2000, and 2010 Censuses, and the `get_acs()` function is used to obtain data from the 1-, 3-, and 5-year American Community Survey samples since 2011.  To get data from either of these functions, users must specify a string representing the requested `geography`; a vector of Census variable IDs, represented by `variable`; or optionally a Census table ID, passed to `table`.   
+
+```{r}
+pop10 <- get_decennial(geography = "state", variables = "P0010001")
+head(pop10)
+```
+
+The function returns a tibble of data from the 2010 US Census (the function default year) with information on total population by state.  Data for 1990 or 2000 can also be obtained by supplying the appropriate year to the `year` parameter.  Similarly, `get_acs()` retrieves data from the American Community Survey.  
+
+```{r}
+pop12to16 <- get_acs(geography = "state", variables = "B01003_001")
+head(pop12to16)
+```
+
+`get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2012-2016.  Different years and different surveys are available by adjusting the `endyear` and `survey` parameters.  For example, the following code will fetch data from the 1-year ACS for 2016: 
+
+```{r}
+pop16 <- get_acs(geography = "state", variables = "B01003_001", survey = "acs1")
+```
+
+Variables from the ACS detailed tables, data profiles, and summary tables are available through tidycensus's `get_acs()` function; the function will auto-detect from which dataset to look for variables.  Alternatively, users can supply a table name to the `table` parameter in `get_acs()`; this will return data for every variable in that table.  For example, to get all variables associated with table B01001, which covers sex broken down by age:
+
+```{r}
+age15 <- get_acs(geography = "state", table = "B01001", cache_table = TRUE)
+```
+
+To find all of the variables associated with a given ACS table, tidycensus downloads a dataset of variables from the Census Bureau website and looks up the variable codes for download.  If the `cache_table` parameter is set to `TRUE`, the function instructs tidycensus to cache this dataset on the user's computer for faster future access.  This only needs to be done once per ACS or Census dataset if the user would like to specify this option.  
+
+## Geography and variables in tidycensus
+
+The `geography` parameter in `get_acs()` and `get_decennial()` allows users to request data aggregated to common Census enumeration units. At the time of this writing, tidycensus accepts enumeration units nested within states and/or counties, when applicable.  Census blocks are available in `get_decennial()` but not in `get_acs()` as block-level data are not available from the American Community Survey.  To request data within states and/or counties, state and county names can be supplied to the `state` and `county` parameters, respectively.  Arguments should be formatted in the way that they are accepted by the US Census Bureau API, specified in the table below.  If an "Available by" geography is in bold, that argument is required for that geography. 
+
+The only geographies available in 1990 and 2000 are "state", "county", "county subdivision", "tract", "block group", and "place".  Some geographies available from the Census API are not available in tidycensus at the moment, and not all variables are available at every geography.  
+
+Geography|Definition|Available by|Available in
+"us"|United States||get_acs() 
+"region"|Census region||get_acs() 
+"division"|Census division||get_acs() 
+"state"|State or equivalent|state|get_acs(), get_decennial() 
+"county"|County or equivalent|state, county|get_acs(), get_decennial() 
+"county subdivision"|County subdivision|state, county|get_acs(), get_decennial() 
+"tract"|Census tract|__state__, county|get_acs(), get_decennial()  
+"block group"|Census block group|__state__, county|get_acs(), get_decennial()  
+"block"|Census block|__state__, __county__|get_decennial() 
+"place"|Census-designated place|state|get_acs(), get_decennial()  
+"alaska native regional corporation"|Alaska native regional corporation|state|get_acs(), get_decennial()  
+"american indian area/alaska native area/hawaiian home land"|Federal and state-recognized American Indian reservations and Hawaiian home lands|state|get_acs(), get_decennial()  
+"american indian area/alaska native area (reservation or statistical entity only)"|Only reservations and statistical entities|state|get_acs() 
+"american indian area (off-reservation trust land only)/hawaiian home land"|Only off-reservation trust lands and Hawaiian home lands|state|get_acs() 
+"metropolitan statistical area/micropolitan statistical area"|Core-based statistical area|state|get_acs(), get_decennial()
+"combined statistical area"|Combined statistical area|state|get_acs() 
+"new england city and town area"|New England city/town area|state|get_acs() 
+"combined new england city and town area"|Combined New England area|state|get_acs() 
+"urban area"|Census-defined urbanized areas||get_acs() 
+"congressional district"|Congressional district for the year-appropriate Congress|state|get_acs(), get_decennial()  
+"school district (elementary)"|Elementary school district|__state__|get_acs() 
+"school district (secondary)"|Secondary school district|__state__|get_acs() 
+"school district (unified)"|Unified school district|__state__|get_acs() 
+"public use microdata area"|PUMA (geography associated with Census microdata samples)|state|get_acs() 
+"zip code tabulation area" OR "zcta"|Zip code tabulation area||get_acs(), get_decennial()  
+"state legislative district (upper chamber)"|State senate districts|__state__|get_acs(), get_decennial()  
+"state legislative district (lower chamber)"|State house districts|__state__|get_acs(), get_decennial()  
+
+For example, to obtain median household income data for counties in Wisconsin from the 2012-2016 ACS: 
+
+```{r}
+wi_income <- get_acs(geography = "county", variables = "B19013_001", 
+                     state = "WI")
+
+wi_income
+```
+
+To drill down further and obtain the same income data at the Census tract level for Dane County, Wisconsin:
+
+```{r}
+dane_income <- get_acs(geography = "tract", variables = "B19013_001", 
+                       state = "WI", county = "Dane")
+
+dane_income
+```
+
+One additional challenge when searching for Census variables is understanding variable IDs, which are required to fetch data from the Census and ACS APIs.  There are thousands of variables available across the different datasets and summary files.  To make searching easier for R users, tidycensus offers the `load_variables()` function.  This function obtains a dataset of variables from the Census Bureau website and formats it for fast searching, ideally in RStudio.  
+
+The function takes two required arguments: `year`, which takes the year or endyear of the Census dataset or ACS sample, and the dataset name - one of `sf1`, `sf3`, `acs1`, or `acs5`.  For the ACS datasets, append `/profile` for the Data Profile, and `/summary` for the Summary Tables.  As this function requires processing thousands of variables from the Census Bureau which may be slow depending on the user's internet connection, the user can specify `cache = TRUE` in the function call to store the data in the user's cache directory for future access.  On subsequent calls of the `load_variables()` function, `cache = TRUE` will direct the function to look in the cache directory for the variables rather than the Census website.  
+
+`load_variables()` works as follows: 
+
+```{r}
+v16 <- load_variables(2016, "acs5", cache = TRUE)
+
+filter(v16, str_detect(concept, "MEDIAN AGE"))
+```
+
+The resultant data frame has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data.  As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration.  However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering.  The data viewer can be accessed with the `View()` function: 
+
+```{r, eval = FALSE}
+View(v16)
+```
+
+![data viewer](img/view.png)
+
+By browsing the table in this way, users can identify the appropriate variable IDs (found in the `name` column) that can be passed to the `variables` parameter in `get_acs()` or `get_decennial()`.  Users may note that the raw variable IDs in the ACS, as consumed by the API, require a suffix of `E` or `M`.  tidycensus does not require this suffix, as it will automatically return both the estimate and margin of error for a given requested variable.  Additionally, if users desire an entire table of related variables from the ACS, the user should supply the characters prior to the underscore from a variable ID to the `table` parameter.  
+
+
+## Data structure in tidycensus
+
+Key to the design philosophy of tidycensus is its interpretation of tidy data.  Following Wickham (XXX), "tidy" data are defined as follows: 
+
+1. Each observation forms a row; 
+2. Each variable forms a column; 
+3. Each observational unit forms a table.  
+
+By default, tidycensus returns a tibble of ACS or decennial Census data in "tidy" format.  For decennial Census data, this will include four columns: `GEOID`, representing the Census ID code that uniquely identifies the geographic unit; `NAME`, which represents a descriptive name of the unit; `variable`, which contains information on the Census variable name corresponding to that row; and `value`, which contains the data values for each unit-variable combination.  For ACS data, two columns replace the `value` column: `estimate`, which represents the ACS estimate, and `moe`, representing the margin of error around that estimate.  
+
+Given the terminology used by the Census Bureau to distinguish data, it is important to provide some clarifications of nomenclature here.  Census or ACS __variables__, which are specific series of data available by enumeration unit, are interpreted in tidycensus as _characteristics_ of those enumeration units.  In turn, rows in datasets returned when `output = "tidy"`, which is the default setting in the `get_acs()` and `get_decennial()` functions, represent data for unique unit-variable combinations.  An example of this is illustrated below with income groups by state for the 2016 1-year American Community Survey.  
+
+```{r}
+hhinc <- get_acs(geography = "state", table = "B19001", 
+                 survey = "acs1")
+
+hhinc
+```
+
+In this example, each row represents state-characteristic combinations, consistent with the tidy data model.  Alternatively, if a user desires the variables spread across the columns of the dataset, the setting `output = "wide"` will enable this.  For ACS data, estimates and margins of error for each ACS variable will be found in their own columns. For example: 
+
+```{r}
+hhinc_wide <- get_acs(geography = "state", table = "B19001", 
+                      survey = "acs1", output = "wide")
+
+hhinc_wide
+```
+
+The wide-form dataset includes `GEOID` and `NAME` columns, as in the tidy dataset, but is also characterized by estimate/margin of error pairs across the columns for each Census variable in the table.  
+
+Census variables IDs can be cumbersome to type and remember in the course of an R session.  As such, tidycensus has built-in tools to automatically rename the variable IDs if requested by a user.  For example, let's say that a user is requesting data on median household income (variable ID `B19013_001`) and median age (variable ID `B01002_001`).  By passing a _named_ vector to the `variables` parameter in `get_acs()` or `get_decennial()`, the functions will return the desired names rather than the Census variable IDs.  Let's examine this for counties in Georgia from the 2012-2016 five-year ACS.  
+
+```{r}
+ga <- get_acs(geography = "county", state = "Georgia", 
+              variables = c(medinc = "B19013_001", 
+                            medage = "B01002_001"))
+
+ga
+```
+
+ACS variable IDs, which would be found in the `variable` column, are replaced by `medage` and `medinc`, as requested.  When a wide-form dataset is requested, tidycensus will still append `E` and `M` to the specified column names, as illustrated below.  
+
+```{r}
+ga_wide <- get_acs(geography = "county", state = "Georgia", 
+                   variables = c(medinc = "B19013_001", 
+                                 medage = "B01002_001"), 
+                   output = "wide")
+
+ga_wide
+```
+
+Median household income for each county is represented by `medincE`, for the estimate, and `medincM`, for the margin of error.  At the time of this writing, custom variable names are only available for `variables` and not for `table`, as users will not always know the number of variables found in a table beforehand.  

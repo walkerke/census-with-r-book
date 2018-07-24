@@ -1,0 +1,556 @@
+--- 
+title: "Analyzing the US Census with R"
+author: "Kyle E. Walker"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+knit: bookdown::render_book
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: rstudio/bookdown-demo
+description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data from the US Census Bureau with the R programming language."
+---
+
+# Overview
+
+This book is an overview of how practitioners can work with data from the US Census Bureau using the R programming language.  The book will focus on data acquisition and wrangling as well as data analysis and modeling of aggregate and individual-level decennial Census and American Community Survey data.  It is designed to be useful for both beginners and advanced users of both R and Census data.  Beginners will find Part 1 more useful, as it covers the basics of R and the US Census and how to work with them together.  Advanced readers will find Parts 2 and 3 more useful, as these parts cover applications from exploratory mapping and visualization to advanced data modeling.  
+
+The growing popularity of the R programming language for exploratory data analysis and data science has led many practitioners to turn to R to work with Census data.  To date, however, no book exists as a reference manual for how to use Census data in R; as such, resources are scattered across blog posts, webinars, and journal articles.  This proposed book aims to fill this gap as a reference manual for a wide range of use cases for practitioners using Census data in R.  
+Additionally, the book will take advantage of cutting-edge developments in both data wrangling and spatial data analysis in R.  The book’s approach will be oriented around two major R ecosystems.  The first is the tidyverse, a suite of packages authored by Hadley Wickham and colleagues at RStudio that are designed to work together seamlessly in data science projects.  The second is sf, a re-imagination of the spatial ecosystem in R that works very well with the tidyverse.  Book readers will learn to work with US Census data using visualization, spatial analysis, and functional programming tools available in these packages.  
+
+<!--chapter:end:index.Rmd-->
+
+# An introduction to the United States Census {#intro}
+
+You can label chapter and section titles using `{#label}` after them, e.g., we can reference Chapter \@ref(intro). If you do not manually label them, there will be automatic labels anyway, e.g., Chapter \@ref(methods).
+
+Figures and tables with captions will be placed in `figure` and `table` environments, respectively.
+
+In this book, you'll be learning about how to use US Census Bureau data in R.  This chapter provides a brief overview of ...
+
+```{r nice-fig, fig.cap='Here is a nice figure!', out.width='80%', fig.asp=.75, fig.align='center'}
+par(mar = c(4, 4, .1, .1))
+plot(pressure, type = 'b', pch = 19)
+```
+
+Reference a figure by its code chunk label with the `fig:` prefix, e.g., see Figure \@ref(fig:nice-fig). Similarly, you can reference tables generated from `knitr::kable()`, e.g., see Table \@ref(tab:nice-tab).
+
+```{r nice-tab, tidy=FALSE}
+knitr::kable(
+  head(iris, 20), caption = 'Here is a nice table!',
+  booktabs = TRUE
+)
+```
+
+You can write citations, too. For example, we are using the **bookdown** package [@R-bookdown] in this sample book, which was built on top of R Markdown and **knitr** [@xie2015].
+
+<!--chapter:end:01-intro-to-the-census.Rmd-->
+
+# R, the tidyverse, and tidy tools for Census data
+
+{intro here}
+
+## R
+
+* Basics of R
+* Benefits of R
+* RStudio
+
+
+## The __tidyverse__
+
+* General discussion
+* Core packages
+* Core functionality
+
+
+## Accessing Census and ACS data with __tidycensus__
+
+The __tidycensus__ package, first released in 2017, replicates some of the functionality of the aforementioned packages but with two distinct goals.  First, tidycensus aims to make Census data available to R users in a tidyverse-friendly format.  Second, R users can obtain feature geometry via __tigris__ pre-joined with tabular Census data in a single tidycensus function call.  As such, tidycensus is designed to streamline the process of Census data access and manipulation for R users who are committed to tidyverse-based workflows.  
+
+To get started with tidycensus, users should load the package along with the __tidyverse__ package and set their Census API key with the `census_api_key()` function.  API keys can be obtained at https://api.census.gov/data/key_signup.html.  Declaring `install = TRUE` when calling `census_api_key()` will install the key for use in future R sessions, which may be convenient for many users.  
+
+```{r, eval = FALSE}
+library(tidycensus)
+library(tidyverse)
+census_api_key("YOUR KEY GOES HERE", install = TRUE)
+```
+
+Once an API key is installed, users can obtain decennial Census or ACS data with a single function call.  The function `get_decennial()` is used to access decennial Census data from the 1990, 2000, and 2010 Censuses, and the `get_acs()` function is used to obtain data from the 1-, 3-, and 5-year American Community Survey samples since 2011.  To get data from either of these functions, users must specify a string representing the requested `geography`; a vector of Census variable IDs, represented by `variable`; or optionally a Census table ID, passed to `table`.   
+
+```{r}
+pop10 <- get_decennial(geography = "state", variables = "P0010001")
+head(pop10)
+```
+
+The function returns a tibble of data from the 2010 US Census (the function default year) with information on total population by state.  Data for 1990 or 2000 can also be obtained by supplying the appropriate year to the `year` parameter.  Similarly, `get_acs()` retrieves data from the American Community Survey.  
+
+```{r}
+pop12to16 <- get_acs(geography = "state", variables = "B01003_001")
+head(pop12to16)
+```
+
+`get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2012-2016.  Different years and different surveys are available by adjusting the `endyear` and `survey` parameters.  For example, the following code will fetch data from the 1-year ACS for 2016: 
+
+```{r}
+pop16 <- get_acs(geography = "state", variables = "B01003_001", survey = "acs1")
+```
+
+Variables from the ACS detailed tables, data profiles, and summary tables are available through tidycensus's `get_acs()` function; the function will auto-detect from which dataset to look for variables.  Alternatively, users can supply a table name to the `table` parameter in `get_acs()`; this will return data for every variable in that table.  For example, to get all variables associated with table B01001, which covers sex broken down by age:
+
+```{r}
+age15 <- get_acs(geography = "state", table = "B01001", cache_table = TRUE)
+```
+
+To find all of the variables associated with a given ACS table, tidycensus downloads a dataset of variables from the Census Bureau website and looks up the variable codes for download.  If the `cache_table` parameter is set to `TRUE`, the function instructs tidycensus to cache this dataset on the user's computer for faster future access.  This only needs to be done once per ACS or Census dataset if the user would like to specify this option.  
+
+## Geography and variables in tidycensus
+
+The `geography` parameter in `get_acs()` and `get_decennial()` allows users to request data aggregated to common Census enumeration units. At the time of this writing, tidycensus accepts enumeration units nested within states and/or counties, when applicable.  Census blocks are available in `get_decennial()` but not in `get_acs()` as block-level data are not available from the American Community Survey.  To request data within states and/or counties, state and county names can be supplied to the `state` and `county` parameters, respectively.  Arguments should be formatted in the way that they are accepted by the US Census Bureau API, specified in the table below.  If an "Available by" geography is in bold, that argument is required for that geography. 
+
+The only geographies available in 1990 and 2000 are "state", "county", "county subdivision", "tract", "block group", and "place".  Some geographies available from the Census API are not available in tidycensus at the moment, and ot all variables are available at every geography.  
+
+Geography|Definition|Available by|Available in
+"us"|United States||get_acs() 
+"region"|Census region||get_acs() 
+"division"|Census division||get_acs() 
+"state"|State or equivalent|state|get_acs(), get_decennial() 
+"county"|County or equivalent|state, county|get_acs(), get_decennial() 
+"county subdivision"|County subdivision|state, county|get_acs(), get_decennial() 
+"tract"|Census tract|__state__, county|get_acs(), get_decennial()  
+"block group"|Census block group|__state__, county|get_acs(), get_decennial()  
+"block"|Census block|__state__, __county__|get_decennial() 
+"place"|Census-designated place|state|get_acs(), get_decennial()  
+"alaska native regional corporation"|Alaska native regional corporation|state|get_acs(), get_decennial()  
+"american indian area/alaska native area/hawaiian home land"|Federal and state-recognized American Indian reservations and Hawaiian home lands|state|get_acs(), get_decennial()  
+"american indian area/alaska native area (reservation or statistical entity only)"|Only reservations and statistical entities|state|get_acs() 
+"american indian area (off-reservation trust land only)/hawaiian home land"|Only off-reservation trust lands and Hawaiian home lands|state|get_acs() 
+"metropolitan statistical area/micropolitan statistical area"|Core-based statistical area|state|get_acs(), get_decennial()
+"combined statistical area"|Combined statistical area|state|get_acs() 
+"new england city and town area"|New England city/town area|state|get_acs() 
+"combined new england city and town area"|Combined New England area|state|get_acs() 
+"urban area"|Census-defined urbanized areas||get_acs() 
+"congressional district"|Congressional district for the year-appropriate Congress|state|get_acs(), get_decennial()  
+"school district (elementary)"|Elementary school district|__state__|get_acs() 
+"school district (secondary)"|Secondary school district|__state__|get_acs() 
+"school district (unified)"|Unified school district|__state__|get_acs() 
+"public use microdata area"|PUMA (geography associated with Census microdata samples)|state|get_acs() 
+"zip code tabulation area" OR "zcta"|Zip code tabulation area||get_acs(), get_decennial()  
+"state legislative district (upper chamber)"|State senate districts|__state__|get_acs(), get_decennial()  
+"state legislative district (lower chamber)"|State house districts|__state__|get_acs(), get_decennial()  
+
+For example, to obtain median household income data for counties in Wisconsin from the 2012-2016 ACS: 
+
+```{r}
+wi_income <- get_acs(geography = "county", variables = "B19013_001", 
+                     state = "WI")
+
+wi_income
+```
+
+To drill down further and obtain the same income data at the Census tract level for Dane County, Wisconsin:
+
+```{r}
+dane_income <- get_acs(geography = "tract", variables = "B19013_001", 
+                       state = "WI", county = "Dane")
+
+dane_income
+```
+
+One additional challenge when searching for Census variables is understanding variable IDs, which are required to fetch data from the Census and ACS APIs.  There are thousands of variables available across the different datasets and summary files.  To make searching easier for R users, tidycensus offers the `load_variables()` function.  This function obtains a dataset of variables from the Census Bureau website and formats it for fast searching, ideally in RStudio.  
+
+The function takes two required arguments: `year`, which takes the year or endyear of the Census dataset or ACS sample, and the dataset name - one of `sf1`, `sf3`, `acs1`, or `acs5`.  For the ACS datasets, append `/profile` for the Data Profile, and `/summary` for the Summary Tables.  As this function requires processing thousands of variables from the Census Bureau which may be slow depending on the user's internet connection, the user can specify `cache = TRUE` in the function call to store the data in the user's cache directory for future access.  On subsequent calls of the `load_variables()` function, `cache = TRUE` will direct the function to look in the cache directory for the variables rather than the Census website.  
+
+`load_variables()` works as follows: 
+
+```{r}
+v16 <- load_variables(2016, "acs5", cache = TRUE)
+
+filter(v16, str_detect(concept, "MEDIAN AGE"))
+```
+
+The resultant data frame has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data.  As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration.  However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering.  The data viewer can be accessed with the `View()` function: 
+
+```{r, eval = FALSE}
+View(v16)
+```
+
+![data viewer](img/view.png)
+
+By browsing the table in this way, users can identify the appropriate variable IDs (found in the `name` column) that can be passed to the `variables` parameter in `get_acs()` or `get_decennial()`.  Users may note that the raw variable IDs in the ACS, as consumed by the API, require a suffix of `E` or `M`.  tidycensus does not require this suffix, as it will automatically return both the estimate and margin of error for a given requested variable.  Additionally, if users desire an entire table of related variables from the ACS, the user should supply the characters prior to the underscore from a variable ID to the `table` parameter.  
+
+
+## Data structure in tidycensus
+
+Key to the design philosophy of tidycensus is its interpretation of tidy data.  Following Wickham (XXX), "tidy" data are defined as follows: 
+
+1. Each observation forms a row; 
+2. Each variable forms a column; 
+3. Each observational unit forms a table.  
+
+By default, tidycensus returns a tibble of ACS or decennial Census data in "tidy" format.  For decennial Census data, this will include four columns: `GEOID`, representing the Census ID code that uniquely identifies the geographic unit; `NAME`, which represents a descriptive name of the unit; `variable`, which contains information on the Census variable name corresponding to that row; and `value`, which contains the data values for each unit-variable combination.  For ACS data, two columns replace the `value` column: `estimate`, which represents the ACS estimate, and `moe`, representing the margin of error around that estimate.  
+
+Given the terminology used by the Census Bureau to distinguish data, it is important to provide some clarifications of nomenclature here.  Census or ACS __variables__, which are specific series of data available by enumeration unit, are interpreted in tidycensus as _characteristics_ of those enumeration units.  In turn, rows in datasets returned when `output = "tidy"`, which is the default setting in the `get_acs()` and `get_decennial()` functions, represent data for unique unit-variable combinations.  An example of this is illustrated below with income groups by state for the 2016 1-year American Community Survey.  
+
+```{r}
+hhinc <- get_acs(geography = "state", table = "B19001", 
+                 survey = "acs1")
+
+hhinc
+```
+
+In this example, each row represents state-characteristic combinations, consistent with the tidy data model.  Alternatively, if a user desires the variables spread across the columns of the dataset, the setting `output = "wide"` will enable this.  For ACS data, estimates and margins of error for each ACS variable will be found in their own columns. For example: 
+
+```{r}
+hhinc_wide <- get_acs(geography = "state", table = "B19001", 
+                      survey = "acs1", output = "wide")
+
+hhinc_wide
+```
+
+The wide-form dataset includes `GEOID` and `NAME` columns, as in the tidy dataset, but is also characterized by estimate/margin of error pairs across the columns for each Census variable in the table.  
+
+Census variables IDs can be cumbersome to type and remember in the course of an R session.  As such, tidycensus has built-in tools to automatically rename the variable IDs if requested by a user.  For example, let's say that a user is requesting data on median household income (variable ID `B19013_001`) and median age (variable ID `B01002_001`).  By passing a _named_ vector to the `variables` parameter in `get_acs()` or `get_decennial()`, the functions will return the desired names rather than the Census variable IDs.  Let's examine this for counties in Georgia from the 2012-2016 five-year ACS.  
+
+```{r}
+ga <- get_acs(geography = "county", state = "Georgia", 
+              variables = c(medinc = "B19013_001", 
+                            medage = "B01002_001"))
+
+ga
+```
+
+ACS variable IDs, which would be found in the `variable` column, are replaced by `medage` and `medinc`, as requested.  When a wide-form dataset is requested, tidycensus will still append `E` and `M` to the specified column names, as illustrated below.  
+
+```{r}
+ga_wide <- get_acs(geography = "county", state = "Georgia", 
+                   variables = c(medinc = "B19013_001", 
+                                 medage = "B01002_001"), 
+                   output = "wide")
+
+ga_wide
+```
+
+Median household income for each county is represented by `medincE`, for the estimate, and `medincM`, for the margin of error.  At the time of this writing, custom variable names are only available for `variables` and not for `table`, as users will not always know the number of variables found in a table beforehand.  
+
+<!--chapter:end:02-r-and-the-tidyverse.Rmd-->
+
+# Wrangling Census data with tidyverse tools
+
+Given the widespread use of US Census data in data analytic and data science projects, the R community has developed a number of packages to allow for access to and exploration of these datasets.  These packages commonly grant access, through R, to the US Census Bureau's application programming interfaces, or APIs.  This chapter focuses on one such package, __tidycensus__, which wraps the decennial US Census and American Community Survey APIs and returns data from the APIs as data frames designed for use with the tidyverse.  The chapter commences with an overview of the R packages available for US Census Bureau data access, then transitions to a focus on how to use tidycensus to work with US Census Bureau data.  Finally, the chapter includes a brief introduction to other packages for Census data analysis and visualization in R, with a focus on the acs, censusapi, and choroplethr packages.  
+
+## Group-wise Census data analysis
+
+The tidy format returned by default by tidycensus is designed to facilitate group-wise data analysis.  For example, variables in ACS table B19001 represents groups of households whose household incomes fall into a variety of categories: less than $10,000/year, between $10,000/year and $19,999/year, and so forth.  Commonly, these categories will be more granular than needed by an analyst.  As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.  
+
+Consider the following example, using household income data for Minnesota counties from the 2012-2016 ACS: 
+
+```{r}
+mn1 <- get_acs(geography = "county", table = "B19001", 
+               state = "MN")
+
+mn1
+```
+
+Our data include household income categories for each county in the rows.  However, let's say we only need three income categories for purposes of analysis: below $35,000/year, between $35,000/year and $75,000/year, and $75,000/year and up.  
+
+We first need to do some transformation of our data to recode the variables appropriately.  First, we will remove variable `B19001_001`, which represents the total number of households for each county.  Second, we will modify the appearance of the variable names with string methods using __stringr__, the package in the tidyverse used for string manipulation.  
+
+```{r}
+mn2 < mn1 %>%
+  filter(variable != "B19001_001") %>%
+  mutate(variable = str_sub(variable, start = -2))
+
+mn2
+
+```
+
+Our data are now ready for group-wise recoding.  To do this, we use the `case_when()` function from the __dplyr__ package (part of the tidyverse) to identify groups of variables that correspond to our desired groupings.  From there, we can group by county and income group, and in turn retrieve group-wise estimates for each county using the `summarize()` function in __dplyr__.  
+
+```{r}
+mn3 <- mn2 %>%
+  mutate(incgroup = case_when(
+    variable %in% c("02", "03", "04", 
+                    "05", "06", "07") ~ "below35k", 
+    variable %in% c("08", "09", "10", 
+                    "11", "12") ~ "bw35kand75k", 
+    variable %in% c("13", "14", "15", 
+                    "16", "17") ~ "above75k"
+  )) %>%
+  group_by(GEOID, incgroup) %>%
+  summarize(estimate = sum(estimate))
+
+mn3
+  
+```
+
+Our data now reflect the new estimates by group.  
+
+## Summary variables
+
+Data in Census and ACS tables, as in the example above, are frequently comprised of variables that individually constitute sub-categories such as the numbers of households in different household income bands.  One limitation of the approach above, however, is that the data - and the resulting analysis - return estimated counts, which are difficult to compare across geographies.  For example, Hennepin County in Minnesota is the state's most populous county with X residents; in turn, comparing Hennepin's estimates with those of smaller counties in Minnesota may be inappropriate.  
+
+A solution to this issue might involve __normalizing__ the count data by dividing it by the overall population from which the sub-group is derived. Appropriate denominators for ACS tables are frequently found in the tables themselves as variables.  In ACS table B19001, which covers the number of households by income bands, the variable `B19001_001` represents the total number of households in a given enumeration unit, which we removed from our analysis earlier.  Given that this variable is an appropriate denominator for the other variables in the table, it merits its own column to facilitate the calculation of proportions or percentages.  
+
+In tidycensus, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions.  Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.  
+
+With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by Census tract in Multnomah County, Oregon for the 2000 Census: 
+
+```{r}
+race <- get_decennial(geography = "tract", 
+                      variables = c(), 
+                      summary_var = "", 
+                      state = "OR", 
+                      county = "Multnomah", 
+                      year = 2000) %>%
+  mutate(pct = 100 * (value / summary_value))
+
+race
+```
+
+By using dplyr's `mutate()` function, we calculate a new column, `pct`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2000.  
+
+## Handling margins of error in the American Community Survey with tidycensus
+
+
+
+
+## Other Census data packages in R
+
+With over 73,000 downloads from the RStudio CRAN mirror as of October 2017, the __acs__ package (Haber Glenn 2017) is one of the most widely-used tools for Census data access in R.  The acs package allows for access to both decennial Census and American Community Survey data, and includes a suite of tools to manage data downloads and calculate margins of error.  The __choroplethr__ package (Lamstein and Johnson 2017) wraps acs and __ggplot2__ to allow R users to rapidly create maps using Census and ACS data, and also provides access to the underlying data as well.  More recently, the __censusapi__ package (Recht 2017) helps R users access any of the US Census Bureau's data APIs.  While the censusapi package requires more knowledge of the underlying structure of the API to work, its breadth is unmatched among Census API packages in R. 
+
+{give examples of each in this section}
+
+<!--chapter:end:03-census-tabular-data.Rmd-->
+
+# Exploring US Census data with visualization
+
+The core visualization package within the __tidyverse__ suite of packages is __ggplot2__ (Wickham 2016).  Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for X downloads per day in XXX.  ggplot2 allows R users to visualize data using a _layered grammar of graphics_ approach, in which plot objects are initialized upon which the R user layers plot elements.  
+
+ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the __tidycensus__ package.  It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).  
+
+This chapter includes several examples of how R users can visualize data from the US Census Bureau using ggplot2.  Chart types explored in this chapter include basic chart types; faceted, or "small multiples" plots; population pyramids; margin of error plots for ACS data; and advanced visualizations using extensions to ggplot2.  Finally, the chapter introduces the __plotly__ package for interactive visualization, which can be used to convert ggplot2 objects to interactive web graphics.  
+
+## Basic Census visualization with ggplot2
+
+In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States.  To determine this information, we can use __tidyverse__ tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.  
+
+```{r}
+
+library(tidycensus)
+library(tidyverse)
+
+metros <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area", 
+        variables = "DP03_0021PE", 
+        summary_var = "B01003_001", 
+        survey = "acs1", 
+        year = 2016) %>%
+  filter(min_rank(desc(summary_est)) < 21)
+
+```
+
+(refine this)
+
+ggplot visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function.  Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.  
+
+After initializing the ggplot object, users can layer plot elements onto the plot object.  Essential to the plot is a `geom`, which specifies one of many chart types available in ggplot2.  For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth.  Layers are linked to the ggplot object by using the `+` operator.  
+
+In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code: 
+
+```{r}
+p <- ggplot(metros, aes(x = NAME, y = estimate)) + 
+  geom_point()
+
+p
+```
+
+As evidenced by the above chart, there are a number of key issues to address.  The x-axis labels are so lengthy that they overlap and are impossible to read; the axis titles are not intuitive; and the data are not sorted, making it difficult to compare similar observations.  
+
+Fortunately, the plot can be made more legible by cleaning up the metropolitan area name, re-ordering the data in descending order, then adding layers to the plot definition.  Additionally, ggplot2 visualization can be used in combination with __magrittr__ piping and in turn tidyverse functions, allowing analysts to string together data manipulation and visualization processes.  
+
+(Consider: step-by-step, or all at once?)
+
+```{r}
+
+p <- metros %>%
+  mutate(NAME = str_replace(NAME, "-.*$", "")) %>%
+  mutate(NAME = str_replace(NAME, ",.*$", "")) %>%
+  ggplot(aes(y = reorder(NAME, estimate), x = estimate)) + 
+  geom_point(size = 3, color = "navy") + 
+  labs(title = "Percentage of residents who take public transportation to work", 
+       subtitle = "2016 1-year ACS estimates, major US metropolitan areas", 
+       y = "", 
+       x = "ACS estimate (percent)", 
+       caption = "Source: ACS Data Profile variable DP03_0021P via the tidycensus R package")
+  
+
+p
+
+```
+
+After making the above modifications, the plot is much more legible, and the sorting of metropolitan areas allows for comparisons between proximate metros.
+
+## Visualizing margins of error
+
+As discussed in Chapter 3, handling margins of error appropriately is of significant importance for analysts working with ACS data.  While __tidycensus__ has tools available for working with margins of error in a data wrangling workflow, it is also often useful to visualize those margins of error to illustrate the degree of uncertainty around estimates, especially when making comparisons between those estimates.  
+
+In the above example visualization of public transportation mode share by metropolitan area for the largest metros in the United States, estimates are associated with margins of error; however, these margins of error are relatively small given the large population size of the geographic units represented in the plot.  However, if studying demographic trends for geographies of smaller population size - like counties, Census tracts, or block groups - comparisons can be subject to a considerable degree of uncertainty.  
+
+In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2012-2016 ACS.  Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population.  We can retrieve this information with tidycensus.  
+
+```{r}
+maine <- get_acs(state = "Maine", geography = "county", 
+                 variables = c(totalpop = "B01003_001")) %>%
+  arrange(desc(estimate))
+
+maine
+```
+
+There are sixteen counties in Maine, ranging in population from a maximum of 286,119 to a minimum of 17,156.  In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.  
+
+Comparing median household incomes of these sixteen counties illustrates this point.  We can first obtain this data with tidycensus, then plot the result with a dot plot in a similar fashion to the previous section.  
+
+```{r}
+inc <- get_acs(state = "Maine", geography = "county", 
+               variables = c(hhincome = "B19013_001")) %>%
+  mutate(NAME = str_replace(NAME, " County, Maine", ""))
+
+ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) + 
+  geom_point(size = 3, color = "darkgreen") + 
+  labs(title = "Median household income", 
+       subtitle = "Counties in Maine", 
+       x = "", 
+       y = "ACS estimate") + 
+  scale_x_continuous(labels = scales::dollar)
+```
+
+The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Aroostook).  In several instances, the estimates of neighboring counties in the ranking is quite close.  Importantly, however, these estimates - represented by dots on the chart - are associated with varying margins of error.  We can explore this by looking directly at the data.  
+
+```{r}
+inc %>% arrange(desc(estimate))
+```
+
+
+Specifically, margins of error around the estimated median household incomes vary from a low of $893 (Aroostook County) to a high of $2998 (Sagadahoc County).  In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.  
+
+In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading.  However, using visualization tools in ggplot2, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking.  This is accomplished with the `geom_errorbarh()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate.  In this instance, we will use the `moe` column to determine the lengths of the error bars.  
+
+```{r}
+ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) + 
+  geom_errorbarh(aes(xmin = estimate - moe, xmax = estimate + moe)) + 
+  geom_point(size = 3, color = "darkgreen") + 
+  labs(title = "Median household income", 
+       subtitle = "Counties in Maine", 
+       x = "ACS estimate", 
+       y = "") + 
+  scale_x_continuous(labels = scales::dollar)
+```
+
+Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income.  For example, while the ACS estimate suggests that Aroostook County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that it too _could_ have the lowest median income in the state.  Additionally, while Androscoggin County has a higher estimated median household income than Hancock and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.   
+
+## Exploring age and sex structure with population pyramids
+
+A common method for visualizing the demographic structure of a particular area is the _population pyramid_.  Population pyramids are typically constructed by visualizing population size or proportion on the x-axis; age cohort on the y-axis; and sex is represented categorically with male and female bars mirrored around a central axis.  
+
+We can illustrate this type of visualization using data from the 2010 decennial US Census for the state of Utah.  We first obtain data using the `get_decennial()` function in tidycensus for Census table P012, with a summary variable representing total population: 
+
+```{r}
+age <- get_decennial(geography = "state", 
+                     state = "UT", 
+                     table = "P012", 
+                     summary_var = "P0010001") 
+
+age
+
+```
+
+The function returns a tidy dataset in which each row represents values for age groups for the state of Utah, characterized by a summary value which represents the total population for Utah, to be used as a normalizing attribute.  However, there are two key issues with this dataset that must be addressed before constructing a population pyramid.  First, three of the rows themselves represent summary values; `P0120001` for total population, `P0120002` for total male population, and `P0120026` for total female population.  Further, some rows represent age bands smaller than five years, meaning that the rows are not directly comparable to each other at the moment.  These issues can be resolved with some data wrangling using tidyverse tools.  
+
+First, we remove the summary rows: 
+
+```{r}
+age2 <- age %>%
+  filter(!variable %in% c("P0120001", "P0120002", "P0120026"))
+```
+
+Next, we specify a mapping of age groups
+
+
+```{r}
+agegroups <- c("0-4", "5-9", "10-14", "15-19", "15-19", "20-24", "20-24", 
+               "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", 
+               "55-59", "60-64", "60-64", "65-69", "65-69", "70-74", "75-79", 
+               "80-84", "85+")
+
+agesex <- c(paste("Male", agegroups), 
+            paste("Female", agegroups))
+
+age2$group <- rep(agesex, length(unique(age2$NAME)))
+
+age3 <- age2 %>%
+  group_by(NAME, group) %>%
+  mutate(group_est = sum(value)) %>%
+  distinct(NAME, group, .keep_all = TRUE) %>%
+  ungroup() %>%
+  mutate(percent = 100 * (group_est / summary_value)) %>%
+  select(name = NAME, group, percent) %>%
+  separate(group, into = c("sex", "age"), sep = " ") %>%
+  mutate(age = factor(age, levels = unique(age)), 
+         percent = ifelse(sex == "Female", percent, -percent))
+
+age2
+```
+
+
+
+
+## Making comparisons with faceted plots
+
+One of the most powerful features of ggplot2 is its ability 
+
+
+
+
+
+
+## Advanced visualization with ggplot2 extensions
+
+
+
+## Interactive visualization with plotly
+
+<!--chapter:end:04-visualizing-census-data.Rmd-->
+
+# Census geographic data and applications in R
+
+As discussed in Chapters 1 and 3, Census and ACS data are associated with _geographies_, which are units at which the data are aggregated.  These defined geographies are represented in the US Census Bureau's TIGER/Line database.  The TIGER/Line database includes geometric representations of Census Bureau geographies made available as _shapefiles_, a common format for encoding geographic data. 
+
+The TIGER/Line shapefiles include three general types of data: 
+
+* _Legal entities_, which are geographies that have official legal standing in the United States.  These include states and counties.  
+* _Statistical entities_, which are geographies defined by the Census Bureau for purposes of data collection and dissemination.  Examples of statistical entities include Census tracts and block groups.  
+* _Geographic features_, which are geographic datasets that are not linked with aggregate demographic data from the Census Bureau.  These datasets include roads and water features.  
+
+Traditionally, TIGER/Line shapefiles are downloaded from a web interface as zipped folders, then unzipped for use in a Geographic Information System (GIS) or other software that can work with geographic data.  However, the R package __tigris__ allows R users to access these datasets directly from their R sessions without having to go through these steps.  
+
+This chapter will cover the core functionality of the tigris package for working with Census geographic data in R.  In doing so, it will highlight the new __sf__ package (Pebesma 2017) for representing spatial data as R objects.  
+
+## Basic usage of tigris
+
+
+## Tigris and simple features
+
+
+## Cartographic boundary shapefiles
+
+
+## Plotting data 
+
+<!--chapter:end:05-census-geographic-data.Rmd-->
+
+`r if (knitr:::is_html_output()) '# References {-}'`
+
+<!--chapter:end:06-mapping-census-data.Rmd-->
+
