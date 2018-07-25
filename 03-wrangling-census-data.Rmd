@@ -9,6 +9,9 @@ The tidy format returned by default by tidycensus is designed to facilitate grou
 Consider the following example, using household income data for Minnesota counties from the 2012-2016 ACS: 
 
 ```{r}
+library(tidycensus)
+library(tidyverse)
+
 mn1 <- get_acs(geography = "county", table = "B19001", 
                state = "MN")
 
@@ -57,23 +60,35 @@ A solution to this issue might involve __normalizing__ the count data by dividin
 
 In tidycensus, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions.  Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.  
 
-With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by Census tract in Multnomah County, Oregon for the 2000 Census: 
+With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by county in Texas from the 2012-2016 ACS: 
 
 ```{r}
-race <- get_decennial(geography = "tract", 
-                      variables = c(), 
-                      summary_var = "", 
-                      state = "OR", 
-                      county = "Multnomah", 
-                      year = 2000) %>%
-  mutate(pct = 100 * (value / summary_value))
+race_vars <- c(White = "B03002_003", Black = "B03002_004", Native = "B03002_005", 
+               Asian = "B03002_006", HIPI = "B03002_007", Hispanic = "B03002_012")
 
-race
+tx_race <- get_acs(geography = "county", 
+                   state = "TX",
+                   variables = race_vars, 
+                   summary_var = "B03002_001") %>%
+  mutate(pct = 100 * (estimate / summary_est))
 ```
 
 By using dplyr's `mutate()` function, we calculate a new column, `pct`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2000.  
 
+## Comparing estimates over time
+
+use example from get_estimates here
+
+
+
 ## Handling margins of error in the American Community Survey with tidycensus
+
+
+## Using margin of error functions in tidycensus
+
+
+## Calculating group-wise margins of error
+
 
 
 
@@ -82,4 +97,4 @@ By using dplyr's `mutate()` function, we calculate a new column, `pct`, represen
 
 With over 73,000 downloads from the RStudio CRAN mirror as of October 2017, the __acs__ package (Haber Glenn 2017) is one of the most widely-used tools for Census data access in R.  The acs package allows for access to both decennial Census and American Community Survey data, and includes a suite of tools to manage data downloads and calculate margins of error.  The __choroplethr__ package (Lamstein and Johnson 2017) wraps acs and __ggplot2__ to allow R users to rapidly create maps using Census and ACS data, and also provides access to the underlying data as well.  More recently, the __censusapi__ package (Recht 2017) helps R users access any of the US Census Bureau's data APIs.  While the censusapi package requires more knowledge of the underlying structure of the API to work, its breadth is unmatched among Census API packages in R. 
 
-{give examples of each in this section}
+{give examples of each in this section}-

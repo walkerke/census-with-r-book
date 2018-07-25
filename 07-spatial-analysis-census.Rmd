@@ -30,7 +30,7 @@ ny <- get_acs(geography = "tract",
               county = "New York", 
               geometry = TRUE)
 
-mapview(ny, zcol = "estimate", legend = TRUE)
+# mapview(ny, zcol = "estimate", legend = TRUE)
 
 ```
 

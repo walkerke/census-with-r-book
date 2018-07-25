@@ -44,26 +44,26 @@ tx <- get_acs(geography = "county",
 
 ```{r}
 
-tx_shared <- SharedData$new(tx, key = ~NAME)
-
-scatter <- ggplot(tx_shared, aes(x = pctcollegeE, y = hhincomeE, label = NAME)) + 
-  geom_point() + 
-  labs(x = "Percent over 25 with a bachelor's degree or higher", 
-       y = "Median household income", 
-       title = "Counties in Texas (2012-2016 ACS)")
-
-map <- ggplot(tx_shared, aes(label = NAME)) + 
-  geom_sf(fill = "grey", color = "black") + 
-  coord_sf(crs = 3083) # http://spatialreference.org/ref/epsg/nad83-texas-centric-albers-equal-area/
-
-scatterly <- ggplotly(scatter, tooltip = "NAME") %>%
-  layout(dragmode = "lasso") %>%
-  highlight("plotly_selected", color = "red")
-
-maply <- ggplotly(map, tooltip = "NAME") %>%
-  highlight("plotly_selected", color = "red")
-
-bscols(scatterly, maply)
+# tx_shared <- SharedData$new(tx, key = ~NAME)
+# 
+# scatter <- ggplot(tx_shared, aes(x = pctcollegeE, y = hhincomeE, label = NAME)) + 
+#   geom_point() + 
+#   labs(x = "Percent over 25 with a bachelor's degree or higher", 
+#        y = "Median household income", 
+#        title = "Counties in Texas (2012-2016 ACS)")
+# 
+# map <- ggplot(tx_shared, aes(label = NAME)) + 
+#   geom_sf(fill = "grey", color = "black") + 
+#   coord_sf(crs = 3083) # http://spatialreference.org/ref/epsg/nad83-texas-centric-albers-equal-area/
+# 
+# scatterly <- ggplotly(scatter, tooltip = "NAME") %>%
+#   layout(dragmode = "lasso") %>%
+#   highlight("plotly_selected", color = "red")
+# 
+# maply <- ggplotly(map, tooltip = "NAME") %>%
+#   highlight("plotly_selected", color = "red")
+# 
+# bscols(scatterly, maply)
 
 ```
 

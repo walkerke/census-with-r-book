@@ -1,4 +1,4 @@
-# R, the tidyverse, and tidy tools for Census data
+# An introduction to tidycensus
 
 {intro here}
 

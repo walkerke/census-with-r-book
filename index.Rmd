@@ -6,10 +6,10 @@ site: bookdown::bookdown_site
 knit: bookdown::render_book
 output: bookdown::gitbook
 documentclass: book
-bibliography: [book.bib, packages.bib]
+bibliography: [book.bib]
 biblio-style: apalike
 link-citations: yes
-github-repo: rstudio/bookdown-demo
+github-repo: walkerke/us-census-with-r-book
 description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data from the US Census Bureau with the R programming language."
 ---
 
