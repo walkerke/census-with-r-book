@@ -1,10 +1,22 @@
 # Spatial analysis with US Census data
 
+A very common use-case of spatial data from the US Census Bureau is _spatial analysis_.  Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset.  Principles in spatial analysis are closely related to the field of _geographic information science_, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.  
 
+Traditionally, geographic information science has been performed in a _geographic information system_, or “GIS”, which refers to an integrated software platform for the management, processing, analysis, and visualization of geographic data.  As evidenced in this book already, R packages exist for handling these tasks, allowing R to function as a capable substitute for desktop GIS software like ArcGIS or QGIS.  
+
+Traditionally, spatial analytic tasks in R have been handled by the __sp__ package and allied packages such as __rgeos__.  In recent years, however, the __sf__ package has emerged as the next-generation alternative to sp for spatial data analysis in R.  In addition to the simpler representation of vector spatial data in R, as discussed in previous chapters, sf also includes significant functionality for spatial data analysis that integrates seamlessly with tidyverse tools.  
+
+This chapter covers how to perform common spatial analysis tasks with Census data using the sf package.  As with previous chapters, the examples will focus on data acquired with the tidycensus and tigris packages, and will cover common workflows of use to practitioners who work with US Census Bureau data.  
 
 ## Spatial overlay and spatial joins
 
+Spatial data analysis allows practitioners to consider how geographic datasets interrelate in geographic space.  This analytic functionality facilitates answering a wide range of research and analytic questions that would otherwise prove difficult without reference to a dataset’s geographic properties.  
 
+One common use-case employed by the geospatial analyst is _spatial overlay_.  Key to the concept of spatial overlay is the representation of geographic datasets as _layers_ in a GIS.  This representation is exemplified by the graphic below.  
+
+{layers graphic}
+
+In this representation, different components of the landscape that interact in the real world 
 
 ## Distance and proximity analysis
 
