@@ -1,6 +1,32 @@
 # Mapping Census data with R
 
+Data from the United States Census Bureau are commonly visualized using maps, given that Census and ACS data are aggregated to enumeration units.  This chapter will cover the process of map-making using the tidycensus R package.  Notably, tidycensus enables R users to download _simple feature geometry_ for common geographies, linking demographic information with their geographic locations in a dataset.  In turn, this data model facilitates the creation of both static and interactive demographic maps. 
+
+In this chapter, readers will learn how to use the `geometry` parameter in tidycensus functions to download geographic data along with demographic data from the US Census Bureau.  The chapter will then cover how to make static maps of Census demographic data using the popular ggplot2 and tmap visualization packages.  The closing parts of the chapter will then turn to interactive mapping, with a focus on the mapview and Leaflet R packages for interactive cartographic visualization.  
+
 ## Using geometry in tidycensus
+
+As covered in the previous chapter, Census geographies are available from the tigris R package as simple features objects, using the data model from the sf R package.  tidycensus wraps several common geographic data functions in the tigris package to allow R users to return simple feature geometry pre-linked to downloaded demographic data with a single function call.  The key argument to accomplish this is `geometry = TRUE`, which is available in the core data download functions in tidycensus, `get_acs()`, `get_decennial()`, and `get_estimates()`.  
+
+The following example illustrates the use of the `geometry = TRUE` argument, fetching information on median household income for Census tracts in the District of Columbia.  As discussed in the previous chapter, the option `tigris_use_cache = TRUE` is used to cache the downloaded geographic data on the user's computer.  
+
+```{r}
+library(tidycensus)
+options(tigris_use_cache = TRUE)
+
+dc_income <- get_acs(geography = "tract", 
+                     variables = c(hhincome = "B19013_001"), 
+                     state = "DC", 
+                     geometry = TRUE)
+
+dc_income
+
+```
+
+As shown in the example call, the structure of the object returned by tidycensus resembles the object we've become familiar with to this point in the book.  For example, median household income data are found in the `estimate` column with associated margins of error in the `moe` column, along with a variable ID, GEOID, and Census tract name.  However, there are some notable differences.  The `geometry` column contains polygon feature geometry for each Census tract, allowing for a linking of the estimates and margins of error with their corresponding locations in Washington, DC.  Beyond that, the object is associated with coordinate system information - using the NAD 1983 geographic coordinate system in which Census geographic datasets are stored by default.  
+
+Such geographic information is very difficult to parse, however, without visualization.  
+
 
 ## Map-making with ggplot2 and geom_sf
 

@@ -15,6 +15,7 @@ This chapter will cover the core functionality of the tigris package for working
 ## Basic usage of tigris
 
 
+
 ## Tigris and simple features
 
 
