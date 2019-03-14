@@ -18,10 +18,11 @@ library(tidyverse)
 metros <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area", 
         variables = "DP03_0021PE", 
         summary_var = "B01003_001", 
-        survey = "acs1", 
-        year = 2016) %>%
+        survey = "acs1") %>%
   filter(min_rank(desc(summary_est)) < 21)
 
+
+metros
 ```
 
 (refine this)
@@ -53,7 +54,7 @@ p <- metros %>%
   ggplot(aes(y = reorder(NAME, estimate), x = estimate)) + 
   geom_point(size = 3, color = "navy") + 
   labs(title = "Percentage of residents who take public transportation to work", 
-       subtitle = "2016 1-year ACS estimates, major US metropolitan areas", 
+       subtitle = "2017 1-year ACS estimates, major US metropolitan areas", 
        y = "", 
        x = "ACS estimate (percent)", 
        caption = "Source: ACS Data Profile variable DP03_0021P via the tidycensus R package")
@@ -71,7 +72,7 @@ As discussed in Chapter 3, handling margins of error appropriately is of signifi
 
 In the above example visualization of public transportation mode share by metropolitan area for the largest metros in the United States, estimates are associated with margins of error; however, these margins of error are relatively small given the large population size of the geographic units represented in the plot.  However, if studying demographic trends for geographies of smaller population size - like counties, Census tracts, or block groups - comparisons can be subject to a considerable degree of uncertainty.  
 
-In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2012-2016 ACS.  Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population.  We can retrieve this information with tidycensus.  
+In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2013-2017 ACS.  Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population.  We can retrieve this information with tidycensus.  
 
 ```{r}
 maine <- get_acs(state = "Maine", geography = "county", 
@@ -127,15 +128,19 @@ Adding the horizontal error bars around each point gives us critical information
 
 A common method for visualizing the demographic structure of a particular area is the _population pyramid_.  Population pyramids are typically constructed by visualizing population size or proportion on the x-axis; age cohort on the y-axis; and sex is represented categorically with male and female bars mirrored around a central axis.  
 
-We can illustrate this type of visualization using data from the 2010 decennial US Census for the state of Utah.  We first obtain data using the `get_decennial()` function in tidycensus for Census table P012, with a summary variable representing total population: 
+We can illustrate this type of visualization using data from the 2010 decennial US Census for the state of Utah.  We first obtain data using the `get_estimates()` function in tidycensus for 2017 population estimates from the Census Bureau's Population Estimates API, with a summary variable representing total population: 
 
 ```{r}
-age <- get_decennial(geography = "state", 
-                     state = "UT", 
-                     table = "P012", 
-                     summary_var = "P0010001") 
+library(tidycensus)
+library(tidyverse)
 
-age
+utah <- get_estimates(geography = "state", 
+                     state = "UT", 
+                     product = "characteristics", 
+                     breakdown = c("SEX", "AGEGROUP"),  
+                     breakdown_labels = TRUE) 
+
+utah
 
 ```
 
@@ -144,36 +149,29 @@ The function returns a tidy dataset in which each row represents values for age 
 First, we remove the summary rows: 
 
 ```{r}
-age2 <- age %>%
-  filter(!variable %in% c("P0120001", "P0120002", "P0120026"))
+utah_filtered <- filter(utah, str_detect(AGEGROUP, "^Age"), 
+                  SEX != "Both sexes") %>%
+  mutate(value = ifelse(SEX == "Male", -value, value))
+
+utah_filtered
 ```
 
 Next, we specify a mapping of age groups
 
 
 ```{r}
-agegroups <- c("0-4", "5-9", "10-14", "15-19", "15-19", "20-24", "20-24", 
-               "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", 
-               "55-59", "60-64", "60-64", "65-69", "65-69", "70-74", "75-79", 
-               "80-84", "85+")
-
-agesex <- c(paste("Male", agegroups), 
-            paste("Female", agegroups))
-
-age2$group <- rep(agesex, length(unique(age2$NAME)))
-
-age3 <- age2 %>%
-  group_by(NAME, group) %>%
-  mutate(group_est = sum(value)) %>%
-  distinct(NAME, group, .keep_all = TRUE) %>%
-  ungroup() %>%
-  mutate(percent = 100 * (group_est / summary_value)) %>%
-  select(name = NAME, group, percent) %>%
-  separate(group, into = c("sex", "age"), sep = " ") %>%
-  mutate(age = factor(age, levels = unique(age)), 
-         percent = ifelse(sex == "Female", percent, -percent))
-
-age2
+ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) + 
+  geom_bar(stat = "identity", width = 1) + 
+  theme_minimal(base_family = "Roboto") + 
+  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
+  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
+  scale_fill_manual(values = c("darkred", "navy")) + 
+  coord_flip() + 
+  labs(x = "", 
+       y = "2017 Census Bureau population estimate", 
+       title = "Population structure in Utah", 
+       fill = "", 
+       caption = "Data source: US Census Bureau population estimates & tidycensus R package")
 ```
 
 
@@ -181,10 +179,33 @@ age2
 
 ## Making comparisons with faceted plots
 
-One of the most powerful features of ggplot2 is its ability 
+One of the most powerful features of ggplot2 is its ability to generate _faceted plots_, which are also commonly referred to as _small multiples_.  Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups.  
+
+```{r}
+housing_val <- get_acs(geography = "tract", 
+                       variables = "B25077_001", 
+                       state = "OR", 
+                       county = c("Multnomah", "Clackamas", "Washington"))
+
+housing_val
+```
+
+```{r}
+housing_val2 <- separate(housing_val, NAME, 
+                         into = c("tract", "county", "state"), 
+                         sep = ",")
+
+housing_val2
+```
 
 
 
+```{r}
+ggplot(housing_val2, aes(x = estimate)) +
+  geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
+  facet_wrap(~county)
+  
+```
 
 
 

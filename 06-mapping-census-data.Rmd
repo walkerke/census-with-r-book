@@ -25,10 +25,19 @@ dc_income
 
 As shown in the example call, the structure of the object returned by tidycensus resembles the object we've become familiar with to this point in the book.  For example, median household income data are found in the `estimate` column with associated margins of error in the `moe` column, along with a variable ID, GEOID, and Census tract name.  However, there are some notable differences.  The `geometry` column contains polygon feature geometry for each Census tract, allowing for a linking of the estimates and margins of error with their corresponding locations in Washington, DC.  Beyond that, the object is associated with coordinate system information - using the NAD 1983 geographic coordinate system in which Census geographic datasets are stored by default.  
 
-Such geographic information is very difficult to parse, however, without visualization.  
+Such geographic information is very difficult to parse, however, without visualization. As the returned object is a simple features spatial object as represented by the __sf__ package, it can be plotted using sf's `plot()` function.  Key here is specifying the name of the column to be plotted - `"estimate"` in this case - inside of brackets.  
 
+```{r}
+plot(dc_income["estimate"])
+```
+
+The `plot()` function returns a simple map showing income variation in Washington, DC.  Wealthier areas, as represented with warmer colors, tend to be located in the northwestern part of the District.  `NA` values are represented on the map in white.  If desired, the map can be modified further with base plotting functions.  
+
+The remainder of this chapter, however, will focus on map-making with additional data visualization packages in R.  This includes the popular __ggplot2__ package for visualization, which supports direct visualization of simple features objects; the __tmap__ package for thematic mapping, and the __leaflet__ package for interactive map-making which calls the Leaflet JavaScript framework directly from R.  
 
 ## Map-making with ggplot2 and geom_sf
+
+__ggplot2__ version 3.0 (released in 2018) included support for mapping simple features objects directly for the first time with the `geom_sf()` function.  `geom_sf()` reads in the simple feature geometry - whether point, line, or polygon - and 
 
 ```{r}
 library(tidycensus)

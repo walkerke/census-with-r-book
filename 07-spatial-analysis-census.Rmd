@@ -95,21 +95,22 @@ library(sf)
 library(spdep)
 options(tigris_use_cache = TRUE)
 
-la <- get_acs(geography = "tract", state = "CA", 
-              county = "Los Angeles", variables = c(medincome = "B19013_001"), 
+orange <- get_acs(geography = "tract", state = "CA", 
+              county = "Orange", variables = c(medincome = "B19013_001"), 
               geometry = TRUE) %>%
+  filter(!is.na(st_dimension(.))) %>%
   st_transform(26910)
 
-head(la)
+head(orange)
 
 ```
 
 * Compute weights matrix
 
 ```{r}
-lasp <- as(la, "Spatial")
+orange_sp <- as_Spatial(orange)
 
-nb <- poly2nb(lasp, queen = TRUE)
+nb <- poly2nb(orange_sp, queen = TRUE)
 
 weights <- nb2listw(nb)
 
