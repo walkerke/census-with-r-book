@@ -32,3 +32,5 @@ library(tidycensus)
 
 ```
 
+
+## Spatial optimization with Census data
