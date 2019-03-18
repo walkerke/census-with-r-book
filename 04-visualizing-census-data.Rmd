@@ -1,6 +1,6 @@
 # Exploring US Census data with visualization
 
-The core visualization package within the __tidyverse__ suite of packages is __ggplot2__ (Wickham 2016).  Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for X downloads per day in XXX.  ggplot2 allows R users to visualize data using a _layered grammar of graphics_ approach, in which plot objects are initialized upon which the R user layers plot elements.  
+The core visualization package within the __tidyverse__ suite of packages is __ggplot2__ (Wickham 2016).  Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 25,000 downloads per day in March of 2019 from the RStudio CRAN mirror.  ggplot2 allows R users to visualize data using a _layered grammar of graphics_ approach, in which plot objects are initialized upon which the R user layers plot elements.  
 
 ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the __tidycensus__ package.  It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).  
 
@@ -8,7 +8,7 @@ This chapter includes several examples of how R users can visualize data from th
 
 ## Basic Census visualization with ggplot2
 
-In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States.  To determine this information, we can use __tidyverse__ tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.  
+In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States.  The data come from the 2017 1-year American Community Survey, variable `DP03_0021P`.  To determine this information, we can use __tidyverse__ tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.  
 
 ```{r}
 
@@ -16,22 +16,22 @@ library(tidycensus)
 library(tidyverse)
 
 metros <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area", 
-        variables = "DP03_0021PE", 
+        variables = "DP03_0021P", 
         summary_var = "B01003_001", 
         survey = "acs1") %>%
   filter(min_rank(desc(summary_est)) < 21)
 
 
-metros
+glimpse(metros)
 ```
 
-(refine this)
+The returned data frame has 7 columns, as is standard for `get_acs()`, but has 20 rows as specified by the `filter` command.  While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization.  The tidy format returned by `get_acs()` is well-suited for visualization with ggplot2.  
 
-ggplot visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function.  Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.  
+ggplot2 visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function.  Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.  
 
 After initializing the ggplot object, users can layer plot elements onto the plot object.  Essential to the plot is a `geom`, which specifies one of many chart types available in ggplot2.  For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth.  Layers are linked to the ggplot object by using the `+` operator.  
 
-In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code: 
+In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code.  The first argument to `ggplot()` in the example below is the name of our dataset; the second argument is an aesthetic mapping of columns to plot elements, specified inside the `aes()` function.  This plot initialization is then linked with the `+` operator to the `geom_point()` function to plot ACS estimates with dots.   
 
 ```{r}
 p <- ggplot(metros, aes(x = NAME, y = estimate)) + 
@@ -40,19 +40,31 @@ p <- ggplot(metros, aes(x = NAME, y = estimate)) +
 p
 ```
 
-As evidenced by the above chart, there are a number of key issues to address.  The x-axis labels are so lengthy that they overlap and are impossible to read; the axis titles are not intuitive; and the data are not sorted, making it difficult to compare similar observations.  
+While the above chart is a visualization of the `metros` dataset, it tells us little about the data given the lack of necessary formatting.  The x-axis labels are so lengthy that they overlap and are impossible to read; the axis titles are not intuitive; and the data are not sorted, making it difficult to compare similar observations.  
 
-Fortunately, the plot can be made more legible by cleaning up the metropolitan area name, re-ordering the data in descending order, then adding layers to the plot definition.  Additionally, ggplot2 visualization can be used in combination with __magrittr__ piping and in turn tidyverse functions, allowing analysts to string together data manipulation and visualization processes.  
+Fortunately, the plot can be made more legible by cleaning up the metropolitan area name, re-ordering the data in descending order, then adding layers to the plot definition.  Additionally, ggplot2 visualization can be used in combination with __magrittr__ piping and tidyverse functions, allowing analysts to string together data manipulation and visualization processes.  
 
-(Consider: step-by-step, or all at once?)
+Our first step will be to format the `NAME` column in a more intuitive way.  The `NAME` column by default provides a description of each geography as formatted by the US Census Bureau.  However, a detailed description like `"Atlanta-Sandy Springs-Roswell, GA Metro Area"` is likely unnecessary for our chart, as the same metropolitan area can be represented on the chart by the name of its principal city, which in this case would be `"Atlanta"`.  To accomplish this, we can overwrite the `NAME` column by using the tidyverse function `str_replace()`, found in the __stringr__ package.  The example uses _regular expressions_ to first remove all the text after the first dash, then remove the text after the first comma if no dash was originally present.  
+
+On the chart, the legibility can be further improved by mapping the metro name to the y-axis and the ACS estimate to the x-axis, and plotting the points in descending order of their estimate values.  The ordering of points in this way is accomplished with the `reorder()` function, used inside the call to `aes()`.  As the result of the `mutate()` operations is piped to the `ggplot()` function in this example with the `%>%` operator, the dataset argument to `ggplot()` is inferred by the function.  
 
 ```{r}
-
 p <- metros %>%
   mutate(NAME = str_replace(NAME, "-.*$", "")) %>%
   mutate(NAME = str_replace(NAME, ",.*$", "")) %>%
   ggplot(aes(y = reorder(NAME, estimate), x = estimate)) + 
-  geom_point(size = 3, color = "navy") + 
+  geom_point()
+
+
+p
+```
+
+
+The plot is much more legible after our modifications.  Metropolitan areas can be directly compared with one another, and the metro area labels convey enough information about the different places without overwhelming the plot with long axis labels.  However, the plot still lacks information to inform the viewer about the plot's content.  This can be accomplished by specifying _labels_ inside the `labs()` function.  In the example below, we'll specify a title and subtitle, and modify the X and Y axis labels from their defaults.  
+
+```{r}
+
+p <- p +  
   labs(title = "Percentage of residents who take public transportation to work", 
        subtitle = "2017 1-year ACS estimates, major US metropolitan areas", 
        y = "", 
@@ -64,7 +76,7 @@ p
 
 ```
 
-After making the above modifications, the plot is much more legible, and the sorting of metropolitan areas allows for comparisons between proximate metros.
+The inclusion of labels provides key information about the contents of the plot and also gives it a more polished look for presentation.   
 
 ## Visualizing margins of error
 
@@ -100,14 +112,14 @@ ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) +
   scale_x_continuous(labels = scales::dollar)
 ```
 
-The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Aroostook).  In several instances, the estimates of neighboring counties in the ranking is quite close.  Importantly, however, these estimates - represented by dots on the chart - are associated with varying margins of error.  We can explore this by looking directly at the data.  
+The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis).  In several instances, the estimates of neighboring counties in the ranking is quite close.  Importantly, however, these estimates - represented by dots on the chart - are associated with varying margins of error.  We can explore this by looking directly at the data.  
 
 ```{r}
-inc %>% arrange(desc(estimate))
+inc %>% arrange(desc(moe))
 ```
 
 
-Specifically, margins of error around the estimated median household incomes vary from a low of $893 (Aroostook County) to a high of $2998 (Sagadahoc County).  In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.  
+Specifically, margins of error around the estimated median household incomes vary from a low of $1115 (Cumberland County) to a high of $2953 (Sagadahoc County).  In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.  
 
 In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading.  However, using visualization tools in ggplot2, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking.  This is accomplished with the `geom_errorbarh()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate.  In this instance, we will use the `moe` column to determine the lengths of the error bars.  
 
@@ -117,12 +129,12 @@ ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) +
   geom_point(size = 3, color = "darkgreen") + 
   labs(title = "Median household income", 
        subtitle = "Counties in Maine", 
-       x = "ACS estimate", 
+       x = "2013-2017 ACS estimate", 
        y = "") + 
   scale_x_continuous(labels = scales::dollar)
 ```
 
-Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income.  For example, while the ACS estimate suggests that Aroostook County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that it too _could_ have the lowest median income in the state.  Additionally, while Androscoggin County has a higher estimated median household income than Hancock and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.   
+Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income.  For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties _could_ conceivably have lower median household incomes.  Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.   
 
 ## Exploring age and sex structure with population pyramids
 
