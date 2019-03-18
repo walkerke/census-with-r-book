@@ -1,24 +1,6 @@
 # An introduction to tidycensus
 
-{intro here}
-
-## R
-
-* Basics of R
-* Benefits of R
-* RStudio
-
-
-## The __tidyverse__
-
-* General discussion
-* Core packages
-* Core functionality
-
-
-## Accessing Census and ACS data with __tidycensus__
-
-The __tidycensus__ package, first released in 2017, replicates some of the functionality of the aforementioned packages but with two distinct goals.  First, tidycensus aims to make Census data available to R users in a tidyverse-friendly format.  Second, R users can obtain feature geometry via __tigris__ pre-joined with tabular Census data in a single tidycensus function call.  As such, tidycensus is designed to streamline the process of Census data access and manipulation for R users who are committed to tidyverse-based workflows.  
+The __tidycensus__ package, first released in 2017, is an R package designed to facilitate the process of acquiring and working with US Census Bureau population data in the R environment.  The package has two distinct goals.  First, tidycensus aims to make Census data available to R users in a tidyverse-friendly format.  Second, R users can obtain feature geometry via __tigris__ pre-joined with tabular Census data in a single tidycensus function call.  As such, tidycensus is designed to streamline the process of Census data access and manipulation for R users who are committed to tidyverse-based workflows.  
 
 To get started with tidycensus, users should load the package along with the __tidyverse__ package and set their Census API key with the `census_api_key()` function.  API keys can be obtained at https://api.census.gov/data/key_signup.html.  Declaring `install = TRUE` when calling `census_api_key()` will install the key for use in future R sessions, which may be convenient for many users.  
 
