@@ -24,7 +24,7 @@ pop12to16 <- get_acs(geography = "state", variables = "B01003_001")
 head(pop12to16)
 ```
 
-`get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2012-2016.  Different years and different surveys are available by adjusting the `endyear` and `survey` parameters.  For example, the following code will fetch data from the 1-year ACS for 2016: 
+`get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2013-2017.  Different years and different surveys are available by adjusting the `endyear` and `survey` parameters.  For example, the following code will fetch data from the 1-year ACS for 2016: 
 
 ```{r}
 pop16 <- get_acs(geography = "state", variables = "B01003_001", survey = "acs1")

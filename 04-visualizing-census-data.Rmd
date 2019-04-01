@@ -156,9 +156,9 @@ utah
 
 ```
 
-The function returns a tidy dataset in which each row represents values for age groups for the state of Utah, characterized by a summary value which represents the total population for Utah, to be used as a normalizing attribute.  However, there are two key issues with this dataset that must be addressed before constructing a population pyramid.  First, three of the rows themselves represent summary values; `P0120001` for total population, `P0120002` for total male population, and `P0120026` for total female population.  Further, some rows represent age bands smaller than five years, meaning that the rows are not directly comparable to each other at the moment.  These issues can be resolved with some data wrangling using tidyverse tools.  
+The function returns a tidy dataset in which each row represents population values broken down by age and sex for the state of Utah.  However, there are some key issues with this dataset that must be addressed before constructing a population pyramid.  First, several rows represent values that we don't need for our population pyramid visualization.  For example, the first few rows in the dataset represent population values for `"Both sexes"` or for `"All ages"`.  In turn, it will be necessary to isolate those rows that represent five-year age bands by sex, anmd remove the rows that do not.  This can be resolved with some data wrangling using tidyverse tools.  
 
-First, we remove the summary rows: 
+In the dataset returned by `get_estimates()`, five-year age bands are identified in the `AGEGROUP` column beginning with the word `"Age"`.  We can filter this dataset for rows that match this pattern, and remove those rows that represent both sexes.  This leaves us with rows that represent five-year age bands by sex.  However, to achieve the desired visual effect, data for one sex must mirror another, split by a central vertical axis.  To accomplish this, we can set the values for all `Male` values to negative.  
 
 ```{r}
 utah_filtered <- filter(utah, str_detect(AGEGROUP, "^Age"), 
@@ -168,12 +168,20 @@ utah_filtered <- filter(utah, str_detect(AGEGROUP, "^Age"),
 utah_filtered
 ```
 
-Next, we specify a mapping of age groups
+The data are now ready for visualization!  The core components of the pyramid visualization require mapping the population value and the age group to the chart axes.  Sex can be mapped to the `fill` aesthetic allowing for the plotting of these categories by color.  Importantly, to get the visualization to work correctly, `value` must be mapped to the `y` aesthetic and `AGEGROUP` to the `x` aesthetic, with the `coord_flip()` function then used to plot the bars horizontally instead of vertically.  
 
 
 ```{r}
+ggplot(utah_filtered, aes(y = value, x = AGEGROUP, fill = SEX)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
+```
+
+The visualization represents a functional population pyramid that is nonetheless in need of some cleanup.  In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse.  Cleaning up the plot allows us to use some additional visualization options in ggplot2.  In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in ggplot2 along with custom label formatters we define.  In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information.  We'll also make use of an alternative ggplot2 theme, `theme_minimal()`, which uses a white background with muted gridlines.  
+
+```{r}
 ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) + 
-  geom_bar(stat = "identity", width = 1) + 
+  geom_bar(stat = "identity", width = 0.95) + 
   theme_minimal(base_family = "Roboto") + 
   scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
   scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
@@ -187,11 +195,9 @@ ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) +
 ```
 
 
-
-
 ## Making comparisons with faceted plots
 
-One of the most powerful features of ggplot2 is its ability to generate _faceted plots_, which are also commonly referred to as _small multiples_.  Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups.  
+One of the most powerful features of ggplot2 is its ability to generate _faceted plots_, which are also commonly referred to as _small multiples_.  Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups.  This is particularly useful when examining how distributions of values vary across different geographies.  An example shown below involves a comparison of median home values by Census tract for three counties in the Portland, Oregon area: Multnomah, which contains the city of Portland, and the suburban counties of Clackamas and Washington.  
 
 ```{r}
 housing_val <- get_acs(geography = "tract", 
@@ -202,6 +208,8 @@ housing_val <- get_acs(geography = "tract",
 housing_val
 ```
 
+As with other datasets obtained with tidycensus, the `NAME` column contains descriptive information that can be parsed to make comparisons.  In this case, Census tract ID, county, and state are separated with commas; in turn the tidyverse `separate()` function can split this column into three columns accordingly.  
+
 ```{r}
 housing_val2 <- separate(housing_val, NAME, 
                          into = c("tract", "county", "state"), 
@@ -210,7 +218,25 @@ housing_val2 <- separate(housing_val, NAME,
 housing_val2
 ```
 
+As explored in previous chapters, a major strength of the tidyverse is its ability to perform group-wise data analysis.  The dimensions of median home values by Census tract in each of the three counties can be explored in this way. For example, a call to `group_by()` followed by `summarize()` facilitates the calculation of county minimums, means, medians, and maximums.    
 
+```{r}
+housing_val2 %>%
+  group_by(county) %>%
+  summarize(min = min(estimate, na.rm = TRUE), 
+            mean = mean(estimate, na.rm = TRUE), 
+            median = median(estimate, na.rm = TRUE), 
+            max = max(estimate, na.rm = TRUE))
+```
+
+While these basic summary statistics offer some insights into comparisons between the three counties, they are limited in their ability to help us understand the dynamics of the overall distribution of values.  This task can in turn be augmented through visualization, which allows for quick visual comparison of these distributions.  Group-wise visualization in ggplot2 can be accomplished with the `facet_wrap()` function added onto any existing ggplot2 code that has salient groups to visualize.  For example, a kernel density plot can show the overall shape of the distribution of median home values in our dataset: 
+
+```{r}
+ggplot(housing_val2, aes(x = estimate)) + 
+  geom_density()
+```
+
+Adding the `facet_wrap()` function, and specifying `county` as the column used to group the data, splits this visualization into side-by-side graphics based on the counties to which each Census tract belongs.  
 
 ```{r}
 ggplot(housing_val2, aes(x = estimate)) +
@@ -219,7 +245,7 @@ ggplot(housing_val2, aes(x = estimate)) +
   
 ```
 
-
+The side-by-side comparative graphics show how the value distributions vary between the three counties.  Home values in all three counties are common around $250,000, but Multnomah County has some Census tracts that represent the highest values in the dataset.  
 
 ## Advanced visualization with ggplot2 extensions
 

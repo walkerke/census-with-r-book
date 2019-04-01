@@ -37,12 +37,15 @@ The remainder of this chapter, however, will focus on map-making with additional
 
 ## Map-making with ggplot2 and geom_sf
 
-__ggplot2__ version 3.0 (released in 2018) included support for mapping simple features objects directly for the first time with the `geom_sf()` function.  `geom_sf()` reads in the simple feature geometry - whether point, line, or polygon - and 
+__ggplot2__ version 3.0 (released in 2018) included support for mapping simple features objects directly for the first time with the `geom_sf()` function.  `geom_sf()` reads in the simple feature geometry - whether point, line, or polygon - and interprets it accordingly to make a map.  As illustrated in Chapter 5, `geom_sf()` can be used for quick plotting of sf objects using familiar ggplot2 syntax.  Beyond this, ggplot2 users can supply an aesthetic mapping, as with other chart types, to generate maps.  
+
+One of the most common ways to visualize statistical information on a map is with _choropleth mapping_.  Choropleth maps use shading to represent how underlying data values vary by feature in a spatial dataset.  The income plot of Washington, DC shown earlier in this chapter is an example of a choropleth map.  
+
+In the example below, tidycensus is used to obtain linked ACS and spatial data on median age by state for the 50 US states plus the District of Columbia.  
 
 ```{r}
 library(tidycensus)
 library(ggplot2)
-library(viridis)
 
 
 
