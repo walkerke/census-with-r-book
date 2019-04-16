@@ -18,7 +18,7 @@
 
 
 
-## Geodemographic classification
+## Geodemographic classification (Spielman-Singleton method)
 
 
 
@@ -34,3 +34,5 @@ library(tidycensus)
 
 
 ## Spatial optimization with Census data
+
+
