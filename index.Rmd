@@ -1,5 +1,5 @@
 --- 
-title: "Analyzing the US Census with R"
+title: "Analyzing Census Data with R"
 author: "Kyle E. Walker"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
@@ -9,13 +9,14 @@ documentclass: book
 bibliography: [book.bib]
 biblio-style: apalike
 link-citations: yes
-github-repo: walkerke/us-census-with-r-book
-description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data from the US Census Bureau with the R programming language."
+github-repo: walkerke/census-with-r-book
+description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data Census data with the R programming language."
 ---
 
 # Overview
 
-This book is an overview of how practitioners can work with data from the US Census Bureau using the R programming language.  The book will focus on data acquisition and wrangling as well as data analysis and modeling of aggregate and individual-level decennial Census and American Community Survey data.  It is designed to be useful for both beginners and advanced users of both R and Census data.  Beginners will find Part 1 more useful, as it covers the basics of R and the US Census and how to work with them together.  Advanced readers will find Parts 2 and 3 more useful, as these parts cover applications from exploratory mapping and visualization to advanced data modeling.  
+This book is an overview of how practitioners can work with Census data around the world using the R programming language.  The book will focus on data acquisition and wrangling as well as data analysis and modeling of aggregate and individual-level data.  It will include a focus on US decennial Census and American Community Survey data along with a selection of other countries around the world.  It is designed to be useful for both beginners and advanced users of both R and Census data.  Beginners will find Part 1 more useful, as it covers the basics of R and Censuses and how to work with them together.  Advanced readers will find Parts 2 and 3 more useful, as these parts cover applications from exploratory mapping and visualization to advanced data modeling.  
 
 The growing popularity of the R programming language for exploratory data analysis and data science has led many practitioners to turn to R to work with Census data.  To date, however, no book exists as a reference manual for how to use Census data in R; as such, resources are scattered across blog posts, webinars, and journal articles.  This proposed book aims to fill this gap as a reference manual for a wide range of use cases for practitioners using Census data in R.  
+
 Additionally, the book will take advantage of cutting-edge developments in both data wrangling and spatial data analysis in R.  The book’s approach will be oriented around two major R ecosystems.  The first is the tidyverse, a suite of packages authored by Hadley Wickham and colleagues at RStudio that are designed to work together seamlessly in data science projects.  The second is sf, a re-imagination of the spatial ecosystem in R that works very well with the tidyverse.  Book readers will learn to work with US Census data using visualization, spatial analysis, and functional programming tools available in these packages.  

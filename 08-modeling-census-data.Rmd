@@ -2,37 +2,30 @@
 
 
 
-## Indices of segregation and diversity
+## Indices of segregation and diversity (June 29)
 
 
 
-## Regression modeling with US Census data
+## Regression modeling with US Census data (June 30)
 
 
 
-## Spatial regression
+## Spatial regression (June 30)
 
 
 
-## Geographically weighted regression
+## Geographically weighted regression (July 1)
 
 
 
-## Geodemographic classification (Spielman-Singleton method)
+## Geodemographic classification (Spielman-Singleton method) (July 2)
 
 
 
-## Machine learning and spatial data science
-
-```{r}
-
-library(tidycensus)
+## Spatial clustering & regionalization (July 3)
 
 
 
-```
 
-
-## Spatial optimization with Census data
 
 

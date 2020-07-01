@@ -166,3 +166,12 @@ ga_wide
 ```
 
 Median household income for each county is represented by `medincE`, for the estimate, and `medincM`, for the margin of error.  At the time of this writing, custom variable names are only available for `variables` and not for `table`, as users will not always know the number of variables found in a table beforehand.  
+
+## Datasets available in tidycensus (week of July 20, as applicable)
+
+* Decennial Census (1990, 2000, 2010)
+* ACS (1-year, 5-year)
+* ACS data profile, subject tables, supplemental estimates
+* Population estimates
+* PUMS/CPS microdata
+
