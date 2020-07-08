@@ -1,5 +1,11 @@
 # Spatial analysis with US Census data
 
+```{r ch7-setup, include = FALSE}
+library(mapboxapi)
+times <- readr::read_rds("data/ia_trauma_times.rds")
+```
+
+
 A very common use-case of spatial data from the US Census Bureau is _spatial analysis_.  Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset.  Principles in spatial analysis are closely related to the field of _geographic information science_, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.  
 
 Traditionally, geographic information science has been performed in a _geographic information system_, or “GIS”, which refers to an integrated software platform for the management, processing, analysis, and visualization of geographic data.  As evidenced in this book already, R packages exist for handling these tasks, allowing R to function as a capable substitute for desktop GIS software like ArcGIS or QGIS.  
@@ -117,6 +123,7 @@ hispanic_by_metro <- st_join(
 
 glimpse(hispanic_by_metro)
 ```
+
 We see that the output dataset has been reduced from 5,265 Census tracts to 3,201.  Notably, the output dataset now includes information, for each Census tract, about the metropolitan area that it falls within.  This enables group-wise data visualization and analysis across metro areas, such as a faceted plot: 
 
 ```{r}
@@ -146,10 +153,196 @@ The grouping column (`NAME_metro`) and the output of `summarize()` (`median_hisp
 ```{r}
 plot(median_by_metro[1,]$geometry)
 ```
+
 The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock).  The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group.  The typical name for this geometric process in geographic information systems is a _dissolve_ operation, where geometries are identified by group and combined to return a single larger geometry.  In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries.  This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.  
 
 ## Distance and proximity analysis (June 24)
 
+A common use case for spatially-referenced demographic data is the analysis of _accessibility_.  This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store.  Conceptually, there are a variety of ways to measure accessibility.  The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system.  A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving.  This section will illustrate both types of approaches. 
+Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from tigris, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.  
+
+```{r}
+library(tigris)
+library(sf)
+library(tidyverse)
+options(tigris_use_cache = TRUE)
+
+ia_tracts <- tracts("IA", cb = TRUE) %>%
+  st_transform(26975)
+
+trauma <- st_read("data/Hospitals.shp") %>%
+  filter(str_detect(TRAUMA, "LEVEL I\\b|LEVEL II\\b|RTH|RTC")) %>%
+  st_transform(26975)
+
+glimpse(trauma)
+```
+To determine accessibility of Iowa Census tracts to Level I or II trauma centers, we need to identify not only those hospitals that are located in Iowa, but also those in other states near to the Iowa border, such as in Omaha, Nebraska and Rock Island, Illinois.  We can accomplish this by applying a distance threshold in `st_filter()`.  In this example, we use the spatial predicate `st_is_within_distance`, and set a 100km distance threshold with the `dist = 100000` argument (specified in meters, the base measurement unit of our coordinate system used). 
+
+```{r}
+ia_trauma <- trauma %>%
+  st_filter(ia_tracts, 
+            .predicate = st_is_within_distance,
+            dist = 100000)
+
+ggplot() + 
+  geom_sf(data = ia_tracts, color = "NA", fill = "grey50") + 
+  geom_sf(data = ia_trauma, color = "red") + 
+  theme_void()
+```
+As illustrated in the visualization, the `st_filter()` operation has retained Level I and II trauma centers _within_ the state of Iowa, but also within the 100km threshold beyond the state's borders.  
+
+With the Census tract and hospital data in hand, we can calculate distances from Census tracts to trauma centers by using the `st_distance()` function in the {sf} package.  `st_distance(x, y)` by default returns the dense matrix of distances computed from the geometries in `x` to the geometries in `y`.  In this example, we will calculate the distances from the _centroids_ of Iowa Census tracts (reflecting the center points of each tract geometry) to each trauma center.  
+
+```{r, message = FALSE, warning = FALSE}
+dist <- ia_tracts %>%
+  st_centroid() %>%
+  st_distance(ia_trauma) 
+
+dist[1:5, 1:5]
+```
+A glimpse at the matrix shows distances (in meters) between the first five Census tracts in the dataset and the first five hospitals.  When considering _accessibility_, we may be interested in the distance to the _nearest_ hospital to each Census tract.  The code below extracts the minimum distance from the matrix for each row, converts to a vector, and divides each value by 1000 to convert values to kilometers.  A quick histogram visualizes the distribution of minimum distances.  
+
+```{r}
+min_dist <- dist %>%
+  apply(1, min) %>%
+  as.vector() %>%
+  magrittr::divide_by(1000)
+
+hist(min_dist)
+```
+While many tracts are within 10km of a trauma center, around 16 percent of Iowa Census tracts are beyond 100km from a Level I or II trauma center, suggesting significant accessibility issues for these areas.  
+
+An alternative way to model accessibility to hospitals is through _travel times_ rather than distance, as the way that people experience access to locations is through time expended given a transportation network.  While network-based accessibility may be a more accurate representation of people's lived experiences, it is more computationally complex and requires additional tools.  To perform spatial network analyses, R users will either need to obtain network data (like roadways) and use appropriate tools that can model the network; set up a routing engine that R can connect to; or connect to a hosted routing engine via a web API. In this example, we'll use the {mapboxapi} R package to perform network analysis using Mapbox's travel-time Matrix API.  
+
+The function `mb_matrix()` in {mapboxapi} works much like `st_distance()` in that it only requires arguments for origins and destinations, and will return the dense matrix of travel times by default.  In turn, much of the computational complexity of routing is abstracted away by the function.  However, as routes will be computed across the state of Iowa and API usage is subject to rate-limitations, the function can take several minutes to compute for larger matrices like this one.  
+
+If you are using {mapboxapi} for the first time, visit [mapbox.com](), register for an account, and obtain an access token.  The function `mb_access_token()` installs this token in your .Renviron for future use.  
+
+```{r, eval = FALSE}
+library(mapboxapi)
+# mb_access_token("pk.eybcasq..., install = TRUE)
+
+times <- mb_matrix(ia_tracts, ia_trauma)
+
+```
+
+```{r, eval = TRUE}
+times[1:5, 1:5]
+```
+A glimpse at the travel-time matrix shows a similar format to the distance matrix, but with travel times in minutes used instead of meters.  As with the distance-based example, we can determine the minimum travel time from each tract to a Level I or Level II trauma center.  In this instance, we will visualize the result on a map.  
+
+```{r}
+
+min_time <- apply(times, 1, min)
+
+ia_tracts$time <- min_time
+
+ggplot(ia_tracts, aes(fill = time)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c(option = "magma") + 
+  theme_void() + 
+  labs(fill = "Time (minutes)",
+       title = "Travel time to nearest Level I or Level II trauma hospital",
+       subtitle = "Census tracts in Iowa",
+       caption = "Data sources: US Census Bureau, US DHS, Mapbox")
+  
+```
+The map illustrates considerable accessibility gaps to trauma centers across the state.  Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.  
+
+```{block2, note-text, type='rmdtip'}
+(Info about other approaches to network analysis here)
+
+```
+
+The above example considers a broader accessibility analysis across the state of Iowa. In many cases, however, you'll want to analyze accessibility in a more local way.  A common use case might involve a study of the demographic characteristics of a hospital _catchment area_, defined as the area around a hospital from which patients will likely come.  
+
+As with the matrix-based accessibility approach outlined above, catchment area-based proximity can be modeled with either Euclidean distances or network travel times as well. Let's consider the example of [Iowa Methodist Medical Center in Des Moines](https://www.unitypoint.org/desmoines/iowa-methodist-medical-center.aspx), one of two Level I trauma centers in the state of Iowa. 
+
+The example below illustrates the distance-based approach using a _buffer_, implemented with the `st_buffer()` function in {sf}.  A buffer is a common GIS operation that represents the area within a given distance of a location.  The code below creates a 5km buffer around Iowa Methodist Medical Center by using the argument `dist = 5000`.  
+
+```{r}
+library(leaflet)
+
+iowa_methodist <- filter(ia_trauma, NAME == "IOWA METHODIST MEDICAL CENTER")
+
+buf5km <- st_buffer(iowa_methodist, dist = 5000) %>%
+  st_transform(4326)
+
+```
+
+An alternative option is to create network-based _isochrones_, which are polygons that represent the accessible area around a given location within a given travel time for a given travel mode.  Isochrones are implemented in the {mapboxapi} package with the `mb_isochrone()` function.  The example below draws a 10-minute driving isochrone around Iowa Methodist.
+
+```{r}
+iso10min <- mb_isochrone(iowa_methodist, time = 10)
+```
+
+We can visualize the comparative extents of these two methods in Des Moines:
+
+
+```{r}
+hospital_icon <- makeAwesomeIcon(icon = "ios-medical", 
+                                 markerColor = "red",
+                                 library = "ion")
+
+map1 <- leaflet() %>% 
+  addMapboxTiles(style_id = "streets-v11", username = "mapbox") %>%
+  addPolygons(data = buf5km) %>% 
+  addAwesomeMarkers(data = st_transform(iowa_methodist, 4326),
+                    icon = hospital_icon)
+
+map2 <- leaflet() %>% 
+  addMapboxTiles(style_id = "streets-v11", username = "mapbox") %>%
+  addPolygons(data = iso10min) %>% 
+  addAwesomeMarkers(data = st_transform(iowa_methodist, 4326),
+                    icon = hospital_icon)
+
+mapview::sync(map1, map2)
+
+```
+
+The comparative maps illustrate the differences between the two methods quite clearly.  Many areas of equal distance to the hospital do not have the same level of access; this is particularly true of areas to the south of the Raccoon/Des Moines River.  Conversely, due to the location of highways, there are some areas outside the 5km buffer area that can reach the hospital within 10 minutes.  
+
+Common to both methods, however, is a mis-alignment between their geometries and those of any Census geographies we may use to infer catchment area demographics.  As opposed to the spatial overlay analysis matching Census tracts to metropolitan areas earlier in this chapter, Census tracts or block groups on the edge of the catchment area will only be partially included in the catchment.  A common method for resolving this issue in geographic information science is _areal interpolation_.  Areal interpolation refers to the allocation of data from one set of zones to a second overlapping set of zones that may or may not perfectly align spatially.  In cases of mis-alignment, some type of weighting scheme needs to be specified to determine how to allocate partial data in areas of overlap.  
+
+Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions.  This will require obtaining block-group level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone.  The variables requested from the ACS include the number of persons living below the poverty line, and the number of persons for whom poverty status is determined, which will serve as a denominator.  
+
+```{r}
+polk_poverty <- get_acs(
+  geography = "tract",
+  variables = c(poverty_denom = "B17001_001",
+                poverty_num = "B17001_002"),
+  state = "IA",
+  county = "Polk",
+  geometry = TRUE,
+  output = "wide"
+) %>%
+  select(poverty_denomE, poverty_numE) %>%
+  st_transform(26975)
+```
+_Area-weighted areal interpolation_ is implemented in {sf} with the `st_interpolate_aw()` function.  This method uses the area of overlap of geometries as the interpolation weights.  This means that, in this example, Census tracts that fall entirely within the 5km buffer polygon will receive a weight of 1.  Census tracts that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area.  Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument.  If `extensive = TRUE`, as used below, weighted sums will be computed.  Alternatively, if `extensive = FALSE`, the function returns weighted means.  
+
+
+```{r, message = FALSE, warning = FALSE}
+library(glue)
+
+buffer_pov <- st_interpolate_aw(
+  polk_poverty, 
+  st_transform(buf5km, 26975),
+  extensive = TRUE
+) %>%
+  mutate(pct_poverty = 100 * (poverty_numE / poverty_denomE))
+
+iso_pov <- st_interpolate_aw(
+  polk_poverty, 
+  st_transform(iso10min, 26975),
+  extensive = TRUE
+) %>%
+  mutate(pct_poverty = 100 * (poverty_numE / poverty_denomE))
+
+
+print(glue("Poverty (5km buffer method): {round(buffer_pov$pct_poverty, 1)}%"))
+print(glue("Poverty (10min isochrone method): {round(iso_pov$pct_poverty, 1)}%"))
+```
 
 
 ## Better cartography with spatial overlay
@@ -252,7 +445,7 @@ ggplot(dfw_tracts) +
   theme_void()
 
 ```
-Exploratory spatial data analysis relies on the concept of a _neighborhood_, which is a conceptualization of how a given geographic feature interrelates with other features nearby.  {spdep} supports a variety of neighborhood definitions.  These definitions include: 
+Exploratory spatial data analysis relies on the concept of a _neighborhood_, which is a conceptualization of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is {spdep}, which includes a wide range of tools for exploring and modeling spatial data.  As part of this framework,  {spdep} supports a variety of neighborhood definitions.  These definitions include: 
 
 * _Proximity-based neighbors_, where neighboring features are identified based on some measure of distance.  Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as _k_-nearest neighbors (e.g. the nearest eight features to a given feature). 
 * _Graph-based neighbors_, where neighbors are defined through network relationships (e.g. along a street network).  
@@ -379,8 +572,6 @@ ggplot(dfw_tracts) +
   theme_void()
 ```
 
-
-## Issues with and other methods for exploratory spatial data analysis
 
 
 

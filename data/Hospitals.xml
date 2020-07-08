@@ -1,0 +1,1621 @@
+<?xml version="1.0" encoding="UTF-8"?><MD_Metadata xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:xalan="http://xml.apache.org/xalan" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.isotc211.org/2005/gmd">
+    <fileIdentifier>
+        <gco:CharacterString>1569605537545r665735614594479</gco:CharacterString>
+    </fileIdentifier>
+    <language>
+        <LanguageCode codeList="http://www.loc.gov/standards/iso639-2/php/code_list.php" codeListValue="eng" codeSpace="ISO639-2">eng</LanguageCode>
+    </language>
+    <characterSet>
+        <MD_CharacterSetCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode" codeListValue="utf8" codeSpace="ISOTC211/19115">utf8</MD_CharacterSetCode>
+    </characterSet>
+    <hierarchyLevel>
+        <MD_ScopeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ScopeCode" codeListValue="dataset" codeSpace="ISOTC211/19115">dataset</MD_ScopeCode>
+    </hierarchyLevel>
+    <contact>
+        <CI_ResponsibleParty>
+            <organisationName>
+                <gco:CharacterString>Oak Ridge National Laboratory</gco:CharacterString>
+            </organisationName>
+            <contactInfo>
+                <CI_Contact>
+                    <phone>
+                        <CI_Telephone>
+                            <voice>
+                                <gco:CharacterString>865-241- 3976</gco:CharacterString>
+                            </voice>
+                            <facsimile>
+                                <gco:CharacterString>865-241-6261</gco:CharacterString>
+                            </facsimile>
+                        </CI_Telephone>
+                    </phone>
+                    <address>
+                        <CI_Address>
+                            <deliveryPoint>
+                                <gco:CharacterString>One Bethel Valley Rd, MS-6017</gco:CharacterString>
+                            </deliveryPoint>
+                            <city>
+                                <gco:CharacterString>Oak Ridge</gco:CharacterString>
+                            </city>
+                            <administrativeArea>
+                                <gco:CharacterString>TN</gco:CharacterString>
+                            </administrativeArea>
+                            <postalCode>
+                                <gco:CharacterString>37831</gco:CharacterString>
+                            </postalCode>
+                            <country>
+                                <Country codeList="http://www.iso.org/iso/country_codes/iso_3166_code_lists.htm" codeListValue="US" codeSpace="ISO3166-1">US</Country>
+                            </country>
+                        </CI_Address>
+                    </address>
+                </CI_Contact>
+            </contactInfo>
+            <role>
+                <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="pointOfContact" codeSpace="ISOTC211/19115">pointOfContact</CI_RoleCode>
+            </role>
+        </CI_ResponsibleParty>
+    </contact>
+    <dateStamp>
+        <gco:Date>2019-07-03</gco:Date>
+    </dateStamp>
+    <metadataStandardName>
+        <gco:CharacterString>NAP - Metadata</gco:CharacterString>
+    </metadataStandardName>
+    <metadataStandardVersion>
+        <gco:CharacterString>1.2</gco:CharacterString>
+    </metadataStandardVersion>
+    <spatialRepresentationInfo>
+        <MD_VectorSpatialRepresentation>
+            <topologyLevel>
+                <MD_TopologyLevelCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_TopologyLevelCode" codeListValue="geometryOnly" codeSpace="ISOTC211/19115">geometryOnly</MD_TopologyLevelCode>
+            </topologyLevel>
+            <geometricObjects>
+                <MD_GeometricObjects>
+                    <geometricObjectType>
+                        <MD_GeometricObjectTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_GeometricObjectTypeCode" codeListValue="point" codeSpace="ISOTC211/19115">point</MD_GeometricObjectTypeCode>
+                    </geometricObjectType>
+                    <geometricObjectCount>
+                        <gco:Integer>7581</gco:Integer>
+                    </geometricObjectCount>
+                </MD_GeometricObjects>
+            </geometricObjects>
+        </MD_VectorSpatialRepresentation>
+    </spatialRepresentationInfo>
+    <referenceSystemInfo>
+        <MD_ReferenceSystem>
+            <referenceSystemIdentifier>
+                <RS_Identifier>
+                    <code>
+                        <gco:CharacterString>4326</gco:CharacterString>
+                    </code>
+                    <codeSpace>
+                        <gco:CharacterString>EPSG</gco:CharacterString>
+                    </codeSpace>
+                    <version>
+                        <gco:CharacterString>6.14(3.0.1)</gco:CharacterString>
+                    </version>
+                </RS_Identifier>
+            </referenceSystemIdentifier>
+        </MD_ReferenceSystem>
+    </referenceSystemInfo>
+    <identificationInfo>
+        <MD_DataIdentification>
+            <citation>
+                <CI_Citation>
+                    <title>
+                        <gco:CharacterString>Hospitals</gco:CharacterString>
+                    </title>
+                    <date>
+                        <CI_Date>
+                            <date>
+                                <gco:Date>2019-06-07</gco:Date>
+                            </date>
+                            <dateType>
+                                <CI_DateTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_DateTypeCode" codeListValue="publication" codeSpace="ISOTC211/19115">publication</CI_DateTypeCode>
+                            </dateType>
+                        </CI_Date>
+                    </date>
+                    <citedResponsibleParty>
+                        <CI_ResponsibleParty>
+                            <organisationName>
+                                <gco:CharacterString>Oak Ridge National Laboratory</gco:CharacterString>
+                            </organisationName>
+                            <contactInfo gco:nilReason="missing"/>
+                            <role>
+                                <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="originator" codeSpace="ISOTC211/19115">originator</CI_RoleCode>
+                            </role>
+                        </CI_ResponsibleParty>
+                    </citedResponsibleParty>
+                    <presentationForm>
+                        <CI_PresentationFormCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_PresentationFormCode" codeListValue="mapDigital" codeSpace="ISOTC211/19115">mapDigital</CI_PresentationFormCode>
+                    </presentationForm>
+                    <collectiveTitle>
+                        <gco:CharacterString>HIFLD Open and HIFLD Secure</gco:CharacterString>
+                    </collectiveTitle>
+                </CI_Citation>
+            </citation>
+            <abstract>
+                <gco:CharacterString>This feature class/shapefile contains locations of Hospitals for 50 US states, Washington D.C., US territories of Puerto Rico, Guam, American Samoa, Northern Mariana Islands, Palau, and Virgin Islands. The dataset only includes hospital facilities based on data acquired from various state departments or federal sources which has been referenced in the SOURCE field. Hospital facilities which do not occur in these sources will be not present in the database. The source data was available in a variety of formats (pdfs, tables, webpages, etc.) which was cleaned and geocoded and then converted into a spatial database. The database does not contain nursing homes or health centers. Hospitals have been categorized into children, chronic disease, critical access, general acute care, long term care, military, psychiatric, rehabilitation, special, and women based on the range of the available values from the various sources after removing similarities. In this update the TRAUMA field was populated for 172 additional hospitals and helipad presence were verified for all hospitals.</gco:CharacterString>
+            </abstract>
+            <purpose>
+                <gco:CharacterString>This feature class/shapefile contains Hospitals derived from various sources (refer SOURCE field) for the Homeland Infrastructure Foundation-Level Data (HIFLD) database. (https://gii.dhs.gov/HIFLD)</gco:CharacterString>
+            </purpose>
+            <credit>
+                <gco:CharacterString>Oak Ridge National Laboratory (ORNL); National Geospatial-Intelligence Agency (NGA) Homeland Security Infrastructure Program (HSIP) Team.</gco:CharacterString>
+            </credit>
+            <status>
+                <MD_ProgressCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ProgressCode" codeListValue="completed" codeSpace="ISOTC211/19115">completed</MD_ProgressCode>
+            </status>
+            <pointOfContact>
+                <CI_ResponsibleParty>
+                    <organisationName>
+                        <gco:CharacterString>Oak Ridge National Laboratory</gco:CharacterString>
+                    </organisationName>
+                    <contactInfo>
+                        <CI_Contact>
+                            <phone>
+                                <CI_Telephone>
+                                    <voice>
+                                        <gco:CharacterString>865-241-3976</gco:CharacterString>
+                                    </voice>
+                                    <facsimile>
+                                        <gco:CharacterString>865-241-6261</gco:CharacterString>
+                                    </facsimile>
+                                </CI_Telephone>
+                            </phone>
+                            <address>
+                                <CI_Address>
+                                    <deliveryPoint>
+                                        <gco:CharacterString>One Bethel Valley Rd, MS-6017</gco:CharacterString>
+                                    </deliveryPoint>
+                                    <city>
+                                        <gco:CharacterString>Oak Ridge</gco:CharacterString>
+                                    </city>
+                                    <administrativeArea>
+                                        <gco:CharacterString>TN</gco:CharacterString>
+                                    </administrativeArea>
+                                    <postalCode>
+                                        <gco:CharacterString>37831</gco:CharacterString>
+                                    </postalCode>
+                                    <country>
+                                        <Country codeList="http://www.iso.org/iso/country_codes/iso_3166_code_lists.htm" codeListValue="US" codeSpace="ISO3166-1">US</Country>
+                                    </country>
+                                </CI_Address>
+                            </address>
+                        </CI_Contact>
+                    </contactInfo>
+                    <role>
+                        <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="pointOfContact" codeSpace="ISOTC211/19115">pointOfContact</CI_RoleCode>
+                    </role>
+                </CI_ResponsibleParty>
+            </pointOfContact>
+            <resourceMaintenance>
+                <MD_MaintenanceInformation>
+                    <maintenanceAndUpdateFrequency>
+                        <MD_MaintenanceFrequencyCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_MaintenanceFrequencyCode" codeListValue="continual" codeSpace="ISOTC211/19115">continual</MD_MaintenanceFrequencyCode>
+                    </maintenanceAndUpdateFrequency>
+                </MD_MaintenanceInformation>
+            </resourceMaintenance>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Alaska</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Continental United States</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Puerto Rico</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Guam</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Hawaii</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>USA</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Northern Mariana Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Palau</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Virgin Islands</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>District of Columbia</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>American Samoa</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="place" codeSpace="ISOTC211/19115">place</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>homeland security</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>emergency response</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>status</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>specialty hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>name</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>homeland defense</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>type</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>helipad</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>population</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>trauma</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>children hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>hospitals</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>facility characteristics</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>address</gco:CharacterString>
+                    </keyword>
+                    <type>
+                        <MD_KeywordTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_KeywordTypeCode" codeListValue="theme" codeSpace="ISOTC211/19115">theme</MD_KeywordTypeCode>
+                    </type>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>Downloadable Data</gco:CharacterString>
+                    </keyword>
+                    <thesaurusName uuidref="723f6998-058e-11dc-8314-0800200c9a66"/>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <resourceConstraints>
+                <MD_Constraints>
+                    <useLimitation>
+                        <gco:CharacterString>None (Public Use). Users are advised to read the data set's metadata thoroughly to understand appropriate use and data limitations.</gco:CharacterString>
+                    </useLimitation>
+                </MD_Constraints>
+            </resourceConstraints>
+            <resourceConstraints>
+                <MD_LegalConstraints>
+                    <useLimitation>
+                        <gco:CharacterString>Distributor assumes no liability for misuse of data.</gco:CharacterString>
+                    </useLimitation>
+                    <otherConstraints>
+                        <gco:CharacterString>None (Public Domain Information)</gco:CharacterString>
+                    </otherConstraints>
+                </MD_LegalConstraints>
+            </resourceConstraints>
+            <aggregationInfo>
+                <MD_AggregateInformation>
+                    <aggregateDataSetName>
+                        <CI_Citation>
+                            <title>
+                                <gco:CharacterString>HIFLD Open and HIFLD Secure</gco:CharacterString>
+                            </title>
+                            <date gco:nilReason="missing"/>
+                            <citedResponsibleParty gco:nilReason="missing"/>
+                        </CI_Citation>
+                    </aggregateDataSetName>
+                    <associationType>
+                        <DS_AssociationTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#DS_AssociationTypeCode" codeListValue="largerWorkCitation" codeSpace="ISOTC211/19115">largerWorkCitation</DS_AssociationTypeCode>
+                    </associationType>
+                </MD_AggregateInformation>
+            </aggregationInfo>
+            <spatialRepresentationType>
+                <MD_SpatialRepresentationTypeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_SpatialRepresentationTypeCode" codeListValue="vector" codeSpace="ISOTC211/19115">vector</MD_SpatialRepresentationTypeCode>
+            </spatialRepresentationType>
+            <language>
+                <LanguageCode codeList="http://www.loc.gov/standards/iso639-2/php/code_list.php" codeListValue="eng" codeSpace="ISO639-2">eng</LanguageCode>
+            </language>
+            <characterSet>
+                <MD_CharacterSetCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode" codeListValue="utf8" codeSpace="ISOTC211/19115">utf8</MD_CharacterSetCode>
+            </characterSet>
+            <environmentDescription>
+                <gco:CharacterString>Version 6.2 (Build 9200) ; Esri ArcGIS 10.5.1.7333</gco:CharacterString>
+            </environmentDescription>
+            <extent>
+                <EX_Extent>
+                    <geographicElement>
+                        <EX_GeographicBoundingBox>
+                            <westBoundLongitude>
+                                <gco:Decimal>-176.639171</gco:Decimal>
+                            </westBoundLongitude>
+                            <eastBoundLongitude>
+                                <gco:Decimal>145.724324</gco:Decimal>
+                            </eastBoundLongitude>
+                            <southBoundLatitude>
+                                <gco:Decimal>-14.290242</gco:Decimal>
+                            </southBoundLatitude>
+                            <northBoundLatitude>
+                                <gco:Decimal>71.292847</gco:Decimal>
+                            </northBoundLatitude>
+                        </EX_GeographicBoundingBox>
+                    </geographicElement>
+                </EX_Extent>
+            </extent>
+            <extent>
+                <EX_Extent>
+                    <description>
+                        <gco:CharacterString>Time period date range corresponds to the data range covered by the SOURCEDATE field</gco:CharacterString>
+                    </description>
+                    <geographicElement>
+                        <EX_GeographicBoundingBox>
+                            <westBoundLongitude>
+                                <gco:Decimal>-180</gco:Decimal>
+                            </westBoundLongitude>
+                            <eastBoundLongitude>
+                                <gco:Decimal>180</gco:Decimal>
+                            </eastBoundLongitude>
+                            <southBoundLatitude>
+                                <gco:Decimal>-90</gco:Decimal>
+                            </southBoundLatitude>
+                            <northBoundLatitude>
+                                <gco:Decimal>90</gco:Decimal>
+                            </northBoundLatitude>
+                        </EX_GeographicBoundingBox>
+                    </geographicElement>
+                    <temporalElement>
+                        <EX_TemporalExtent>
+                            <extent>
+                                <gml:TimePeriod gml:id="N65803">
+                                    <gml:beginPosition>2018-06-28</gml:beginPosition>
+                                    <gml:endPosition>2019-06-07</gml:endPosition>
+                                </gml:TimePeriod>
+                            </extent>
+                        </EX_TemporalExtent>
+                    </temporalElement>
+                </EX_Extent>
+            </extent>
+            <extent>
+                <EX_Extent>
+                    <geographicElement>
+                        <EX_GeographicBoundingBox>
+                            <extentTypeCode>
+                                <gco:Boolean>true</gco:Boolean>
+                            </extentTypeCode>
+                            <westBoundLongitude>
+                                <gco:Decimal>-176.640263</gco:Decimal>
+                            </westBoundLongitude>
+                            <eastBoundLongitude>
+                                <gco:Decimal>145.724472</gco:Decimal>
+                            </eastBoundLongitude>
+                            <southBoundLatitude>
+                                <gco:Decimal>-14.290242</gco:Decimal>
+                            </southBoundLatitude>
+                            <northBoundLatitude>
+                                <gco:Decimal>71.292847</gco:Decimal>
+                            </northBoundLatitude>
+                        </EX_GeographicBoundingBox>
+                    </geographicElement>
+                </EX_Extent>
+            </extent>
+            <supplementalInformation>
+                <gco:CharacterString>This feature class/shapefile has a one-to-many relationship class (HospitalsToTrauma)/relate with the “Trauma_Levels” table. This table captures the relationship between Hospitals and the state trauma level designations. “Hospitals” is the origin using STATE as the primary key. “Trauma_Levels” table is the destination using STATE as the foreign key.</gco:CharacterString>
+            </supplementalInformation>
+        </MD_DataIdentification>
+    </identificationInfo>
+    <distributionInfo>
+        <MD_Distribution>
+            <distributionFormat>
+                <MD_Format>
+                    <name>
+                        <gco:CharacterString>File Geodatabase Feature Class</gco:CharacterString>
+                    </name>
+                    <version gco:nilReason="missing"/>
+                </MD_Format>
+            </distributionFormat>
+            <distributionFormat>
+                <MD_Format>
+                    <name>
+                        <gco:CharacterString>Vector Digital Data Set (Point)</gco:CharacterString>
+                    </name>
+                    <version gco:nilReason="missing"/>
+                </MD_Format>
+            </distributionFormat>
+            <distributor>
+                <MD_Distributor>
+                    <distributorContact>
+                        <CI_ResponsibleParty>
+                            <organisationName>
+                                <gco:CharacterString>HIFLD Subcommittee</gco:CharacterString>
+                            </organisationName>
+                            <contactInfo>
+                                <CI_Contact>
+                                    <address>
+                                        <CI_Address>
+                                            <electronicMailAddress>
+                                                <gco:CharacterString>hifld@hq.dhs.gov</gco:CharacterString>
+                                            </electronicMailAddress>
+                                        </CI_Address>
+                                    </address>
+                                </CI_Contact>
+                            </contactInfo>
+                            <role>
+                                <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="distributor" codeSpace="ISOTC211/19115">distributor</CI_RoleCode>
+                            </role>
+                        </CI_ResponsibleParty>
+                    </distributorContact>
+                    <distributionOrderProcess>
+                        <MD_StandardOrderProcess>
+                            <fees>
+                                <gco:CharacterString>None. No fees are applicable for obtaining the data set.</gco:CharacterString>
+                            </fees>
+                        </MD_StandardOrderProcess>
+                    </distributionOrderProcess>
+                </MD_Distributor>
+            </distributor>
+            <transferOptions>
+                <MD_DigitalTransferOptions/>
+            </transferOptions>
+        </MD_Distribution>
+    </distributionInfo>
+    <dataQualityInfo>
+        <DQ_DataQuality>
+            <scope>
+                <DQ_Scope>
+                    <level>
+                        <MD_ScopeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ScopeCode" codeListValue="dataset" codeSpace="ISOTC211/19115">dataset</MD_ScopeCode>
+                    </level>
+                </DQ_Scope>
+            </scope>
+            <report>
+                <DQ_TopologicalConsistency>
+                    <evaluationMethodDescription>
+                        <gco:CharacterString>Data were extracted from sources (identified in the SOURCE field) and other open source websites to populate the attribute fields. For string and date data types, NOT AVAILABLE values donate missing data that was not present in the source data. For numeric data types, -999 denotes missing data that was not present in the source data. During quality control, attributes were checked to ensure that they fell within the expected ranges or had expected/valid values. Text attribute values were checked for spelling and usage consistency. No topology tests were conducted. All records were verified to occur within the spatial domain of the feature class/shapefile.</gco:CharacterString>
+                    </evaluationMethodDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_TopologicalConsistency>
+            </report>
+            <report>
+                <DQ_DomainConsistency>
+                    <evaluationMethodDescription>
+                        <gco:CharacterString>Data were extracted from sources (identified in the SOURCE field) and other open source websites to populate the attribute fields. For string and date data types, NOT AVAILABLE values donate missing data that was not present in the source data. For numeric data types, -999 denotes missing data that was not present in the source data. During quality control, attributes were checked to ensure that they fell within the expected ranges or had expected/valid values. Text attribute values were checked for spelling and usage consistency. No topology tests were conducted. All records were verified to occur within the spatial domain of the feature class/shapefile.</gco:CharacterString>
+                    </evaluationMethodDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_DomainConsistency>
+            </report>
+            <report>
+                <DQ_ConceptualConsistency>
+                    <measureDescription>
+                        <gco:CharacterString>Data were extracted from sources (identified in the SOURCE field) and other open source websites to populate the attribute fields. For string and date data types, NOT AVAILABLE values donate missing data that was not present in the source data. For numeric data types, -999 denotes missing data that was not present in the source data. During quality control, attributes were checked to ensure that they fell within the expected ranges or had expected/valid values. Text attribute values were checked for spelling and usage consistency. No topology tests were conducted. All records were verified to occur within the spatial domain of the feature class/shapefile.</gco:CharacterString>
+                    </measureDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_ConceptualConsistency>
+            </report>
+            <report>
+                <DQ_CompletenessOmission>
+                    <measureDescription>
+                        <gco:CharacterString>Data is complete as of the most recent date indicated in the Time Period section.</gco:CharacterString>
+                    </measureDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_CompletenessOmission>
+            </report>
+            <report>
+                <DQ_QuantitativeAttributeAccuracy>
+                    <measureDescription>
+                        <gco:CharacterString>No formal attribute accuracy test was conducted. Data from the authoritative sources (as identified in other sections of this metadata) is assumed to be correct and accurate. See also “Overview Description” in the “Entities and Attributes” metadata section.</gco:CharacterString>
+                    </measureDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_QuantitativeAttributeAccuracy>
+            </report>
+            <report>
+                <DQ_AbsoluteExternalPositionalAccuracy>
+                    <measureDescription>
+                        <gco:CharacterString>None; all efforts are made to place the geographic representation of the facility on-entity using the best available imagery from a wide variety of sources. Users should read and understand the VAL_METHOD metadata as well as the Processing Steps.</gco:CharacterString>
+                    </measureDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_AbsoluteExternalPositionalAccuracy>
+            </report>
+            <report>
+                <DQ_AbsoluteExternalPositionalAccuracy>
+                    <measureDescription>
+                        <gco:CharacterString>None; dataset contains no vertical data.</gco:CharacterString>
+                    </measureDescription>
+                    <result gco:nilReason="missing"/>
+                </DQ_AbsoluteExternalPositionalAccuracy>
+            </report>
+            <lineage>
+                <LI_Lineage>
+                    <processStep>
+                        <LI_ProcessStep>
+                            <description>
+                                <gco:CharacterString>Authoritative data sources are identified through open source research. That data is then acquired and transformed into a usable data format. The properly formatted data then goes through preprocessing steps that includes a geocoding operation to give spatial context to the data. The data goes through further refinement using remote sensing techniques. After preprocessing, every record goes through a review process and each point is moved to a facility based on-entity location based on interpretation of the best available imagery and open source information. Hospitals with multi-building campus were located on a large building towards the center of campus. The VAL_DATE field indicates the date in which the review step took place.</gco:CharacterString>
+                            </description>
+                        </LI_ProcessStep>
+                    </processStep>
+                    <source>
+                        <LI_Source>
+                            <sourceCitation>
+                                <CI_Citation>
+                                    <title>
+                                        <gco:CharacterString>see SOURCE field</gco:CharacterString>
+                                    </title>
+                                    <date gco:nilReason="missing"/>
+                                    <citedResponsibleParty gco:nilReason="missing"/>
+                                </CI_Citation>
+                            </sourceCitation>
+                            <sourceExtent>
+                                <EX_Extent>
+                                    <description>
+                                        <gco:CharacterString>observed</gco:CharacterString>
+                                    </description>
+                                    <temporalElement>
+                                        <EX_TemporalExtent>
+                                            <extent>
+                                                <gml:TimePeriod gml:id="N65967">
+                                                    <gml:beginPosition>2018-06-28</gml:beginPosition>
+                                                    <gml:endPosition>2019-06-07</gml:endPosition>
+                                                </gml:TimePeriod>
+                                            </extent>
+                                        </EX_TemporalExtent>
+                                    </temporalElement>
+                                </EX_Extent>
+                            </sourceExtent>
+                        </LI_Source>
+                    </source>
+                </LI_Lineage>
+            </lineage>
+        </DQ_DataQuality>
+    </dataQualityInfo>
+</MD_Metadata>
