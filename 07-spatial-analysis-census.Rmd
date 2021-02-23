@@ -1,34 +1,34 @@
 # Spatial analysis with US Census data
 
 ```{r ch7-setup, include = FALSE}
+knitr::opts_chunk$set(cache = FALSE)
 library(mapboxapi)
 times <- readr::read_rds("data/ia_trauma_times.rds")
 ```
 
+A very common use-case of spatial data from the US Census Bureau is *spatial analysis*. Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset. Principles in spatial analysis are closely related to the field of *geographic information science*, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.
 
-A very common use-case of spatial data from the US Census Bureau is _spatial analysis_.  Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset.  Principles in spatial analysis are closely related to the field of _geographic information science_, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.  
+Traditionally, geographic information science has been performed in a *geographic information system*, or "GIS", which refers to an integrated software platform for the management, processing, analysis, and visualization of geographic data. As evidenced in this book already, R packages exist for handling these tasks, allowing R to function as a capable substitute for desktop GIS software like ArcGIS or QGIS.
 
-Traditionally, geographic information science has been performed in a _geographic information system_, or “GIS”, which refers to an integrated software platform for the management, processing, analysis, and visualization of geographic data.  As evidenced in this book already, R packages exist for handling these tasks, allowing R to function as a capable substitute for desktop GIS software like ArcGIS or QGIS.  
+Traditionally, spatial analytic tasks in R have been handled by the **sp** package and allied packages such as **rgeos**. In recent years, however, the **sf** package has emerged as the next-generation alternative to sp for spatial data analysis in R. In addition to the simpler representation of vector spatial data in R, as discussed in previous chapters, sf also includes significant functionality for spatial data analysis that integrates seamlessly with tidyverse tools.
 
-Traditionally, spatial analytic tasks in R have been handled by the __sp__ package and allied packages such as __rgeos__.  In recent years, however, the __sf__ package has emerged as the next-generation alternative to sp for spatial data analysis in R.  In addition to the simpler representation of vector spatial data in R, as discussed in previous chapters, sf also includes significant functionality for spatial data analysis that integrates seamlessly with tidyverse tools.  
-
-This chapter covers how to perform common spatial analysis tasks with Census data using the sf package.  As with previous chapters, the examples will focus on data acquired with the tidycensus and tigris packages, and will cover common workflows of use to practitioners who work with US Census Bureau data.  
+This chapter covers how to perform common spatial analysis tasks with Census data using the sf package. As with previous chapters, the examples will focus on data acquired with the tidycensus and tigris packages, and will cover common workflows of use to practitioners who work with US Census Bureau data.
 
 ## Spatial overlay and spatial joins (June 22)
 
-Spatial data analysis allows practitioners to consider how geographic datasets interrelate in geographic space.  This analytic functionality facilitates answering a wide range of research and analytic questions that would otherwise prove difficult without reference to a dataset’s geographic properties.  
+Spatial data analysis allows practitioners to consider how geographic datasets interrelate in geographic space. This analytic functionality facilitates answering a wide range of research and analytic questions that would otherwise prove difficult without reference to a dataset's geographic properties.
 
-One common use-case employed by the geospatial analyst is _spatial overlay_.  Key to the concept of spatial overlay is the representation of geographic datasets as _layers_ in a GIS.  This representation is exemplified by the graphic below.  
+One common use-case employed by the geospatial analyst is *spatial overlay*. Key to the concept of spatial overlay is the representation of geographic datasets as *layers* in a GIS. This representation is exemplified by the graphic below.
 
 {layers graphic}
 
-In this representation, different components of the landscape that interact in the real world are abstracted out into different layers, represented by different geometries.  For example, Census tracts might be represented as polygons; customers as points; roads as linestrings; and land use type as a continuous raster dataset.  Separating out these components has significant utility for the geospatial analyst, however.  By using spatial analytic tools, a researcher could answer questions like "How many customers live within a given Census tract?" or "Which roads intersect a given Census tract?".  
+In this representation, different components of the landscape that interact in the real world are abstracted out into different layers, represented by different geometries. For example, Census tracts might be represented as polygons; customers as points; roads as linestrings; and land use type as a continuous raster dataset. Separating out these components has significant utility for the geospatial analyst, however. By using spatial analytic tools, a researcher could answer questions like "How many customers live within a given Census tract?" or "Which roads intersect a given Census tract?".
 
-One example of the utility of spatial overlay for the Census data analyst is the use of overlay techniques to find out which geographies lie within a given metropolitan area.  Core-based statistical areas, also known as metropolitan or micropolitan areas, are common geographies defined by the US Census Bureau for regional analysis.  Core-based statistical areas are defined as agglomerations of counties that are oriented around a central core or cores, and have a significant degree of population interaction as measured through commuting patterns.  Metropolitan areas are those core-based statistical areas that have a population exceeding 50,000.  
+One example of the utility of spatial overlay for the Census data analyst is the use of overlay techniques to find out which geographies lie within a given metropolitan area. Core-based statistical areas, also known as metropolitan or micropolitan areas, are common geographies defined by the US Census Bureau for regional analysis. Core-based statistical areas are defined as agglomerations of counties that are oriented around a central core or cores, and have a significant degree of population interaction as measured through commuting patterns. Metropolitan areas are those core-based statistical areas that have a population exceeding 50,000.
 
-A Census data analyst in the United States will often need to know which Census geographies, such as Census tracts or block groups, fall within a given metropolitan area.  However, these geographies are only organized by state and county, and don't have metropolitan area identification included by default.  Given that Census spatial datasets are designed to align with one another, spatial overlay can be used to identify geographic features that fall within a given metropolitan area and extract those features.  
+A Census data analyst in the United States will often need to know which Census geographies, such as Census tracts or block groups, fall within a given metropolitan area. However, these geographies are only organized by state and county, and don't have metropolitan area identification included by default. Given that Census spatial datasets are designed to align with one another, spatial overlay can be used to identify geographic features that fall within a given metropolitan area and extract those features.
 
-Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri.  We'll first use tigris to acquire Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area. 
+Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri. We'll first use tigris to acquire Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area.
 
 ```{r}
 library(tigris)
@@ -50,7 +50,8 @@ ggplot() +
   theme_void()
 
 ```
-We can see visually from the plot which Census tracts are _within_ the Kansas City metropolitan area, and which lay outside.  This spatial relationship represented in the image can be expressed through code using _spatial subsetting_, enabled by functionality in the sf package.  Spatial subsetting uses the extent of one spatial dataset to extract features from another spatial dataset based on colocation, defined by a _spatial predicate_.  Spatial subsets can be expressed through base R indexing notation: 
+
+We can see visually from the plot which Census tracts are *within* the Kansas City metropolitan area, and which lay outside. This spatial relationship represented in the image can be expressed through code using *spatial subsetting*, enabled by functionality in the sf package. Spatial subsetting uses the extent of one spatial dataset to extract features from another spatial dataset based on colocation, defined by a *spatial predicate*. Spatial subsets can be expressed through base R indexing notation:
 
 ```{r}
 kc_tracts <- ks_mo_tracts[kc_metro, ]
@@ -60,9 +61,10 @@ ggplot() +
   geom_sf(data = kc_metro, fill = NA, color = "red") + 
   theme_void()
 ```
-The spatial subsetting operation returns all the Census tracts that _intersect_ the extent of the Kansas City metropolitan area, using the default spatial predicate, `st_intersects()`.  This gives us back tracts that fall within the metro area's boundary and those that cross or touch the boundary.  For many analysts, however, this will be insufficient as they will want to tabulate statistics exclusively for tracts that fall _within_ the metropolitan area's boundaries.  In this case, a different spatial predicate can be used with the `op` argument. 
 
-Generally, Census analysts will want to use the `st_within()` spatial predicate to return tracts within a given metropolitan area.  As long as objects within the core Census hierarchy are obtained for the same year from tigris, the `st_within()` spatial predicate will cleanly return geographies that fall within the larger geography when requested.  The example below illustrates the same process using the `st_filter()` function in sf, which allows spatial subsetting to be used cleanly within a tidyverse-style pipeline.  The key difference between these two approaches to spatial subsetting is the argument name for the spatial predicate (`op` vs. `.predicate`). 
+The spatial subsetting operation returns all the Census tracts that *intersect* the extent of the Kansas City metropolitan area, using the default spatial predicate, `st_intersects()`. This gives us back tracts that fall within the metro area's boundary and those that cross or touch the boundary. For many analysts, however, this will be insufficient as they will want to tabulate statistics exclusively for tracts that fall *within* the metropolitan area's boundaries. In this case, a different spatial predicate can be used with the `op` argument.
+
+Generally, Census analysts will want to use the `st_within()` spatial predicate to return tracts within a given metropolitan area. As long as objects within the core Census hierarchy are obtained for the same year from tigris, the `st_within()` spatial predicate will cleanly return geographies that fall within the larger geography when requested. The example below illustrates the same process using the `st_filter()` function in sf, which allows spatial subsetting to be used cleanly within a tidyverse-style pipeline. The key difference between these two approaches to spatial subsetting is the argument name for the spatial predicate (`op` vs. `.predicate`).
 
 ```{r}
 kc_tracts_within <- ks_mo_tracts %>%
@@ -79,9 +81,9 @@ ggplot() +
 
 ## Group-wise spatial data analysis (June 23)
 
-Spatial data operations can also be embedded in workflows where analysts are interested in understanding how characteristics vary by group.  For example, while demographic data for metropolitan areas can be readily acquired using tidycensus functions, we might also be interested in learning about how demographic characteristics of _neighborhoods within metropolitan areas_ vary across the United States.  We can accomplish this using a _spatial join_, which transfers attributes between spatial layers based on a relationship defined by a spatial predicate, as discussed above.  Spatial joins in R are implemented in sf's `st_join()` function.  
+Spatial data operations can also be embedded in workflows where analysts are interested in understanding how characteristics vary by group. For example, while demographic data for metropolitan areas can be readily acquired using tidycensus functions, we might also be interested in learning about how demographic characteristics of *neighborhoods within metropolitan areas* vary across the United States. We can accomplish this using a *spatial join*, which transfers attributes between spatial layers based on a relationship defined by a spatial predicate, as discussed above. Spatial joins in R are implemented in sf's `st_join()` function.
 
-Let's say that we are interested in analyzing the distributions of neighborhoods (defined here as Census tracts) by Hispanic population for the four largest metropolitan areas in Texas.  We'll use the variable `B01003_001` from the 2018 1-year ACS to acquire population data by core-based statistical area (CBSA) along with simple feature geometry, and filter the data to retain the four target metro areas (Dallas-Fort Worth, Houston, Austin, and San Antonio) by GEOID.
+Let's say that we are interested in analyzing the distributions of neighborhoods (defined here as Census tracts) by Hispanic population for the four largest metropolitan areas in Texas. We'll use the variable `B01003_001` from the 2018 1-year ACS to acquire population data by core-based statistical area (CBSA) along with simple feature geometry, and filter the data to retain the four target metro areas (Dallas-Fort Worth, Houston, Austin, and San Antonio) by GEOID.
 
 ```{r}
 library(tidycensus)
@@ -98,7 +100,8 @@ tx_cbsa <- get_acs(
 
 tx_cbsa
 ```
-Given that all four of these metropolitan areas are completely contained within the state of Texas, we can obtain data on percent Hispanic by tract from the ACS Data Profile.  
+
+Given that all four of these metropolitan areas are completely contained within the state of Texas, we can obtain data on percent Hispanic by tract from the ACS Data Profile.
 
 ```{r}
 pct_hispanic <- get_acs(
@@ -110,7 +113,8 @@ pct_hispanic <- get_acs(
 
 pct_hispanic
 ```
-The returned dataset covers Census tracts in the entirety of the state of Texas; however we only need to retain those tracts that fall within our four metropolitan areas of interest.  We can accomplish this with a spatial join using `st_join()`.  In a call to `st_join()`, we request that a given spatial dataset `x`, for which geometry will be retained, gains attributes from a second spatial dataset `y` based on their spatial relationship.  This spatial relationship, as in the above examples, will be defined by a spatial predicate passed to the `join` parameter.  The argument `suffix` defines the suffixes to be used for columns that share the same names, and the argument `left = FALSE` requests an inner spatial join, returning only those tracts that fall within the four metropolitan areas.  
+
+The returned dataset covers Census tracts in the entirety of the state of Texas; however we only need to retain those tracts that fall within our four metropolitan areas of interest. We can accomplish this with a spatial join using `st_join()`. In a call to `st_join()`, we request that a given spatial dataset `x`, for which geometry will be retained, gains attributes from a second spatial dataset `y` based on their spatial relationship. This spatial relationship, as in the above examples, will be defined by a spatial predicate passed to the `join` parameter. The argument `suffix` defines the suffixes to be used for columns that share the same names, and the argument `left = FALSE` requests an inner spatial join, returning only those tracts that fall within the four metropolitan areas.
 
 ```{r}
 hispanic_by_metro <- st_join(
@@ -124,7 +128,7 @@ hispanic_by_metro <- st_join(
 glimpse(hispanic_by_metro)
 ```
 
-We see that the output dataset has been reduced from 5,265 Census tracts to 3,201.  Notably, the output dataset now includes information, for each Census tract, about the metropolitan area that it falls within.  This enables group-wise data visualization and analysis across metro areas, such as a faceted plot: 
+We see that the output dataset has been reduced from 5,265 Census tracts to 3,201. Notably, the output dataset now includes information, for each Census tract, about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas, such as a faceted plot:
 
 ```{r}
 hispanic_by_metro %>%
@@ -139,7 +143,8 @@ hispanic_by_metro %>%
        y = "Kernel density estimate",
        x = "Percent Hispanic/Latino in Census tract")
 ```
-Output from a spatial join operation can also be "rolled up" to a larger geography through group-wise data analysis.  For example, let's say we want to know the median value of the four distributions visualized in the plot above.  As explained in Chapter 3, we can accomplish this by grouping our dataset by metro area then summarizing using the `median()` function.  
+
+Output from a spatial join operation can also be "rolled up" to a larger geography through group-wise data analysis. For example, let's say we want to know the median value of the four distributions visualized in the plot above. As explained in Chapter 3, we can accomplish this by grouping our dataset by metro area then summarizing using the `median()` function.
 
 ```{r}
 median_by_metro <- hispanic_by_metro %>%
@@ -148,18 +153,18 @@ median_by_metro <- hispanic_by_metro %>%
 
 glimpse(median_by_metro)
 ```
-The grouping column (`NAME_metro`) and the output of `summarize()` (`median_hispanic`) are returned as expected.  However, the `group_by() %>% summarize()` operations also return the dataset as a simple features object with geometry, but in this case with only 4 rows.  Let's take a look at the output geometry: 
+
+The grouping column (`NAME_metro`) and the output of `summarize()` (`median_hispanic`) are returned as expected. However, the `group_by() %>% summarize()` operations also return the dataset as a simple features object with geometry, but in this case with only 4 rows. Let's take a look at the output geometry:
 
 ```{r}
 plot(median_by_metro[1,]$geometry)
 ```
 
-The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock).  The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group.  The typical name for this geometric process in geographic information systems is a _dissolve_ operation, where geometries are identified by group and combined to return a single larger geometry.  In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries.  This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.  
+The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock). The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group. The typical name for this geometric process in geographic information systems is a *dissolve* operation, where geometries are identified by group and combined to return a single larger geometry. In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries. This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.
 
 ## Distance and proximity analysis (June 24)
 
-A common use case for spatially-referenced demographic data is the analysis of _accessibility_.  This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store.  Conceptually, there are a variety of ways to measure accessibility.  The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system.  A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving.  This section will illustrate both types of approaches. 
-Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from tigris, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.  
+A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from tigris, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
 
 ```{r}
 library(tigris)
@@ -176,7 +181,8 @@ trauma <- st_read("data/Hospitals.shp") %>%
 
 glimpse(trauma)
 ```
-To determine accessibility of Iowa Census tracts to Level I or II trauma centers, we need to identify not only those hospitals that are located in Iowa, but also those in other states near to the Iowa border, such as in Omaha, Nebraska and Rock Island, Illinois.  We can accomplish this by applying a distance threshold in `st_filter()`.  In this example, we use the spatial predicate `st_is_within_distance`, and set a 100km distance threshold with the `dist = 100000` argument (specified in meters, the base measurement unit of our coordinate system used). 
+
+To determine accessibility of Iowa Census tracts to Level I or II trauma centers, we need to identify not only those hospitals that are located in Iowa, but also those in other states near to the Iowa border, such as in Omaha, Nebraska and Rock Island, Illinois. We can accomplish this by applying a distance threshold in `st_filter()`. In this example, we use the spatial predicate `st_is_within_distance`, and set a 100km distance threshold with the `dist = 100000` argument (specified in meters, the base measurement unit of our coordinate system used).
 
 ```{r}
 ia_trauma <- trauma %>%
@@ -189,9 +195,10 @@ ggplot() +
   geom_sf(data = ia_trauma, color = "red") + 
   theme_void()
 ```
-As illustrated in the visualization, the `st_filter()` operation has retained Level I and II trauma centers _within_ the state of Iowa, but also within the 100km threshold beyond the state's borders.  
 
-With the Census tract and hospital data in hand, we can calculate distances from Census tracts to trauma centers by using the `st_distance()` function in the {sf} package.  `st_distance(x, y)` by default returns the dense matrix of distances computed from the geometries in `x` to the geometries in `y`.  In this example, we will calculate the distances from the _centroids_ of Iowa Census tracts (reflecting the center points of each tract geometry) to each trauma center.  
+As illustrated in the visualization, the `st_filter()` operation has retained Level I and II trauma centers *within* the state of Iowa, but also within the 100km threshold beyond the state's borders.
+
+With the Census tract and hospital data in hand, we can calculate distances from Census tracts to trauma centers by using the `st_distance()` function in the {sf} package. `st_distance(x, y)` by default returns the dense matrix of distances computed from the geometries in `x` to the geometries in `y`. In this example, we will calculate the distances from the *centroids* of Iowa Census tracts (reflecting the center points of each tract geometry) to each trauma center.
 
 ```{r, message = FALSE, warning = FALSE}
 dist <- ia_tracts %>%
@@ -200,7 +207,8 @@ dist <- ia_tracts %>%
 
 dist[1:5, 1:5]
 ```
-A glimpse at the matrix shows distances (in meters) between the first five Census tracts in the dataset and the first five hospitals.  When considering _accessibility_, we may be interested in the distance to the _nearest_ hospital to each Census tract.  The code below extracts the minimum distance from the matrix for each row, converts to a vector, and divides each value by 1000 to convert values to kilometers.  A quick histogram visualizes the distribution of minimum distances.  
+
+A glimpse at the matrix shows distances (in meters) between the first five Census tracts in the dataset and the first five hospitals. When considering *accessibility*, we may be interested in the distance to the *nearest* hospital to each Census tract. The code below extracts the minimum distance from the matrix for each row, converts to a vector, and divides each value by 1000 to convert values to kilometers. A quick histogram visualizes the distribution of minimum distances.
 
 ```{r}
 min_dist <- dist %>%
@@ -210,13 +218,14 @@ min_dist <- dist %>%
 
 hist(min_dist)
 ```
-While many tracts are within 10km of a trauma center, around 16 percent of Iowa Census tracts are beyond 100km from a Level I or II trauma center, suggesting significant accessibility issues for these areas.  
 
-An alternative way to model accessibility to hospitals is through _travel times_ rather than distance, as the way that people experience access to locations is through time expended given a transportation network.  While network-based accessibility may be a more accurate representation of people's lived experiences, it is more computationally complex and requires additional tools.  To perform spatial network analyses, R users will either need to obtain network data (like roadways) and use appropriate tools that can model the network; set up a routing engine that R can connect to; or connect to a hosted routing engine via a web API. In this example, we'll use the {mapboxapi} R package to perform network analysis using Mapbox's travel-time Matrix API.  
+While many tracts are within 10km of a trauma center, around 16 percent of Iowa Census tracts are beyond 100km from a Level I or II trauma center, suggesting significant accessibility issues for these areas.
 
-The function `mb_matrix()` in {mapboxapi} works much like `st_distance()` in that it only requires arguments for origins and destinations, and will return the dense matrix of travel times by default.  In turn, much of the computational complexity of routing is abstracted away by the function.  However, as routes will be computed across the state of Iowa and API usage is subject to rate-limitations, the function can take several minutes to compute for larger matrices like this one.  
+An alternative way to model accessibility to hospitals is through *travel times* rather than distance, as the way that people experience access to locations is through time expended given a transportation network. While network-based accessibility may be a more accurate representation of people's lived experiences, it is more computationally complex and requires additional tools. To perform spatial network analyses, R users will either need to obtain network data (like roadways) and use appropriate tools that can model the network; set up a routing engine that R can connect to; or connect to a hosted routing engine via a web API. In this example, we'll use the {mapboxapi} R package to perform network analysis using Mapbox's travel-time Matrix API.
 
-If you are using {mapboxapi} for the first time, visit [mapbox.com](), register for an account, and obtain an access token.  The function `mb_access_token()` installs this token in your .Renviron for future use.  
+The function `mb_matrix()` in {mapboxapi} works much like `st_distance()` in that it only requires arguments for origins and destinations, and will return the dense matrix of travel times by default. In turn, much of the computational complexity of routing is abstracted away by the function. However, as routes will be computed across the state of Iowa and API usage is subject to rate-limitations, the function can take several minutes to compute for larger matrices like this one.
+
+If you are using {mapboxapi} for the first time, visit [mapbox.com](), register for an account, and obtain an access token. The function `mb_access_token()` installs this token in your .Renviron for future use.
 
 ```{r, eval = FALSE}
 library(mapboxapi)
@@ -229,7 +238,8 @@ times <- mb_matrix(ia_tracts, ia_trauma)
 ```{r, eval = TRUE}
 times[1:5, 1:5]
 ```
-A glimpse at the travel-time matrix shows a similar format to the distance matrix, but with travel times in minutes used instead of meters.  As with the distance-based example, we can determine the minimum travel time from each tract to a Level I or Level II trauma center.  In this instance, we will visualize the result on a map.  
+
+A glimpse at the travel-time matrix shows a similar format to the distance matrix, but with travel times in minutes used instead of meters. As with the distance-based example, we can determine the minimum travel time from each tract to a Level I or Level II trauma center. In this instance, we will visualize the result on a map.
 
 ```{r}
 
@@ -247,18 +257,19 @@ ggplot(ia_tracts, aes(fill = time)) +
        caption = "Data sources: US Census Bureau, US DHS, Mapbox")
   
 ```
-The map illustrates considerable accessibility gaps to trauma centers across the state.  Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.  
+
+The map illustrates considerable accessibility gaps to trauma centers across the state. Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.
 
 ```{block2, note-text, type='rmdtip'}
-(Info about other approaches to network analysis here)
+An advantage to using a package like {mapboxapi} for routing and travel times is that users can connect directly to a hosted routing engine using an API.  Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale.  There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks.  These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.  
 
 ```
 
-The above example considers a broader accessibility analysis across the state of Iowa. In many cases, however, you'll want to analyze accessibility in a more local way.  A common use case might involve a study of the demographic characteristics of a hospital _catchment area_, defined as the area around a hospital from which patients will likely come.  
+The above example considers a broader accessibility analysis across the state of Iowa. In many cases, however, you'll want to analyze accessibility in a more local way. A common use case might involve a study of the demographic characteristics of a hospital *catchment area*, defined as the area around a hospital from which patients will likely come.
 
-As with the matrix-based accessibility approach outlined above, catchment area-based proximity can be modeled with either Euclidean distances or network travel times as well. Let's consider the example of [Iowa Methodist Medical Center in Des Moines](https://www.unitypoint.org/desmoines/iowa-methodist-medical-center.aspx), one of two Level I trauma centers in the state of Iowa. 
+As with the matrix-based accessibility approach outlined above, catchment area-based proximity can be modeled with either Euclidean distances or network travel times as well. Let's consider the example of [Iowa Methodist Medical Center in Des Moines](https://www.unitypoint.org/desmoines/iowa-methodist-medical-center.aspx), one of two Level I trauma centers in the state of Iowa.
 
-The example below illustrates the distance-based approach using a _buffer_, implemented with the `st_buffer()` function in {sf}.  A buffer is a common GIS operation that represents the area within a given distance of a location.  The code below creates a 5km buffer around Iowa Methodist Medical Center by using the argument `dist = 5000`.  
+The example below illustrates the distance-based approach using a *buffer*, implemented with the `st_buffer()` function in {sf}. A buffer is a common GIS operation that represents the area within a given distance of a location. The code below creates a 5km buffer around Iowa Methodist Medical Center by using the argument `dist = 5000`.
 
 ```{r}
 library(leaflet)
@@ -270,7 +281,7 @@ buf5km <- st_buffer(iowa_methodist, dist = 5000) %>%
 
 ```
 
-An alternative option is to create network-based _isochrones_, which are polygons that represent the accessible area around a given location within a given travel time for a given travel mode.  Isochrones are implemented in the {mapboxapi} package with the `mb_isochrone()` function.  The example below draws a 10-minute driving isochrone around Iowa Methodist.
+An alternative option is to create network-based *isochrones*, which are polygons that represent the accessible area around a given location within a given travel time for a given travel mode. Isochrones are implemented in the {mapboxapi} package with the `mb_isochrone()` function. The example below draws a 10-minute driving isochrone around Iowa Methodist.
 
 ```{r}
 iso10min <- mb_isochrone(iowa_methodist, time = 10)
@@ -278,33 +289,32 @@ iso10min <- mb_isochrone(iowa_methodist, time = 10)
 
 We can visualize the comparative extents of these two methods in Des Moines:
 
-
 ```{r}
 hospital_icon <- makeAwesomeIcon(icon = "ios-medical", 
                                  markerColor = "red",
                                  library = "ion")
 
 map1 <- leaflet() %>% 
-  addMapboxTiles(style_id = "streets-v11", username = "mapbox") %>%
+  addTiles() %>%
   addPolygons(data = buf5km) %>% 
   addAwesomeMarkers(data = st_transform(iowa_methodist, 4326),
                     icon = hospital_icon)
 
 map2 <- leaflet() %>% 
-  addMapboxTiles(style_id = "streets-v11", username = "mapbox") %>%
+  addTiles() %>%
   addPolygons(data = iso10min) %>% 
   addAwesomeMarkers(data = st_transform(iowa_methodist, 4326),
                     icon = hospital_icon)
 
-mapview::sync(map1, map2)
+leafsync::sync(map1, map2)
 
 ```
 
-The comparative maps illustrate the differences between the two methods quite clearly.  Many areas of equal distance to the hospital do not have the same level of access; this is particularly true of areas to the south of the Raccoon/Des Moines River.  Conversely, due to the location of highways, there are some areas outside the 5km buffer area that can reach the hospital within 10 minutes.  
+The comparative maps illustrate the differences between the two methods quite clearly. Many areas of equal distance to the hospital do not have the same level of access; this is particularly true of areas to the south of the Raccoon/Des Moines River. Conversely, due to the location of highways, there are some areas outside the 5km buffer area that can reach the hospital within 10 minutes.
 
-Common to both methods, however, is a mis-alignment between their geometries and those of any Census geographies we may use to infer catchment area demographics.  As opposed to the spatial overlay analysis matching Census tracts to metropolitan areas earlier in this chapter, Census tracts or block groups on the edge of the catchment area will only be partially included in the catchment.  A common method for resolving this issue in geographic information science is _areal interpolation_.  Areal interpolation refers to the allocation of data from one set of zones to a second overlapping set of zones that may or may not perfectly align spatially.  In cases of mis-alignment, some type of weighting scheme needs to be specified to determine how to allocate partial data in areas of overlap.  
+Common to both methods, however, is a mis-alignment between their geometries and those of any Census geographies we may use to infer catchment area demographics. As opposed to the spatial overlay analysis matching Census tracts to metropolitan areas earlier in this chapter, Census tracts or block groups on the edge of the catchment area will only be partially included in the catchment. A common method for resolving this issue in geographic information science is *areal interpolation*. Areal interpolation refers to the allocation of data from one set of zones to a second overlapping set of zones that may or may not perfectly align spatially. In cases of mis-alignment, some type of weighting scheme needs to be specified to determine how to allocate partial data in areas of overlap.
 
-Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions.  This will require obtaining block-group level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone.  The variables requested from the ACS include the number of persons living below the poverty line, and the number of persons for whom poverty status is determined, which will serve as a denominator.  
+Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions. This will require obtaining block-group level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone. The variables requested from the ACS include the number of persons living below the poverty line, and the number of persons for whom poverty status is determined, which will serve as a denominator.
 
 ```{r}
 polk_poverty <- get_acs(
@@ -319,8 +329,8 @@ polk_poverty <- get_acs(
   select(poverty_denomE, poverty_numE) %>%
   st_transform(26975)
 ```
-_Area-weighted areal interpolation_ is implemented in {sf} with the `st_interpolate_aw()` function.  This method uses the area of overlap of geometries as the interpolation weights.  This means that, in this example, Census tracts that fall entirely within the 5km buffer polygon will receive a weight of 1.  Census tracts that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area.  Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument.  If `extensive = TRUE`, as used below, weighted sums will be computed.  Alternatively, if `extensive = FALSE`, the function returns weighted means.  
 
+*Area-weighted areal interpolation* is implemented in {sf} with the `st_interpolate_aw()` function. This method uses the area of overlap of geometries as the interpolation weights. This means that, in this example, Census tracts that fall entirely within the 5km buffer polygon will receive a weight of 1. Census tracts that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area. Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument. If `extensive = TRUE`, as used below, weighted sums will be computed. Alternatively, if `extensive = FALSE`, the function returns weighted means.
 
 ```{r, message = FALSE, warning = FALSE}
 library(glue)
@@ -344,12 +354,11 @@ print(glue("Poverty (5km buffer method): {round(buffer_pov$pct_poverty, 1)}%"))
 print(glue("Poverty (10min isochrone method): {round(iso_pov$pct_poverty, 1)}%"))
 ```
 
-
 ## Better cartography with spatial overlay
 
-One of the major benefits of working with the [tidycensus](https://walkerke.github.io/tidycensus/) package to get Census data in R is its ability to retrieve pre-joined feature geometry for Census geographies with the argument `geometry = TRUE`.  tidycensus uses the [tigris](https://github.com/walkerke/tigris) package to fetch these geometries, which default to the Census Bureau's [cartographic boundary shapefiles](https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html).  Cartographic boundary shapefiles are preferred to the core [TIGER/Line shapefiles](https://www.census.gov/geo/maps-data/data/tiger-line.html) in tidycensus as their smaller size speeds up processing and because they are pre-clipped to the US coastline.
+One of the major benefits of working with the [tidycensus](https://walkerke.github.io/tidycensus/) package to get Census data in R is its ability to retrieve pre-joined feature geometry for Census geographies with the argument `geometry = TRUE`. tidycensus uses the [tigris](https://github.com/walkerke/tigris) package to fetch these geometries, which default to the Census Bureau's [cartographic boundary shapefiles](https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html). Cartographic boundary shapefiles are preferred to the core [TIGER/Line shapefiles](https://www.census.gov/geo/maps-data/data/tiger-line.html) in tidycensus as their smaller size speeds up processing and because they are pre-clipped to the US coastline.
 
-However, there may be circumstances in which your mapping requires more detail.  A good example of this would be maps of New York City, in which even the cartographic boundary shapefiles include water area.  For example, take this example of median household income by Census tract in Manhattan (New York County), NY: 
+However, there may be circumstances in which your mapping requires more detail. A good example of this would be maps of New York City, in which even the cartographic boundary shapefiles include water area. For example, take this example of median household income by Census tract in Manhattan (New York County), NY:
 
 ```{r}
 library(tidycensus)
@@ -370,9 +379,9 @@ ggplot(ny) +
 
 ```
 
-As illustrated in the graphic, the boundaries of Manhattan include water boundaries - stretching into the Hudson and East Rivers.  In turn, a more accurate representation of Manhattan's land area might be desired.  To accomplish this, a tidycensus user can use the core TIGER/Line shapefiles instead, then erase water area from Manhattan's geometry.  
+As illustrated in the graphic, the boundaries of Manhattan include water boundaries - stretching into the Hudson and East Rivers. In turn, a more accurate representation of Manhattan's land area might be desired. To accomplish this, a tidycensus user can use the core TIGER/Line shapefiles instead, then erase water area from Manhattan's geometry.
 
-tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`.  This argument will be familiar to users of the tigris package, as it is used by tigris to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.  
+tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`. This argument will be familiar to users of the tigris package, as it is used by tigris to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.
 
 ```{r}
 ny2 <- get_acs(geography = "tract", 
@@ -383,9 +392,9 @@ ny2 <- get_acs(geography = "tract",
               cb = FALSE)
 ```
 
-Next, tools in the tigris and [sf](https://github.com/r-spatial/sf) package can be used to remove the water area from Manhattan's Census tracts.  sf allows users to "erase" one geometry from another, [akin to tools available in desktop GIS software](http://pro.arcgis.com/en/pro-app/tool-reference/analysis/erase.htm).  The `st_erase()` function defined below is not exported by the package, but is defined in the documentation for `st_difference()`.  
+Next, tools in the tigris and [sf](https://github.com/r-spatial/sf) package can be used to remove the water area from Manhattan's Census tracts. sf allows users to "erase" one geometry from another, [akin to tools available in desktop GIS software](http://pro.arcgis.com/en/pro-app/tool-reference/analysis/erase.htm). The `st_erase()` function defined below is not exported by the package, but is defined in the documentation for `st_difference()`.
 
-The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in tigris, making sure to choose the option `class = "sf"`.  
+The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in tigris, making sure to choose the option `class = "sf"`.
 
 ```{r}
 library(sf)
@@ -401,7 +410,7 @@ ny_erase <- st_erase(ny2, ny_water)
 
 ```
 
-After performing this operation, we can map the result: 
+After performing this operation, we can map the result:
 
 ```{r}
 ggplot(ny_erase) + 
@@ -410,13 +419,14 @@ ggplot(ny_erase) +
   theme_void() + 
   labs(fill = "Median household\nincome")
 ```
-The map appears as before, but now with a more familiar representation of the extent of Manhattan.  
+
+The map appears as before, but now with a more familiar representation of the extent of Manhattan.
 
 ## Spatial neighborhoods and spatial weights matrices (June 25)
 
-The spatial capabilities of tidycensus also allow for exploratory spatial data analysis (ESDA) within R.  ESDA refers to the use of datasets' spatial properties in addition to their attributes to explore patterns and relationships.  This may involve exploration of spatial patterns in datasets or identification of spatial clustering of a given demographic attribute.  
+The spatial capabilities of tidycensus also allow for exploratory spatial data analysis (ESDA) within R. ESDA refers to the use of datasets' spatial properties in addition to their attributes to explore patterns and relationships. This may involve exploration of spatial patterns in datasets or identification of spatial clustering of a given demographic attribute.
 
-To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on the percent of the population age 25 and up with a bachelor's degree for Census tracts in the Dallas-Fort Worth, TX metropolitan area.  Census tracts in the metro area will be identified using methods introduced earlier in this chapter.  
+To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on the percent of the population age 25 and up with a bachelor's degree for Census tracts in the Dallas-Fort Worth, TX metropolitan area. Census tracts in the metro area will be identified using methods introduced earlier in this chapter.
 
 ```{r}
 library(tidycensus)
@@ -445,20 +455,22 @@ ggplot(dfw_tracts) +
   theme_void()
 
 ```
-Exploratory spatial data analysis relies on the concept of a _neighborhood_, which is a conceptualization of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is {spdep}, which includes a wide range of tools for exploring and modeling spatial data.  As part of this framework,  {spdep} supports a variety of neighborhood definitions.  These definitions include: 
 
-* _Proximity-based neighbors_, where neighboring features are identified based on some measure of distance.  Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as _k_-nearest neighbors (e.g. the nearest eight features to a given feature). 
-* _Graph-based neighbors_, where neighbors are defined through network relationships (e.g. along a street network).  
-* _Contiguity-based neighbors_, used when geographic features are polygons.  Options for contiguity-based spatial relationships include _queen's case neighbors_, where all polygons that share at least one vertex are considered neighbors; and _rook's case neighbors_, where polygons must share at least one line segment to be considered neighbors.  
+Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a conceptualization of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is {spdep}, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, {spdep} supports a variety of neighborhood definitions. These definitions include:
 
-In this example, we'll choose a queen's case contiguity-based neighborhood definition for our Census tracts.  We implement this with the function `poly2nb()`, which can take an sf object as an argument and produce a neighbors list object.  We use the argument `queen = TRUE` to request queen's case neighbors explicitly (though this is the function default). 
+-   *Proximity-based neighbors*, where neighboring features are identified based on some measure of distance. Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as *k*-nearest neighbors (e.g. the nearest eight features to a given feature).
+-   *Graph-based neighbors*, where neighbors are defined through network relationships (e.g. along a street network).\
+-   *Contiguity-based neighbors*, used when geographic features are polygons. Options for contiguity-based spatial relationships include *queen's case neighbors*, where all polygons that share at least one vertex are considered neighbors; and *rook's case neighbors*, where polygons must share at least one line segment to be considered neighbors.
+
+In this example, we'll choose a queen's case contiguity-based neighborhood definition for our Census tracts. We implement this with the function `poly2nb()`, which can take an sf object as an argument and produce a neighbors list object. We use the argument `queen = TRUE` to request queen's case neighbors explicitly (though this is the function default).
 
 ```{r}
 neighbors <- poly2nb(dfw_tracts, queen = TRUE)
 
 summary(neighbors)
 ```
-On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors.  The minimum number of neighbors in the dataset is 1 (the tract at row index 856), and the maximum number of neighbors is 16 (the tract at row index 1171). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area.  In turn, our analysis may be influenced by _edge effects_ as neighborhoods on the edge of the metropolitan area are artificially restricted.  
+
+On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 1 (the tract at row index 856), and the maximum number of neighbors is 16 (the tract at row index 1171). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis may be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
 
 Neighborhood relationships can be visualized using plotting functionality in {spdep}:
 
@@ -474,15 +486,17 @@ plot(neighbors,
      col = "blue", 
      points = FALSE)
 ```
-Additionally, row indices for the neighbors of a given feature can be readily extracted from the neighbors list object.  
+
+Additionally, row indices for the neighbors of a given feature can be readily extracted from the neighbors list object.
 
 ```{r}
 # Get the row indices of the neighbors of the Census tract at row index 1
 neighbors[[1]]
 ```
-To perform exploratory spatial data analysis, we can convert the neighbors list object into _spatial weights_.  Spatial weights define how metrics associated with a feature's neighbors should be weighted.  Weight generation is implemented in the `nb2listw()` function, to which we pass the neighbors object and specify a style of weights.  The default, `style = "W"`, produces a row-standardized weights object where the weights for all neighbors of a given feature sum to 1.  This is the option you would choose when analyzing neighborhood means.  An alternative option, `style = "B"`, produces binary weights where neighbors are given the weight of 1 and non-neighbors take the weight of 0.  This style of weights is useful for producing neighborhood sums.  
 
-In the example below, we create row-standardized spatial weights for the DFW Census tracts and check their values for the feature at row index 1.  
+To perform exploratory spatial data analysis, we can convert the neighbors list object into *spatial weights*. Spatial weights define how metrics associated with a feature's neighbors should be weighted. Weight generation is implemented in the `nb2listw()` function, to which we pass the neighbors object and specify a style of weights. The default, `style = "W"`, produces a row-standardized weights object where the weights for all neighbors of a given feature sum to 1. This is the option you would choose when analyzing neighborhood means. An alternative option, `style = "B"`, produces binary weights where neighbors are given the weight of 1 and non-neighbors take the weight of 0. This style of weights is useful for producing neighborhood sums.
+
+In the example below, we create row-standardized spatial weights for the DFW Census tracts and check their values for the feature at row index 1.
 
 ```{r}
 weights <- nb2listw(neighbors, style = "W")
@@ -490,30 +504,30 @@ weights <- nb2listw(neighbors, style = "W")
 weights$weights[[1]]
 
 ```
-Given that the Census tract at row index 1 has seven neighbors, each neighbor is assigned the weight 0.143.  
+
+Given that the Census tract at row index 1 has seven neighbors, each neighbor is assigned the weight 0.143.
 
 ## Global and local spatial autocorrelation (June 26)
 
-The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area.  In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors.  Formally, this concept is called _spatial autocorrelation_.  The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads: 
+The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads:
 
 > Everything is related to everything else, but near things are more related than distant things.
 
-This formulation informs much of the theory behind spatial data science and geographical inquiry more broadly.  With respect to the exploratory spatial analysis of Census data, we might be interested in the degree to which a given attribute clusters spatially, and subsequently where those clusters are found.  One such way to assess clustering is to assess the degree to which attribute values are similar to or differ from those of their neighbors as defined by a weights matrix.  Patterns can in turn be explained as follows: 
+This formulation informs much of the theory behind spatial data science and geographical inquiry more broadly. With respect to the exploratory spatial analysis of Census data, we might be interested in the degree to which a given attribute clusters spatially, and subsequently where those clusters are found. One such way to assess clustering is to assess the degree to which attribute values are similar to or differ from those of their neighbors as defined by a weights matrix. Patterns can in turn be explained as follows:
 
-* _Spatial clustering_: data values tend to be similar to neighboring data values; 
-* _Spatial uniformity_: data values tend to differ from neighboring data values; 
-* _Spatial randomness_: there is no apparent relationship between data values and those of their neighbors.  
+-   *Spatial clustering*: data values tend to be similar to neighboring data values;
+-   *Spatial uniformity*: data values tend to differ from neighboring data values;
+-   *Spatial randomness*: there is no apparent relationship between data values and those of their neighbors.
 
-Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering.  This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the {spdep} package.  
+Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering. This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the {spdep} package.
 
-Spatial weights matrices can be used to calculate the _spatial lag_ of a given attribute for each observation in a dataset.  The spatial lag refers to the neighboring values of an observation given a spatial weights matrix.  As discussed above, row-standardized weights matrices will produce lagged means, and binary weights matrices will produce lagged sums.  Spatial lag calculations are implemented in the function `lag.listw()`, which requires a spatial weights list object and a numeric vector from which to compute the lag.  
-
+Spatial weights matrices can be used to calculate the *spatial lag* of a given attribute for each observation in a dataset. The spatial lag refers to the neighboring values of an observation given a spatial weights matrix. As discussed above, row-standardized weights matrices will produce lagged means, and binary weights matrices will produce lagged sums. Spatial lag calculations are implemented in the function `lag.listw()`, which requires a spatial weights list object and a numeric vector from which to compute the lag.
 
 ```{r}
 dfw_tracts$lag_estimate <- lag.listw(weights, dfw_tracts$estimate)
 ```
 
-The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the mean percentage of bachelor's degree holders for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area.  Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.  
+The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the mean percentage of bachelor's degree holders for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area. Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.
 
 ```{r}
 ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) + 
@@ -526,26 +540,26 @@ ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) +
        caption = "Data source: 2014-2018 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
 
 ```
-The scatterplot suggests a positive correlation between the ACS estimate and its spatial lag, representative of spatial autocorrelation in the data.  This relationship can be evaluated further by using a test of global spatial autocorrelation.  The most common method used for spatial autocorrelation evaluation is Moran's I, which can be intepreted similar to a correlation coefficient but for the relationship between observations and their neighbors.  The statistic is computed as: 
+
+The scatterplot suggests a positive correlation between the ACS estimate and its spatial lag, representative of spatial autocorrelation in the data. This relationship can be evaluated further by using a test of global spatial autocorrelation. The most common method used for spatial autocorrelation evaluation is Moran's I, which can be intepreted similar to a correlation coefficient but for the relationship between observations and their neighbors. The statistic is computed as:
 
 $$
 I = \frac{N}{W}\frac{\sum_i\sum_j w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_i(x_i - \bar{x})^2}
-$$
-where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spatial units denoted by $i$ and $j$, and $W$ is the sum of the spatial weights. 
+$$ where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spatial units denoted by $i$ and $j$, and $W$ is the sum of the spatial weights.
 
-Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.  
+Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
 ```{r}
 moran.test(dfw_tracts$estimate, weights)
 ```
-The Moran's I statistic of 0.74 is large and positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset.  In a practical sense, this means that Census tracts with highly-educated populations tend to be located near one another, and Census tracts with low levels of educational attainment also tend to be found in the same areas.  
 
-We can explore this further with _local spatial autocorrelation analysis_.  Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset.  One such example is the Getis-Ord local G statistic, which is computed as follows: 
+The Moran's I statistic of 0.74 is large and positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset. In a practical sense, this means that Census tracts with highly-educated populations tend to be located near one another, and Census tracts with low levels of educational attainment also tend to be found in the same areas.
+
+We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic, which is computed as follows:
 
 $$
 G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
-$$
-In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset.  A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation.  Results are returned as z-scores, and implemented in the `localG()` function in {spdep}.  
+$$ In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation. Results are returned as z-scores, and implemented in the `localG()` function in {spdep}.
 
 ```{r}
 # For Gi*, re-compute the weights with `include.self()`
@@ -559,7 +573,8 @@ ggplot(dfw_tracts) +
   theme_void() + 
   labs(fill = "Local Gi* statistic")
 ```
-Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic and plot them accordingly: 
+
+Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic and plot them accordingly:
 
 ```{r}
 dfw_tracts$hotspot <- ifelse(dfw_tracts$localG >= 2.56, "High cluster",
@@ -571,7 +586,3 @@ ggplot(dfw_tracts) +
   scale_fill_manual(values = c("red", "blue", "grey")) + 
   theme_void()
 ```
-
-
-
-

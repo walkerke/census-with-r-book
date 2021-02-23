@@ -1,10 +1,58 @@
 # Wrangling Census data with tidyverse tools
 
-Given the widespread use of US Census data in data analytic and data science projects, the R community has developed a number of packages to allow for access to and exploration of these datasets.  These packages commonly grant access, through R, to the US Census Bureau's application programming interfaces, or APIs.  This chapter focuses on one such package, __tidycensus__, which wraps the decennial US Census and American Community Survey APIs and returns data from the APIs as data frames designed for use with the tidyverse.  The chapter commences with an overview of the R packages available for US Census Bureau data access, then transitions to a focus on how to use tidycensus to work with US Census Bureau data.  Finally, the chapter includes a brief introduction to other packages for Census data analysis and visualization in R, with a focus on the acs, censusapi, and choroplethr packages.  
+One of the most popular frameworks for data analysis in R is the __tidyverse__, a suite of packages designed for integrated data wrangling, visualization, and modeling.  The "tidy" or long-form data returned by default in tidycensus is designed to work well with tidyverse analytic workflows.  This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with tidycensus.  It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
+
+## Exploring Census data with tidyverse tools
+
+Census data queries using tidycensus, combined with core tidyverse functions, are excellent ways to explore downloaded Census data.  
+
+```{r}
+library(tidycensus)
+
+median_age <- get_acs(
+  geography = "county",
+  variables = "B01002_001"
+)
+
+median_age
+```
+
+What are the youngest counties in the US?
+
+```{r}
+library(tidyverse)
+
+arrange(median_age, estimate)
+```
+
+How about the oldest?
+
+```{r}
+arrange(median_age, desc(estimate))
+```
+
+Filter data by values: 
+
+```{r}
+filter(median_age, estimate >= 50)
+```
+
+Parsing data: 
+
+```{r}
+separate(
+  median_age,
+  NAME,
+  into = c("county", "state"),
+  sep = ", "
+)
+```
+
+
 
 ## Group-wise Census data analysis
 
-The tidy format returned by default by tidycensus is designed to facilitate group-wise data analysis.  For example, variables in ACS table B19001 represents groups of households whose household incomes fall into a variety of categories: less than $10,000/year, between $10,000/year and $19,999/year, and so forth.  Commonly, these categories will be more granular than needed by an analyst.  As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.  
+For example, variables in ACS table B19001 represents groups of households whose household incomes fall into a variety of categories: less than $10,000/year, between $10,000/year and $19,999/year, and so forth.  Commonly, these categories will be more granular than needed by an analyst.  As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.  
 
 Consider the following example, using household income data for Minnesota counties from the 2012-2016 ACS: 
 
@@ -12,8 +60,12 @@ Consider the following example, using household income data for Minnesota counti
 library(tidycensus)
 library(tidyverse)
 
-mn1 <- get_acs(geography = "county", table = "B19001", 
-               state = "MN")
+
+mn1 <- get_acs(
+  geography = "county",
+  table = "B19001",
+  state = "MN"
+)
 
 mn1
 ```
@@ -63,21 +115,83 @@ In tidycensus, this can be accomplished by supplying a variable ID to the `summa
 With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by county in Texas from the 2012-2016 ACS: 
 
 ```{r}
-race_vars <- c(White = "B03002_003", Black = "B03002_004", Native = "B03002_005", 
-               Asian = "B03002_006", HIPI = "B03002_007", Hispanic = "B03002_012")
+race_vars <-
+  c(
+    White = "B03002_003",
+    Black = "B03002_004",
+    Native = "B03002_005",
+    Asian = "B03002_006",
+    HIPI = "B03002_007",
+    Hispanic = "B03002_012"
+  )
 
-tx_race <- get_acs(geography = "county", 
-                   state = "TX",
-                   variables = race_vars, 
-                   summary_var = "B03002_001") %>%
+tx_race <- get_acs(
+  geography = "county",
+  state = "TX",
+  variables = race_vars,
+  summary_var = "B03002_001"
+) %>%
   mutate(pct = 100 * (estimate / summary_est))
+
 ```
 
 By using dplyr's `mutate()` function, we calculate a new column, `pct`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2000.  
 
-## Comparing estimates over time ()
+## Comparing ACS estimates over time 
 
-use example from get_estimates here
+```{r}
+college_vars <- c("B15002_015",
+                  "B15002_016",
+                  "B15002_017",
+                  "B15002_018",
+                  "B15002_032",
+                  "B15002_033",
+                  "B15002_034",
+                  "B15002_035")
+
+college_data <- get_acs(
+  geography = "county",
+  variables = college_vars,
+  state = "CO",
+  county = c("Boulder", "Denver", "Broomfield",
+             "Adams", "Arapahoe", "Jefferson"),
+  summary_var = "B15002_001"
+)
+```
+Use purrr to iterate over multiple years: 
+
+```{r}
+years <- c(2009, 2014, 2019)
+
+college_by_year <- map_df(years, ~{
+  get_acs(
+    geography = "county",
+    variables = college_vars,
+    state = "CO",
+    county = c(
+      "Boulder",
+      "Denver",
+      "Broomfield",
+      "Adams",
+      "Arapahoe",
+      "Jefferson"
+    ),
+    summary_var = "B15002_001",
+    year = .x
+  ) %>%
+    group_by(NAME) %>%
+    summarize(numerator = sum(estimate),
+              denominator = first(summary_est)) %>%
+    mutate(pct_college = 100 * (numerator / denominator),
+           year = .x) 
+}) %>%
+  select(NAME, year, pct_college) %>%
+  arrange(NAME, year)
+```
+
+```{r}
+college_by_year
+```
 
 
 

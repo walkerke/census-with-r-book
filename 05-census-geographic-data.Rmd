@@ -1,5 +1,10 @@
 # Census geographic data and applications in R
 
+```{r ch5-setup, include = FALSE}
+options(tigris_use_cache = TRUE)
+```
+
+
 As discussed in Chapters 1 and 3, Census and ACS data are associated with _geographies_, which are units at which the data are aggregated.  These defined geographies are represented in the US Census Bureau's TIGER/Line database.  The TIGER/Line database includes geometric representations of Census Bureau geographies made available as _shapefiles_, a common format for encoding geographic data. 
 
 The TIGER/Line shapefiles include three general types of data: 
@@ -10,20 +15,39 @@ The TIGER/Line shapefiles include three general types of data:
 
 Traditionally, TIGER/Line shapefiles are downloaded from a web interface as zipped folders, then unzipped for use in a Geographic Information System (GIS) or other software that can work with geographic data.  However, the R package __tigris__ allows R users to access these datasets directly from their R sessions without having to go through these steps.  
 
-This chapter will cover the core functionality of the tigris package for working with Census geographic data in R.  In doing so, it will highlight the new __sf__ package (Pebesma 2017) for representing spatial data as R objects.  
+This chapter will cover the core functionality of the tigris package for working with Census geographic data in R.  In doing so, it will highlight the __sf__ package (Pebesma 2017) for representing spatial data as R objects.  
 
-## Basic usage of tigris (July 6)
+## Basic usage of tigris 
 
 The tigris R package simplifies the process for R users of obtaining and using Census geographic datasets.  Functions in tigris _download_ a requested Census geographic dataset from the US Census Bureau website, then _load_ the dataset into R as a spatial object.  Generally speaking, each type of geographic dataset available in the Census Bureau's TIGER/Line database is available with a corresponding function in tigris.  For example, the `states()` function can be run without arguments to download a boundary file of US states and state equivalents. 
+
 ```{r}
 library(tigris)
 
 st <- states()
+```
+Let's take a look at what we get back:
 
-plot(st)
+```{r}
+class(st)
 ```
 
-By default, tigris returns an object of class `SpatialPolygonsDataFrame` from the __sp__ package when the function `states()` is called representing the boundaries of US states and territories.  
+The returned object is of both class `"sf"` and `"data.frame"`.  We can print out the first 10 rows to inspect the object further:
+
+```{r}
+st
+```
+The object `st`, representing all US states and territories, includes a data frame with a series of columns representing characteristics of those states, like a name, postal code, and Census ID (the `GEOID` column).  It also contains a special list-column, `geometry`, which is made up of a sequence of coordinate of longitude/latitude coordinate pairs that collectively represent the boundary of each state.  
+
+The information above the data frame gives some additional geographic context to the coordinates in the `geometry` column.  The returned data is of geometry type `MULTIPOLYGON`, and is characterized by a bounding box and geographic coordinate reference system (CRS) of `NAD83`.  These spatial concepts help define how R represents the data geographically, and will be explored further later in this chapter.  
+
+The `geometry` column can be visualized in R with the `plot()` function:
+
+```{r}
+plot(st$geometry)
+```
+
+
 
 Other Census datasets may be available by state or by county within the state.  In some cases, this subsetting is optional; in other cases, `state` and/or `county` arguments will be required.  For example, the `counties()` function can be used to obtain county boundaries for the entirety of the United States, but also can be used with the `state` argument to return only those counties from a specific state, like New Mexico.  
 
@@ -52,13 +76,16 @@ plot(la_water)
 ```
 
 
-## tigris workflows (July 7)
+## tigris workflows 
 
 
-## Cartographic boundary shapefiles (July 8)
+## Cartographic boundary shapefiles 
 
 
-## Coordinate systems (July 9)
+## Coordinate systems 
 
 
-## Plotting data (July 10)
+## Plotting data 
+
+
+## Interactive viewing of data with mapview

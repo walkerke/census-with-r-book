@@ -15,17 +15,20 @@ In this example, we will create a visualization that illustrates the percent of 
 library(tidycensus)
 library(tidyverse)
 
-metros <- get_acs(geography = "metropolitan statistical area/micropolitan statistical area", 
-        variables = "DP03_0021P", 
-        summary_var = "B01003_001", 
-        survey = "acs1") %>%
+metros <-
+  get_acs(
+    geography = "cbsa",
+    variables = "DP03_0021P",
+    summary_var = "B01003_001",
+    survey = "acs1"
+  ) %>%
   filter(min_rank(desc(summary_est)) < 21)
 
 
 glimpse(metros)
 ```
 
-The returned data frame has 7 columns, as is standard for `get_acs()`, but has 20 rows as specified by the `filter` command.  While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization.  The tidy format returned by `get_acs()` is well-suited for visualization with ggplot2.  
+The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `filter` command.  While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization.  The tidy format returned by `get_acs()` is well-suited for visualization with ggplot2.  
 
 ggplot2 visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function.  Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.  
 
@@ -146,11 +149,13 @@ We can illustrate this type of visualization using data from the 2010 decennial 
 library(tidycensus)
 library(tidyverse)
 
-utah <- get_estimates(geography = "state", 
-                     state = "UT", 
-                     product = "characteristics", 
-                     breakdown = c("SEX", "AGEGROUP"),  
-                     breakdown_labels = TRUE) 
+utah <- get_estimates(
+  geography = "state",
+  state = "UT",
+  product = "characteristics",
+  breakdown = c("SEX", "AGEGROUP"),
+  breakdown_labels = TRUE
+) 
 
 utah
 
@@ -249,8 +254,98 @@ The side-by-side comparative graphics show how the value distributions vary betw
 
 ## Advanced visualization with ggplot2 extensions
 
+Beeswarm plot: 
 
+```{r}
+library(tidycensus)
+library(tidyverse)
+library(ggbeeswarm)
+
+ny_race_income <- get_acs(
+  geography = "tract", 
+  state = "NY",  
+  county = c("New York", "Bronx", "Queens", "Richmond", "Kings"),
+  variables = c(White = "B03002_003", 
+                Black = "B03002_004", 
+                Asian = "B03002_006",
+                Hispanic = "B03002_012"), 
+  summary_var = "B19013_001"
+) %>%
+  group_by(GEOID) %>%
+  filter(estimate == max(estimate, na.rm = TRUE)) %>%
+  ungroup() %>%
+  filter(estimate != 0)
+
+ggplot(ny_race_income, aes(x = variable, y = summary_est, color = summary_est)) +
+  geom_quasirandom(alpha = 0.5) + 
+  coord_flip() + 
+  theme_minimal() + 
+  scale_color_viridis_c(guide = FALSE) + 
+  scale_y_continuous(labels = scales::dollar) + 
+  labs(x = "Largest group in Census tract", 
+       y = "Median household income", 
+       title = "Household income distribution by largest racial/ethnic group", 
+       subtitle = "Census tracts, New York City", 
+       caption = "Data source: 2015-2019 ACS")
+```
+
+## Geo-facets:
+
+```{r}
+library(geofacet)
+
+us_pyramid_data <- get_estimates(
+  geography = "state",
+  product = "characteristics",
+  breakdown = c("SEX", "AGEGROUP"),
+  breakdown_labels = TRUE,
+  year = 2019
+) %>%
+  filter(str_detect(AGEGROUP, "^Age"),
+         SEX != "Both sexes") %>%
+  group_by(NAME) %>%
+  mutate(prop = value / sum(value, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(prop = ifelse(SEX == "Male", -prop, prop))
+
+ggplot(us_pyramid_data, aes(x = AGEGROUP, y = prop, fill = SEX)) + 
+  geom_bar(stat = "identity", width = 1) + 
+  theme_minimal() + 
+  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
+  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
+  scale_fill_manual(values = c("darkred", "navy")) + 
+  coord_flip() + 
+  facet_geo(~NAME, grid = "us_state_with_DC_PR_grid2",
+            label = "code") + 
+  theme(axis.text = element_blank(),
+        strip.text.x = element_text(size = 8)) + 
+  labs(x = "", 
+       y = "", 
+       title = "Population structure by age and sex", 
+       fill = "", 
+       caption = "Data source: US Census Bureau population estimates & tidycensus R package")
+```
 
 ## Interactive visualization with plotly
 
+
+```{r}
+library(plotly)
+
+utah_pyramid <- ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) + 
+  geom_bar(stat = "identity", width = 0.95) + 
+  theme_minimal(base_family = "Roboto") + 
+  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
+  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
+  scale_fill_manual(values = c("darkred", "navy")) + 
+  coord_flip() + 
+  labs(x = "", 
+       y = "2017 Census Bureau population estimate", 
+       title = "Population structure in Utah", 
+       fill = "", 
+       caption = "Data source: US Census Bureau population estimates & tidycensus R package")
+
+ggplotly(utah_pyramid)
+
+```
 
