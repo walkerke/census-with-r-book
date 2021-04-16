@@ -1,5 +1,10 @@
 # Wrangling Census data with tidyverse tools
 
+```{r setup-ch3, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
 One of the most popular frameworks for data analysis in R is the __tidyverse__, a suite of packages designed for integrated data wrangling, visualization, and modeling.  The "tidy" or long-form data returned by default in tidycensus is designed to work well with tidyverse analytic workflows.  This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with tidycensus.  It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
 
 ## Exploring Census data with tidyverse tools
@@ -48,9 +53,74 @@ separate(
 )
 ```
 
+## Summary variables
 
+Data in Census and ACS tables, as in the example above, are frequently comprised of variables that individually constitute sub-categories such as the numbers of households in different household income bands.  One limitation of the approach above, however, is that the data - and the resulting analysis - return estimated counts, which are difficult to compare across geographies.  For example, Hennepin County in Minnesota is the state's most populous county with X residents; in turn, comparing Hennepin's estimates with those of smaller counties in Minnesota may be inappropriate.  
+
+A solution to this issue might involve __normalizing__ the count data by dividing it by the overall population from which the sub-group is derived. Appropriate denominators for ACS tables are frequently found in the tables themselves as variables.  In ACS table B19001, which covers the number of households by income bands, the variable `B19001_001` represents the total number of households in a given enumeration unit, which we removed from our analysis earlier.  Given that this variable is an appropriate denominator for the other variables in the table, it merits its own column to facilitate the calculation of proportions or percentages.  
+
+In tidycensus, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions.  Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.  
+
+With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by county in Texas from the 2012-2016 ACS: 
+
+```{r}
+race_vars <- c(
+  White = "B03002_003",
+  Black = "B03002_004",
+  Native = "B03002_005",
+  Asian = "B03002_006",
+  HIPI = "B03002_007",
+  Hispanic = "B03002_012"
+)
+
+az_race <- get_acs(
+  geography = "county",
+  state = "AZ",
+  variables = race_vars,
+  summary_var = "B03002_001"
+) 
+
+az_race
+
+```
+
+By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2000.  
+
+```{r}
+az_race_percent <- az_race %>%
+  mutate(percent = 100 * (estimate / summary_est)) %>%
+  select(NAME, variable, percent)
+
+az_race_percent
+```
 
 ## Group-wise Census data analysis
+
+## What is the largest group by county?
+
+```{r largest-group}
+largest_group <- az_race_percent %>%
+  group_by(NAME) %>%
+  filter(percent == max(percent))
+```
+
+---
+
+```{r view-largest-group}
+largest_group
+```
+
+---
+
+## What are the median percentages by group?
+
+```{r median-by-group}
+az_race_percent %>%
+  group_by(variable) %>%
+  summarize(median_pct = median(percent))
+```
+
+### Tabulating new groups
 
 For example, variables in ACS table B19001 represents groups of households whose household incomes fall into a variety of categories: less than $10,000/year, between $10,000/year and $19,999/year, and so forth.  Commonly, these categories will be more granular than needed by an analyst.  As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.  
 
@@ -103,39 +173,6 @@ mn3
 ```
 
 Our data now reflect the new estimates by group.  
-
-## Summary variables
-
-Data in Census and ACS tables, as in the example above, are frequently comprised of variables that individually constitute sub-categories such as the numbers of households in different household income bands.  One limitation of the approach above, however, is that the data - and the resulting analysis - return estimated counts, which are difficult to compare across geographies.  For example, Hennepin County in Minnesota is the state's most populous county with X residents; in turn, comparing Hennepin's estimates with those of smaller counties in Minnesota may be inappropriate.  
-
-A solution to this issue might involve __normalizing__ the count data by dividing it by the overall population from which the sub-group is derived. Appropriate denominators for ACS tables are frequently found in the tables themselves as variables.  In ACS table B19001, which covers the number of households by income bands, the variable `B19001_001` represents the total number of households in a given enumeration unit, which we removed from our analysis earlier.  Given that this variable is an appropriate denominator for the other variables in the table, it merits its own column to facilitate the calculation of proportions or percentages.  
-
-In tidycensus, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions.  Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.  
-
-With this information in hand, normalizing data is straightforward.  The following example uses the `summary_var` parameter to consider the percentage of the population that is non-Hispanic white, non-Hispanic black, and Hispanic by county in Texas from the 2012-2016 ACS: 
-
-```{r}
-race_vars <-
-  c(
-    White = "B03002_003",
-    Black = "B03002_004",
-    Native = "B03002_005",
-    Asian = "B03002_006",
-    HIPI = "B03002_007",
-    Hispanic = "B03002_012"
-  )
-
-tx_race <- get_acs(
-  geography = "county",
-  state = "TX",
-  variables = race_vars,
-  summary_var = "B03002_001"
-) %>%
-  mutate(pct = 100 * (estimate / summary_est))
-
-```
-
-By using dplyr's `mutate()` function, we calculate a new column, `pct`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2000.  
 
 ## Comparing ACS estimates over time 
 
@@ -197,12 +234,85 @@ college_by_year
 
 ## Handling margins of error in the American Community Survey with tidycensus
 
+## Margins of error in the ACS
 
-## Using margin of error functions in tidycensus
+* As the American Community Survey is a _survey_, its estimates are subject to a _margin of error_, or MOE
 
+* By default, MOEs are returned at a 90 percent confidence level; e.g., "we are 90 percent sure that the true value falls within a range defined by the estimate plus or minus the margin of error"
+
+---
+
+## Margins of error in tidycensus
+
+* tidycensus always returns the margin of error for ACS estimates when applicable.  
+
+* By default, margins of error are contained in the `moe` column; in wide-form data, MOEs are found in columns that end with `M`
+
+* The `moe_level` parameter controls the confidence level of the MOE; choose `90` (the default), `95`, or `99`
+
+---
+
+```{r}
+library(tidycensus)
+library(tidyverse)
+
+vars <- paste0("B01001_0", c(20:25, 44:49))
+
+salt_lake <- get_acs(
+  geography = "tract",
+  variables = vars,
+  state = "Utah",
+  county = "Salt Lake",
+  year = 2019
+)
+
+example_tract <- salt_lake %>%
+  filter(GEOID == "49035100100")
+
+example_tract %>% select(-NAME)
+```
+
+## Margin of error functions in tidycensus
+
+* tidycensus includes helper functions for calculating derives margins of error based on Census-supplied formulas.  These functions include `moe_sum()`, `moe_product()`, `moe_ratio()`, and `moe_prop()`
+
+Example: 
+
+```{r moe-prop}
+moe_prop(25, 100, 5, 3)
+```
+
+---
 
 ## Calculating group-wise margins of error
 
+```{r summarize-moe}
+salt_lake_grouped <- salt_lake %>%
+  mutate(sex = if_else(str_sub(variable, start = -2) < "26",
+                       "Male", 
+                       "Female")) %>%
+  group_by(GEOID, sex) %>%
+  summarize(sum_est = sum(estimate), 
+            sum_moe = moe_sum(moe, estimate))
+
+```
+
+---
+
+```{r view-summarize-moe}
+salt_lake_grouped
+```
+
+---
+
+## Exercises
+
+* The ACS Data Profile includes a number of pre-computed percentages which can reduce your data wrangling time.  The variable in the 2015-2019 ACS for "percent of the population age 25 and up with a bachelor's degree" is `DP02_0068P`.  For a state of your choosing, use this variable to determine: 
+  - The county with the highest percentage in the state;
+  
+  - The county with the lowest percentage in the state;
+  
+  - The median value for counties in your chosen state
 
 
 

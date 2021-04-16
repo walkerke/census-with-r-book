@@ -1,12 +1,316 @@
 # Working with Census data outside the United States
 
-## Canada
+```{r setup-ch12, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
 
 
-## Mexico
+## The US Census International Data Base
+
+* The US Census Bureau International Database includes both historical data on demographic components (population, fertility, mortality, migration) and population projections to 2100
+
+* idbr: my R package to query data from the IDB API.  Not as smooth as tidycensus, but it works!
+
+* Functions: `idb1()` for the 1-year API and `idb5()` for the 5-year API (a bit of a misnomer, as it includes a wide range of yearly demographic variables)
+
+---
+
+## International data with idbr
+
+* Example: how has life expectancy at birth changed in Southeast Asia?
+
+```{r idbr-1, eval = FALSE}
+library(idbr)
+library(tidyverse)
+
+# Not necessary if you have the development version of idbr
+idb_api_key(Sys.getenv("CENSUS_API_KEY"))
+
+se_asia_lex <- idb5(
+  country = c("Laos", "Vietnam", "Cambodia", "Thailand"),
+  year = 1995:2021,
+  variable = "E0",
+  country_name = TRUE
+)
+
+ggplot(se_asia_lex, aes(x = time, y = E0, color = NAME)) + 
+  theme_minimal(base_size = 18) + 
+  geom_line(size = 2) + 
+  labs(title = "Change in life expectancy, 1995-2021",
+       y = "Life expectancy at birth",
+       x = "Year")
+```
+
+---
+
+<img src=img/lex_plot.png style="width: 850px"> 
+
+---
+
+## International data with idbr
 
 
-## United Kingdom
+* Example: what 10 countries have the highest total fertility rates in 2021?
+
+```{r idbr-2, eval = FALSE}
+top_tfr <- idb5(
+  country = "all",
+  year = 2021,
+  variable = "TFR",
+  country_name = TRUE
+) %>%
+  slice_max(TFR, n = 10)
+```
 
 
-## Brazil
+```{r show-tfr, eval = FALSE}
+top_tfr
+```
+
+```{r bypass-idbr-call, echo = FALSE}
+structure(list(TFR = c(6.9097, 5.8955, 5.7, 5.63, 5.57, 5.4716, 
+5.448, 5.4267, 5.4119, 5.1034), NAME = c("Niger", "Angola", "Congo (Kinshasa)", 
+"Mali", "Chad", "Benin", "Uganda", "South Sudan", "Somalia", 
+"Burundi"), FIPS = c("NG", "AO", "CG", "ML", "CD", "BN", "UG", 
+"OD", "SO", "BY"), time = c(2021, 2021, 2021, 2021, 2021, 2021, 
+2021, 2021, 2021, 2021)), row.names = c(NA, -10L), class = c("tbl_df", 
+"tbl", "data.frame"))
+```
+
+
+
+---
+
+## International population pyramids
+
+<img src=img/nigeria_pyramid-1.gif style="width: 500px">
+
+.footnote[See more at [Ari Lamstein's blog](https://arilamstein.com/blog/2016/06/06/idbr-access-us-census-bureau-international-data-base-r/)]
+
+---
+
+## Canada: cancensus
+
+
+<img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px">
+
+
+* [The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
+
+```{r cancensus-1}
+library(cancensus)
+library(tidyverse)
+library(sf)
+options(cancensus.api_key = Sys.getenv("CANCENSUS_API_KEY"))
+
+# View(list_census_vectors("CA16"))
+
+```
+
+
+---
+
+## Canada: cancensus
+
+* cancensus allows for different datasets, regions, and geographic levels to be queried 
+
+* Simple feature geometry is available if requested 
+
+```{r montreal-english, eval = FALSE}
+montreal_english <- get_census(
+  dataset = "CA16",
+  regions = list(CMA = "24462"),
+  vectors = "v_CA16_1364",
+  level = "CT",
+  geo_format = "sf",
+  labels = "short"
+) 
+```
+
+---
+
+## Mapping Canadian Census data
+
+```{r map-montreal-english, eval = FALSE}
+tmap_mode("view")
+
+montreal_pct <- montreal_english %>%
+  mutate(pct_english = 100 * (v_CA16_1364 / Population))
+
+tm_shape(montreal_pct) + 
+  tm_polygons(col = "pct_english", alpha = 0.5, palette = "viridis",
+              style = "jenks", n = 7, title = "Percent speaking<br/>English at home")
+```
+
+---
+
+<img src=img/montreal.png style="width: 800px">
+
+---
+
+## Mexico: mxmaps/inegiR
+
+* Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) and [inegiR](https://github.com/Eflores89/inegiR) R packages allow for geographic analysis and visualization of Mexican Census data
+
+* Get an API token at http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx
+
+---
+
+## Mexico: mxmaps/inegiR
+
+```{r mxmaps, eval = FALSE}
+# remotes::install_github("diegovalle/mxmaps")
+library(mxmaps)
+token_inegi <- Sys.getenv("INEGI_API_KEY")
+
+state_regions <- df_mxstate_2020$region
+choropleth_inegi(token_inegi, state_regions, 
+                 indicator = "3104003001",
+                 legend = "%",
+                 title = "Percentage born outside\nstate of residence") + 
+  theme_void(base_size = 18)
+```
+
+
+---
+
+<img src=img/mx_map.png style="width: 850px">
+
+---
+
+
+```{r inegir}
+library(inegiR)
+token_inegi <- Sys.getenv("INEGI_API_KEY")
+state_regions <- mxmaps::df_mxstate_2020$region
+
+pct_migrants <- map_df(state_regions, ~{
+  inegi_series(series_id = "3104003001", 
+               token = token_inegi, 
+               geography = .x,
+               database = "BISE") %>%
+    mutate(state_code = .x)
+})
+  
+```
+
+
+
+
+```{r show-inegir}
+head(pct_migrants)
+```
+
+
+
+---
+
+## Brazil: geobr
+
+
+<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" style="width: 400px">
+
+
+* Package from [IPEA](https://www.ipea.gov.br/portal/) that helps you load shapes for many Brazilian geographies, including Census boundaries
+
+```{r geobr, results = "hide", eval = FALSE}
+library(geobr)
+
+rj_tracts <- read_census_tract(code_tract = 3304557)
+```
+
+
+
+---
+
+```r
+mapview::mapview(rj_tracts)
+```
+<img src=img/rj_tracts.png style="width: 800px">
+
+---
+
+## Kenya: RKenyaCensus
+
+
+* The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) by [Shel Kariuki](https://shelkariuki.netlify.app/) makes indicators from the 2019 Kenya Population and Housing Census
+
+* Tables install directly with the package and can be accessed by name
+
+
+
+```{r kenya-1}
+# remotes::install_github("Shelmith-Kariuki/rKenyaCensus")
+library(rKenyaCensus)
+library(tidyverse)
+
+religion <- V4_T2.30 %>%
+  filter(County != "KENYA") %>%
+  mutate(county_title = str_to_title(County), 
+         prop_islam = Islam / Total)
+```
+
+
+
+
+---
+
+## Visualizing Kenyan Census data
+
+```{r plot-kenya, eval = FALSE}
+ggplot(religion, aes(x = prop_islam, y = reorder(county_title, prop_islam))) + 
+  geom_col(fill = "navy", alpha = 0.6) + 
+  theme_minimal(base_size = 12.5) + 
+  scale_x_continuous(labels = scales::percent) + 
+  labs(title = "Percent Muslim by County in Kenya",
+       subtitle = "2019 Kenyan Census", 
+       x = "",
+       y = "",
+       caption = "Data source: rKenyaCensus R package")
+```
+
+---
+
+<img src=img/kenya_plot.png style="width: 900px">
+
+---
+
+
+## Mapping Kenyan Census data
+
+* The rKenyaCensus package includes county boundaries to facilitate mapping of the various indicators in the Census
+
+```{r map-kenya, eval = FALSE}
+kenya_islam_map <- KenyaCounties_SHP %>%
+  sf::st_as_sf() %>%
+  mutate(County = str_remove(County, " CITY")) %>%
+  left_join(religion, by = "County") %>%
+  mutate(pct_islam = 100 * prop_islam)
+
+tm_shape(kenya_islam_map) + 
+  tm_polygons(col = "pct_islam",
+              palette = "viridis", 
+              style = "jenks",
+              n = 7, 
+              title = "% Muslim",
+              alpha = 0.6)
+```
+
+
+---
+
+<img src=img/kenya_map.png style="width: 700px">
+
+---
+
+## Other data resources
+
+* Many other international data resources in R exist, e.g. [nomisr](https://github.com/ropensci/nomisr) for UK data and [afrimapr](https://afrimapr.github.io/afrimapr.website/) for Africa-wide datasets
+
+* The [IPUMS International project](https://international.ipums.org/international/) has microdata for over 100 countries; use IPUMS data with the [ipumsr R package](https://github.com/mnpopcenter/ipumsr)
+
+---
+
+## Part 3 exercises
+
+* Choose a country from the examples above and explore further.  Try making a map or a chart for a new variable for a country of your choice!  

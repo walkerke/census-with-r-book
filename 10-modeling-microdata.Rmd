@@ -1,1 +1,334 @@
-# Modeling Census microdata
+# Analyzing Census microdata
+
+```{r setup-ch10, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
+A major benefit of using the individual-level microdata returned by `get_pums()` is the ability to create detailed, granular estimates of ACS data.  While the aggregate ACS data available with `get_acs()` includes tens of thousands of indicators to choose from, researchers and analysts still may be interested in cross-tabulations not available in the aggregate files.  Additionally, microdata helps researchers design statistical models to assess demographic relationships at the individual level in a way not possible with aggregate data.  
+
+Analysts must pay careful attention to the structure of the PUMS datasets in order to produce accurate estimates and handle errors appropriately.  PUMS datasets are _weighted_ samples, in which each person or household is not considered unique or individual, but rather representative of multiple other persons or households.  In turn, analyses and tabulations using PUMS data must use appropriate tools for handling weighting variables to accurately produce estimates.  Fortunately, tidyverse tools like dplyr, covered elsewhere in this book, are excellent for producing these tabulations and handling survey weights
+
+As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error.  This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific.  Fortunately, the US Census Bureau provides _replicate weights_ to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample.  While working with replicate weights has traditionally been cumbersome for analysts, tidycensus with help from the [survey](https://cran.r-project.org/web/packages/survey/survey.pdf) and [srvyr](https://github.com/gergness/srvyr) R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.  
+
+## PUMS data and the tidyverse
+
+As discussed in Chapter 9, `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights.  These weights can loosely be interpreted as the number of households - or persons - represented by each individual row in the PUMS data.  Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data.  Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter 3.  
+
+Let's get some sample PUMS data from the 2015-2019 ACS for Mississippi.  We'll get information on the PUMA geography, along with sex, age (`AGEP`), and educational attainment (`SCHL`).  
+
+```{r ms-pums, results = 'hide'}
+library(tidycensus)
+library(tidyverse)
+
+ms_pums <- get_pums(
+  variables = c("PUMA", "SEX", "AGEP", "SCHL"),
+  state = "MS",
+  survey = "acs5",
+  year = 2019,
+  recode = TRUE
+)
+```
+
+Let's take a quick look at our data: 
+
+```{r glimpse_ms_pums}
+glimpse(ms_pums)
+```
+
+As we learned in Chapter 9, the number of people in Mississippi can be tabulated by summing over the person-weight column: 
+
+```{r ms-sum}
+sum(ms_pums$PWGTP)
+```
+
+We can perform similar calculations with tidyverse tools.  The `count()` function in the dplyr package performs a simple tabulation of your data.  The optional `wt` argument in `count()` allows you to specify a weight column, which in this case will be our person-weight.  
+
+```{r ms-count}
+ms_pums %>% count(wt = PWGTP)
+```
+
+`count()` has the additional benefit, however, of allowing for the specification of one our more columns that will be grouped and tabulated.  For example, we could tabulate data by unique values of age and sex in Mississippi: 
+
+```{r ms-age-count}
+ms_pums %>%
+  count(SEX_label, AGEP, wt = PWGTP) 
+```
+
+We can also perform more custom analyses, such as tabulating the number of people over age 65 by sex in Mississippi.  This involves specifying a filter condition to retain rows for records with an age of 65 and up, then tabulating by sex.  
+
+```{r}
+ms_pums %>%
+  filter(AGEP >= 65) %>%
+  count(SEX, wt = PWGTP)
+```
+
+We can then use `get_acs()` to check our answer: 
+
+```{r}
+get_acs(geography = "state",
+        state = "MS",
+        variables = c("DP05_0030", "DP05_0031"))
+```
+
+
+We notice that our tabulations are very close to the ACS estimates available in `get_acs()`, and well within the margin of error.  When we are doing tabulations with microdata, it is important to remember that we are tabulating data based on a smaller subsample of information than is available to the aggregate ACS estimates.  In turn, as the US Census Bureau reminds us:  
+
+> Because PUMS data consist of a subset of the full ACS sample, tabulations from the ACS PUMS will not match those from published tables of ACS data (US Census Bureau 2021).  
+
+
+
+
+
+
+## Group-wise data tabulation
+
+```{r ms-summary}
+ms_pums_summary <- ms_pums %>% 
+  mutate(ba_above = SCHL %in% c("21", "22", "23", "24")) %>% 
+  group_by(PUMA, SEX_label) %>% 
+  summarize(
+    total_pop = sum(PWGTP),
+    mean_age = weighted.mean(AGEP, PWGTP),
+    ba_above = sum(PWGTP[ba_above == TRUE & AGEP >= 25]),
+    ba_above_pct = 100 * (ba_above / sum(PWGTP[AGEP >= 25]))
+  )
+```
+
+
+
+```{r show-ms-summary}
+ms_pums_summary
+```
+
+
+
+
+## Advanced example: mapping PUMS data
+
+* Use the tigris package to obtain PUMA geometries and join data based on a common identifier for mapping
+
+```{r join-ms-data}
+library(tigris)
+library(tmap)
+options(tigris_use_cache = TRUE)
+
+ms_pumas <- pumas("MS", cb = TRUE)
+
+joined_pumas <- ms_pumas %>%
+  left_join(ms_pums_summary, by = c("PUMACE10" = "PUMA")) %>%
+  filter(SEX_label == "Female")
+```
+
+
+
+
+```{r ms-pums-map}
+ms_map <- tm_shape(joined_pumas) + 
+  tm_polygons(col = "ba_above_pct", 
+              palette = "Greens",
+              title = "% of women with\ncollege degree") + 
+  tm_layout(legend.outside = TRUE,
+            legend.outside.position = "right")
+```
+
+
+
+```{r show-ms-map}
+ms_map
+```
+
+
+
+## Calculating errors around tabulated estimates
+
+
+## Survey design and the ACS PUMS
+
+* As we covered in the first workshop, the American Community Survey is based on a _sample_ of the US population and in turn subject to sampling error
+
+* The complex sample design of the ACS further requires appropriate specification when fitting statistical models using PUMS data
+
+* tidycensus, with help from the survey/srvyr packages, includes tools to assist with these tasks
+
+
+## Getting replicate weights
+
+
+* The Census Bureau publishes 80 "replicate weights" that can be used to calculate standard errors around tabulated estimates from microdata
+
+* The `rep_weights` parameter in `get_pums()` makes it easier for users to retrieve all of these variables without having to request all 80 directly.  Choose `rep_weights = "person"` for person-weights or `"household"` for household weights
+
+```{r rep-weights, eval = FALSE}
+ms_pums_replicate <- get_pums(
+  variables = c("PUMA", "SEX", "AGEP", "SCHL"),
+  state = "MS",
+  survey = "acs5",
+  year = 2019,
+  recode = TRUE,
+  rep_weights = "person"
+)
+```
+
+
+```{r read-rep-weights, echo = FALSE}
+ms_pums_replicate <- read_rds("~/Dropbox/kwalkerdata/Umich/umich-workshop/microdata/data/ms_pums_replicate.rds")
+```
+
+```{r show-rep-weights}
+ms_pums_replicate
+```
+
+
+
+## Creating a `survey` object
+
+
+* The __survey__ package is the standard for handling complex survey samples in R
+
+* The more recent __srvyr__ package wraps __survey__ to allow the use of tidyverse functions on survey objects
+
+* tidycensus includes a function, `to_survey()`, to convert ACS microdata to survey/srvyr objects
+
+
+```{r svy-object}
+library(survey)
+library(srvyr)
+
+ms_pums_svy <- ms_pums_replicate %>%
+  to_survey(type = "person", 
+            design = "rep_weights")
+
+class(ms_pums_svy)
+```
+
+
+
+## Calculating estimates and errors with __srvyr__
+
+* srvyr's `survey_*()` family of functions automatically calculates standard errors around tabulated estimates for you 
+
+```{r svy-count}
+ms_pums_svy %>% 
+  survey_count(PUMA, SEX_label)
+```
+
+
+
+## Complex tabulations with __srvyr__
+
+```{r svy-summary}
+ms_svy_summary <- ms_pums_svy %>% 
+  mutate(ba_above = SCHL %in% c("21", "22", "23", "24")) %>% 
+  filter(AGEP >= 25) %>% 
+  group_by(PUMA, SEX_label) %>% 
+  summarize(
+    age_25_up = survey_total(vartype = "se"),
+    ba_above_n = survey_total(ba_above, vartype = "se"),
+    ba_above_prop = survey_mean(ba_above, vartype = "se")
+    )
+
+glimpse(ms_svy_summary)
+```
+
+
+
+## Converting standard errors to MOEs
+
+* To convert standard errors to the familiar margins of error at a 90 percent confidence level, multiply them by 1.645
+
+```{r svy-plot, eval = FALSE}
+ms_svy_summary_moe <- ms_svy_summary %>%
+  mutate(ba_above_prop_moe = ba_above_prop_se * 1.645) %>%
+  filter(SEX_label == "Female")
+
+ggplot(ms_svy_summary_moe, aes(x = ba_above_prop, y = reorder(PUMA, ba_above_prop))) +
+  geom_errorbarh(aes(xmin = ba_above_prop - ba_above_prop_moe, 
+                     xmax = ba_above_prop + ba_above_prop_moe)) +
+  geom_point(size = 3, color = "navy") +
+  labs(title = "Percent of women age 25+ with 4-year college degree",
+       subtitle = "PUMAs in Missisippi.  Error bars represent margin of error at 90 percent confidence level.",
+       x = "2015-2019 ACS estimate (from PUMS data)",
+       y = "") +
+  scale_x_continuous(labels = scales::percent) + 
+  theme_grey(base_size = 14)
+```
+
+
+<img src=img/errorbars.png style="width: 800px">
+
+
+## Advanced example: modeling with PUMS data
+
+
+* Question (adapted from the tidycensus docs by Matt Herman): what is the relationship between wages/class of worker and commute times in Rhode Island?
+
+```{r ri-data, results = 'hide'}
+ri_pums_to_model <- get_pums(
+  variables = c("PUMA", "WAGP", "JWMNP", "JWTRNS", "COW", "ESR"),
+  state = "RI",
+  survey = "acs5",
+  year = 2019,
+  rep_weights = "person"
+  )
+```
+
+
+
+## Data preparation
+
+
+
+
+* For analysis of subpopulations, `srvyr::filter()` works like `survey::subset()` for appropriate standard error estimation
+
+
+```{r ri-filter}
+ri_model_sd <- ri_pums_to_model %>% 
+  mutate(
+    emp_type = case_when(
+      COW %in% c("1", "2")      ~ "private",
+      COW %in% c("3", "4", "5") ~ "public",
+      TRUE                      ~ "self"
+      )
+    ) %>%
+  to_survey() %>%
+  filter(
+    ESR == 1,   # civilian employed
+    JWTRNS != 11, # does not work at home
+    WAGP > 0,   # earned wages last year
+    JWMNP > 0   # commute more than zero min
+  ) 
+```
+
+
+
+
+
+## Fitting a model
+
+* The family of modeling functions in the __survey__ package should be used for modeling data in survey design objects, e.g. `survey::svyglm()`
+
+```{r ri-model}
+model <- survey::svyglm(log(JWMNP) ~ log(WAGP) + emp_type + PUMA, 
+                        design = ri_model_sd)
+```
+
+
+
+
+## Evaluating the model
+
+```{r ri-model-summary}
+summary(model)
+```
+
+
+
+## Part 2 exercises
+
+* Using the dataset you acquired from the exercises in Part 1 (or the example Wyoming dataset), tabulate a group-wise summary using the PWGTP column and dplyr functions as you've learned in this section.  
+
+* Advanced follow-up: using `get_acs()`, attempt to acquire the same aggregated data from the ACS.  Compare your tabulated estimate with the ACS estimate.
+
+* Second advanced follow-up: request the same data as before, but this time with replicate weights.  Calculate the margin of error as you've learned in this section - and if you have time, compare with the posted ACS margin of error!  

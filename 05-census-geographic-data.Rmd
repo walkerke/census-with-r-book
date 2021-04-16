@@ -1,6 +1,7 @@
 # Census geographic data and applications in R
 
-```{r ch5-setup, include = FALSE}
+```{r setup-ch5, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 options(tigris_use_cache = TRUE)
 ```
 

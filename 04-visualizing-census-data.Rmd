@@ -1,5 +1,10 @@
 # Exploring US Census data with visualization
 
+```{r setup-ch4, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
 The core visualization package within the __tidyverse__ suite of packages is __ggplot2__ (Wickham 2016).  Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 25,000 downloads per day in March of 2019 from the RStudio CRAN mirror.  ggplot2 allows R users to visualize data using a _layered grammar of graphics_ approach, in which plot objects are initialized upon which the R user layers plot elements.  
 
 ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the __tidycensus__ package.  It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).  
@@ -11,7 +16,6 @@ This chapter includes several examples of how R users can visualize data from th
 In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States.  The data come from the 2017 1-year American Community Survey, variable `DP03_0021P`.  To determine this information, we can use __tidyverse__ tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.  
 
 ```{r}
-
 library(tidycensus)
 library(tidyverse)
 
@@ -154,7 +158,8 @@ utah <- get_estimates(
   state = "UT",
   product = "characteristics",
   breakdown = c("SEX", "AGEGROUP"),
-  breakdown_labels = TRUE
+  breakdown_labels = TRUE,
+  year = 2019
 ) 
 
 utah
@@ -193,7 +198,7 @@ ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) +
   scale_fill_manual(values = c("darkred", "navy")) + 
   coord_flip() + 
   labs(x = "", 
-       y = "2017 Census Bureau population estimate", 
+       y = "2019 Census Bureau population estimate", 
        title = "Population structure in Utah", 
        fill = "", 
        caption = "Data source: US Census Bureau population estimates & tidycensus R package")
@@ -325,6 +330,7 @@ ggplot(us_pyramid_data, aes(x = AGEGROUP, y = prop, fill = SEX)) +
        fill = "", 
        caption = "Data source: US Census Bureau population estimates & tidycensus R package")
 ```
+
 
 ## Interactive visualization with plotly
 

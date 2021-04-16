@@ -1,1 +1,270 @@
 # Introduction to Census microdata
+
+```{r setup-ch9, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
+The previous two sections of this book cover aggregate-level analysis of US Census Bureau data. However, such analyses are limited to the pre-tabulated estimates provided by the Census Bureau.  While these estimates are voluminous, they may not include the level of detail required by researchers, and they are limited to analyses appropriate for aggregate-level data.  In turn, many researchers turn to Census _microdata_, which are anonymized individual-level Census records, to help answer demographic questions.  In 2020, tidycensus added support for American Community Survey microdata along with a series of tools to assist with analysis of these datasets.  The next two chapters provide an overview of this functionality in tidycensus and help users get started analyzing and modeling ACS microdata appropriately.  
+
+## What is "microdata?"  
+
+__Microdata__ refer to individual-level data made available to researchers.  In many cases, microdata reflect 
+
+
+* [The ACS Public Use Microdata Series (PUMS)](https://www.census.gov/programs-surveys/acs/microdata.html) allows for detailed cross-tabulations not available in aggregated data
+
+* The 1-year PUMS covers about 1 percent of the US population; the 5-year PUMS covers about 5 percent (so, not the full ACS)
+
+* Data downloads available [in bulk from the Census FTP server](https://www2.census.gov/programs-surveys/acs/data/pums/2019/5-Year/) or [from data.census.gov's MDAT tool](https://data.census.gov/mdat/#/search?ds=ACSPUMS5Y2019)
+
+
+
+
+## Microdata resources: IPUMS & ipumsr
+
+<img src=img/ipums.png style="width: 800px">
+
+
+
+## Microdata and the Census API
+
+<img src=img/micro_api.png style="width: 800px">
+
+---
+class: middle, center, inverse
+
+## Using microdata in tidycensus
+
+---
+
+## Setting up tidycensus
+
+* To use tidycensus, you will need a Census API key.  Visit https://api.census.gov/data/key_signup.html to request a key, then activate the key from the link in your email.  
+
+* Once activated, use the `census_api_key()` function to set your key as an environment variable
+
+```{r api-key, eval = FALSE}
+library(tidycensus)
+
+census_api_key("YOUR KEY GOES HERE", install = TRUE)
+```
+
+
+---
+
+## Basic usage of `get_pums()`
+
+
+
+* `get_pums()` requires specifying one or more variables and the state for which you'd like to request data.  `state = 'all'` _can_ get data for the entire USA, but it takes a while!
+
+* The function defaults to the 5-year ACS with `survey = "acs5"`; 1-year ACS data is available with `survey = "acs1"`. 
+
+* The default year is 2019; data are available back to 2006 (1-year ACS) and 2005-2009 (5-year ACS)
+
+
+
+```{r first-call, results = 'hide'}
+library(tidycensus)
+
+wy_pums <- get_pums(
+  variables = c("SEX", "AGEP", "SCHL"),
+  state = "WY",
+  survey = "acs1",
+  year = 2019
+)
+```
+
+
+
+---
+
+```{r}
+wy_pums
+```
+
+---
+
+## Understanding default data from `get_pums()`
+
+`get_pums()` returns some technical variables by default without the user needing to request them specifically.  These include: 
+
+* `SERIALNO`: a serial number that uniquely identifies households in the sample; 
+
+* `SPORDER`: the order of the person in the household; when combined with `SERIALNO`, uniquely identifies a person;
+
+* `WGTP`: the household weight;
+
+* `PWGTP`: the person weight
+
+---
+
+## Weights and ACS microdata
+
+* Given that PUMS data are a _sample_ of the US population, the weights columns must be used for analysis
+
+```{r tabulate}
+library(tidyverse)
+
+wy_age_50 <- filter(wy_pums, AGEP == 50)
+
+print(sum(wy_pums$PWGTP))
+print(sum(wy_age_50$PWGTP))
+```
+
+
+
+## Working with PUMS variables
+
+---
+
+## Variables available in the ACS PUMS
+
+```{r view, eval = FALSE}
+View(pums_variables)
+```
+
+* The `pums_variables` dataset is your one-stop shop for browsing variables in the ACS PUMS
+
+* It is a long-form dataset that organizes specific _value codes_ by variable so you know what you can get.  You'll use information in the `var_code` column to fetch variables, but pay attention to the `var_label`, `val_code`, `val_label`, and `data_type` columns
+
+---
+
+## Recoding PUMS variables
+
+
+
+* The `recode = TRUE` argument in `get_pums()` appends recoded columns to your returned dataset based on information available in `pums_variables`
+
+
+```{r recode, results = 'hide'}
+wy_pums_recoded <- get_pums(
+  variables = c("SEX", "AGEP", "SCHL"),
+  state = "WY",
+  survey = "acs1",
+  year = 2019,
+  recode = TRUE
+)
+```
+
+
+
+---
+
+```{r show-recode}
+wy_pums_recoded
+```
+
+---
+
+## Using variables filters
+
+
+
+* PUMS datasets - especially from the 5-year ACS - can get quite large.  The `variables_filter` argument can return a subset of data from the API, reducing long download times
+
+* This feature is currently only available in the development (GitHub) version of tidycensus
+
+
+
+```{r filter, results = 'hide'}
+wy_pums_filtered <- get_pums(
+  variables = c("SEX", "AGEP", "SCHL"),
+  state = "WY",
+  survey = "acs5",
+  variables_filter = list(
+    SEX = 2,
+    SCHL = 16:20
+  ),
+  year = 2019,
+  recode = TRUE
+)
+```
+
+
+
+
+---
+
+```{r show-filter}
+wy_pums_filtered
+```
+
+
+## Public Use Microdata Areas (PUMAs)
+
+---
+
+## What is a PUMA?
+
+
+* Public Use Microdata Areas (PUMAs) are the smallest available geographies at which records are identifiable in the PUMS datasets
+
+* PUMAs are redrawn with each decennial US Census, and typically are home to 100,000-200,000 people
+
+* In large cities, a PUMA will represent a collection of nearby neighborhoods; in rural areas, it might represent several counties across a large area of a state
+
+
+
+```{r plot-pumas}
+library(tigris)
+options(tigris_use_cache = TRUE)
+
+wy_pumas <- pumas(state = "WY", cb = TRUE)
+
+plot(wy_pumas$geometry)
+```
+
+
+
+---
+
+## Working with PUMAs in PUMS data
+
+* To get PUMA information in your output data, use the variable code `PUMA`
+
+```{r get-pumas, results = 'hide'}
+wy_age_by_puma <- get_pums(
+  variables = c("PUMA", "AGEP"),
+  state = "WY",
+  survey = "acs5"
+)
+```
+
+---
+
+```{r show-pumas}
+wy_age_by_puma
+```
+
+
+---
+
+## Custom queries by PUMA
+
+* The `puma` argument in `get_pums()` can be used to obtain data for a specific PUMA or multiple PUMAs - again reducing long download times if specific geographies are required
+
+```{r subset-puma, results = 'hide'}
+wy_puma_subset <- get_pums(
+  variables = "AGEP",
+  state = "WY",
+  survey = "acs5",
+  puma = "00500"
+)
+```
+
+---
+
+```{r show-subset-puma}
+wy_puma_subset
+```
+
+
+---
+
+## Part 1 exercises
+
+* Try requesting PUMS data using `get_pums()` yourselves, but for a state other than Wyoming.  
+
+* Use the `pums_variables` dataset to browse the available variables in the PUMS.  Create a custom query with `get_pums()` to request data for variables other than those we've used in the above examples.  

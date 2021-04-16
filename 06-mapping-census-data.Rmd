@@ -1,7 +1,8 @@
 # Mapping Census data with R
 
-```{r ch6-setup, include = FALSE}
-knitr::opts_chunk$set(cache = FALSE)
+```{r setup-ch6, include = FALSE}
+options(tigris_use_cache = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 
@@ -138,6 +139,7 @@ We get a default view of Census tracts in Hennepin County, Minnesota.  Alternati
 tm_shape(hennepin_asian) + 
   tm_fill(col = "estimate")
 ```
+
 You'll notice that tmap uses a classed color scheme rather than the continuous palette used by ggplot2, by default.  This involves the identification of "classes" in the distribution of data values and mapping a color from a color palette to data values that belong to each class.  The default classification scheme used by `tm_fill()` is `"pretty"`, which identifies clean-looking intervals in the data based on the data range.  In this example, data classes change every 10 percent.  However, this doesn't quite work for our data given the distribution of data values.  Let's take a look at our data distribution to understand why: 
 
 ```{r}
@@ -192,7 +194,7 @@ hennepin_race2 <- get_acs(
 )
 ```
 
-```{r}
+```{r, eval = FALSE}
 groups <- unique(hennepin_race2$variable)
 
 hennepin_dots <- map(groups, ~{
@@ -212,7 +214,7 @@ hennepin_dots <- map(groups, ~{
   slice_sample(prop = 1)
 ```
 
-```{r}
+```{r, eval = FALSE}
 tm_shape(hennepin_dots) +
   tm_dots(col = "group", palette = "Set1",
           size = 0.005)
@@ -252,13 +254,13 @@ boston_zctas <- zctas(cb = TRUE,
                       starts_with = c("021", "022", "024"),
                       year = 2018)
 
-mapview(boston_zctas)
 ```
 The ZCTA prefixes `021`, `022`, and `024` cover much of the Boston metropolitan area; "holes" in the region represent areas like Boston Common which are not covered by ZCTAs.  Let's take a quick look at its attributes: 
 
 ```{r}
 glimpse(boston_zctas)
 ```
+
 Either the `ZCTA4CE10` column or the `GEOID10` column can be matched to the appropriate zip code information in the IRS dataset for visualization.  This is computed with the `left_join()` function from dplyr.  Given that the ZCTA dataset is returned as a simple features object, the sf package includes a variety of methods to allow for processing of spatial datasets using tidyverse functions.  
 
 The code below joins the IRS data to the spatial dataset and computes a new column representing the percentage of returns with self-employment income.  Note the `by` argument in `left_join()` that specifies the columns to be used on the left and right hand sides of the join.  
@@ -306,16 +308,17 @@ dallas_bachelors <- get_acs(
   geometry = TRUE
 )
 ```
+
 Mapview version:
 
-```{r}
+```r
 library(mapview)
 mapview(dallas_bachelors, zcol = "estimate")
 ```
 
 Interactive viewing with tmap: 
 
-```{r}
+```r
 library(tmap)
 tmap_mode("view")
 
@@ -327,7 +330,7 @@ tm_shape(dallas_bachelors) +
 
 Leaflet version:
 
-```{r}
+```{r, eval = FALSE}
 library(leaflet)
 
 pal <- colorNumeric(
@@ -342,9 +345,9 @@ pal(c(10, 20, 30, 40, 50))
 
 Make the map:
 
-```{r}
+```{r, eval = FALSE}
 leaflet() %>%
-  addTiles() %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
   addPolygons(data = dallas_bachelors,
               color = ~pal(estimate),
               weight = 0.5,
@@ -438,7 +441,7 @@ shinyApp(ui = ui, server = server)
 
 ## Visualizing thousands of Census shapes with mapdeck
 
-```{r}
+```{r, eval = FALSE}
 library(tidycensus)
 library(mapdeck)
 library(sf)

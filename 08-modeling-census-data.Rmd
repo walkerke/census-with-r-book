@@ -1,8 +1,10 @@
 # Modeling US Census data
 
-```{r setup-ch8}
-
+```{r setup-ch7, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(tigris_use_cache = TRUE)
 ```
+
 
 The previous chapter included a range of examples illustrating methods for analyzing and exploring spatial datasets.  Census data can also be used to derive models for explaining patterns that occur across regions or within cities.  These models draw from concepts introduced in prior chapters, but can also be used as part of explanatory frameworks or within broader analytic pipelines for statistical inference or machine learning.  This chapter introduces a series of such frameworks.  The first section looks at _demographic indices_ such as segregation, diversity, and centralization, which are widely used across the social sciences to explain demographic patterns.  The second section explores topics in statistical modeling, including methods for _spatial regression_ that take into account the spatial autocorrelation inherent in most Census variables.  The third and final section explores  concepts such as _classification_, _clustering_, and _regionalization_ which are common in both unsupervised and supervised machine learning.  Examples will illustrate how to use Census data to generate neighborhood typologies, which are widely used for business and marketing applications, and how to generate spatially coherent sales territories from Census data with regionalization.  
 

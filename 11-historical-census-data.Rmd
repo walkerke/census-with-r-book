@@ -1,1 +1,5 @@
 # Historical Census data analysis with NHGIS
+
+```{r setup-ch11, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```

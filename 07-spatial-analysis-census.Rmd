@@ -1,9 +1,10 @@
 # Spatial analysis with US Census data
 
 ```{r ch7-setup, include = FALSE}
-knitr::opts_chunk$set(cache = FALSE)
+knitr::opts_chunk$set(cache = FALSE, warning = FALSE, message = FALSE)
 library(mapboxapi)
 times <- readr::read_rds("data/ia_trauma_times.rds")
+options(tigris_use_cache = TRUE)
 ```
 
 A very common use-case of spatial data from the US Census Bureau is *spatial analysis*. Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset. Principles in spatial analysis are closely related to the field of *geographic information science*, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.
@@ -289,7 +290,7 @@ iso10min <- mb_isochrone(iowa_methodist, time = 10)
 
 We can visualize the comparative extents of these two methods in Des Moines:
 
-```{r}
+```{r, eval = FALSE}
 hospital_icon <- makeAwesomeIcon(icon = "ios-medical", 
                                  markerColor = "red",
                                  library = "ion")
@@ -556,6 +557,7 @@ moran.test(dfw_tracts$estimate, weights)
 The Moran's I statistic of 0.74 is large and positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset. In a practical sense, this means that Census tracts with highly-educated populations tend to be located near one another, and Census tracts with low levels of educational attainment also tend to be found in the same areas.
 
 We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic, which is computed as follows:
+
 
 $$
 G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j

@@ -4,7 +4,7 @@ author: "Kyle E. Walker"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 knit: bookdown::render_book
-output: bookdown::gitbook
+output: bookdown::bs4_book
 documentclass: book
 bibliography: [book.bib]
 biblio-style: apalike
@@ -13,7 +13,7 @@ github-repo: walkerke/census-with-r-book
 description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data Census data with the R programming language."
 ---
 
-# Overview
+# Overview {-}
 
 This book is an overview of how practitioners can work with Census data around the world using the R programming language.  The book will focus on data acquisition and wrangling as well as data analysis and modeling of aggregate and individual-level data.  It will include a focus on US decennial Census and American Community Survey data along with a selection of other countries around the world.  It is designed to be useful for both beginners and advanced users of both R and Census data.  Beginners will find Part 1 more useful, as it covers the basics of R and Censuses and how to work with them together.  Advanced readers will find Parts 2 and 3 more useful, as these parts cover applications from exploratory mapping and visualization to advanced data modeling.  
 
