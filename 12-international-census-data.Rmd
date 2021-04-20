@@ -2,22 +2,61 @@
 
 ```{r setup-ch12, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(idbr)
 ```
 
+Although the methods presented in this book are generalizable, the examples given in the book to this point have focused on the United States. Readers of this book are most certainly not limited to the United States in their projects, and will be interested in how to apply the methods presented to examples around the world. International Census & demographic data is the focus of this chapter. The first section focuses on *global demographic indicators* for between-country comparisons and gives an overview of the [idbr R package](https://github.com/walkerke/idbr) for accessing these indicators through the [US Census Bureau's International Data Base](<https://www.census.gov/programs-surveys/international-programs/about/idb.html>). The sections that follow cover country-specific packages from around the world that deliver Census data to R users in similar ways to the US-focused packages covered earlier in this book. Examples from Canada, Mexico, Brazil, and Kenya illustrate how to apply the methods readers have learned in this book to Census data analyses in other parts of the world.
 
-## The US Census International Data Base
+## The International Data Base and the idbr R package
 
-* The US Census Bureau International Database includes both historical data on demographic components (population, fertility, mortality, migration) and population projections to 2100
+The US Census Bureau's International Database (IDB) is a repository of dozens of demographic indicators for over 200 countries around the world. The IDB includes both historical information by year for most countries as well as population projections to 2100. In-place demographic characteristics are derived from a wide range of international Censuses and surveys, and future projections are estimated with the cohort-component method.
 
-* idbr: my R package to query data from the IDB API.  Not as smooth as tidycensus, but it works!
+The Census Bureau makes these datasets available to researchers [through an interactive data tool](<https://www.census.gov/data-tools/demo/idb/#/country?YR_ANIM=2021>) and also through its API, allowing for programmatic data access. The idbr R package, first released in 2016 and updated to version 1.0 in 2021, uses a simple R interface to help users gain access to and analyze data from the IDB.
 
-* Functions: `idb1()` for the 1-year API and `idb5()` for the 5-year API (a bit of a misnomer, as it includes a wide range of yearly demographic variables)
+To get started with idbr, users can install the package from CRAN and set their Census API keys with the `idb_api_key()` function. If a user's Census API key is already installed using tidycensus, idbr will pick it up making this step unnecessary.
 
----
+```{r idb-api-key, eval = FALSE}
+library(idbr)
+# Unnecessary if API key is installed iwth tidycensus
+idb_api_key("YOUR KEY GOES HERE")
+
+```
+
+The core function implemented in idbr is `get_idb()`, which can access all datasets available in the IDB. There are two main datasets available: the 1-year-of-age population dataset, which allows for population data by country to be downloaded broken down by age and sex; and the 5-year-of-age dataset, which gives access to population by 5-year age bands but also many other fertility, mortality, and migration indicators that are not organized by age bands.
+
+A basic IDB query uses a country, specified as either an ISO-2 code or a country name in English, a vector of one or more variables, and a vector of one or more years. For example, we can fetch historical and projected population for Nigeria from 1990 to 2100, and quickly visualize it using ggplot2:
+
+```{r nigeria-pop}
+nigeria_pop <- get_idb(
+  country = "Nigeria",
+  variables = "POP",
+  year = 1990:2100
+)
+
+nigeria_pop
+
+```
+
+```{r plot-nigeria-pop}
+library(tidyverse)
+
+ggplot(nigeria_pop, aes(x = year, y = pop)) + 
+  geom_line(color = "darkgreen") + 
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::label_number_si()) + 
+  labs(title = "Population of Nigeria",
+       subtitle = "1990 to 2100 (projected)",
+       x = "Year",
+       y = "Population at midyear")
+```
+
+idbr includes functionality to help users look up variable codes for use in their function calls. The function `idb_variables()` returns a data frame with all variables available in the IDB, along with an informative label; the `idb_concepts()` function prints out a list of *concepts* that can be supplied to the `concept` parameter and will return a group of variables that belong to the same concept (e.g. mortality rates, components of population growth).
+
+For worldwide analyses, users can specify the argument `country = "all"` to return all available countries in the IDB.
 
 ## International data with idbr
 
-* Example: how has life expectancy at birth changed in Southeast Asia?
+-   Example: how has life expectancy at birth changed in Southeast Asia?
 
 ```{r idbr-1, eval = FALSE}
 library(idbr)
@@ -41,16 +80,15 @@ ggplot(se_asia_lex, aes(x = time, y = E0, color = NAME)) +
        x = "Year")
 ```
 
----
+------------------------------------------------------------------------
 
-<img src=img/lex_plot.png style="width: 850px"> 
+<img src="img/lex_plot.png" style="width: 850px"/>
 
----
+------------------------------------------------------------------------
 
 ## International data with idbr
 
-
-* Example: what 10 countries have the highest total fertility rates in 2021?
+-   Example: what 10 countries have the highest total fertility rates in 2021?
 
 ```{r idbr-2, eval = FALSE}
 top_tfr <- idb5(
@@ -61,7 +99,6 @@ top_tfr <- idb5(
 ) %>%
   slice_max(TFR, n = 10)
 ```
-
 
 ```{r show-tfr, eval = FALSE}
 top_tfr
@@ -77,25 +114,21 @@ structure(list(TFR = c(6.9097, 5.8955, 5.7, 5.63, 5.57, 5.4716,
 "tbl", "data.frame"))
 ```
 
-
-
----
+------------------------------------------------------------------------
 
 ## International population pyramids
 
-<img src=img/nigeria_pyramid-1.gif style="width: 500px">
+<img src="img/nigeria_pyramid-1.gif" style="width: 500px"/>
 
 .footnote[See more at [Ari Lamstein's blog](https://arilamstein.com/blog/2016/06/06/idbr-access-us-census-bureau-international-data-base-r/)]
 
----
+------------------------------------------------------------------------
 
 ## Canada: cancensus
 
+<img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px"/>
 
-<img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px">
-
-
-* [The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
+-   [The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
 
 ```{r cancensus-1}
 library(cancensus)
@@ -107,14 +140,13 @@ options(cancensus.api_key = Sys.getenv("CANCENSUS_API_KEY"))
 
 ```
 
-
----
+------------------------------------------------------------------------
 
 ## Canada: cancensus
 
-* cancensus allows for different datasets, regions, and geographic levels to be queried 
+-   cancensus allows for different datasets, regions, and geographic levels to be queried
 
-* Simple feature geometry is available if requested 
+-   Simple feature geometry is available if requested
 
 ```{r montreal-english, eval = FALSE}
 montreal_english <- get_census(
@@ -127,7 +159,7 @@ montreal_english <- get_census(
 ) 
 ```
 
----
+------------------------------------------------------------------------
 
 ## Mapping Canadian Census data
 
@@ -142,19 +174,19 @@ tm_shape(montreal_pct) +
               style = "jenks", n = 7, title = "Percent speaking<br/>English at home")
 ```
 
----
+------------------------------------------------------------------------
 
-<img src=img/montreal.png style="width: 800px">
+<img src="img/montreal.png" style="width: 800px"/>
 
----
+------------------------------------------------------------------------
 
 ## Mexico: mxmaps/inegiR
 
-* Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) and [inegiR](https://github.com/Eflores89/inegiR) R packages allow for geographic analysis and visualization of Mexican Census data
+-   Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) and [inegiR](https://github.com/Eflores89/inegiR) R packages allow for geographic analysis and visualization of Mexican Census data
 
-* Get an API token at http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx
+-   Get an API token at <http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx>
 
----
+------------------------------------------------------------------------
 
 ## Mexico: mxmaps/inegiR
 
@@ -171,13 +203,11 @@ choropleth_inegi(token_inegi, state_regions,
   theme_void(base_size = 18)
 ```
 
+------------------------------------------------------------------------
 
----
+<img src="img/mx_map.png" style="width: 850px"/>
 
-<img src=img/mx_map.png style="width: 850px">
-
----
-
+------------------------------------------------------------------------
 
 ```{r inegir}
 library(inegiR)
@@ -194,24 +224,17 @@ pct_migrants <- map_df(state_regions, ~{
   
 ```
 
-
-
-
 ```{r show-inegir}
 head(pct_migrants)
 ```
 
-
-
----
+------------------------------------------------------------------------
 
 ## Brazil: geobr
 
+<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" style="width: 400px"/>
 
-<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" style="width: 400px">
-
-
-* Package from [IPEA](https://www.ipea.gov.br/portal/) that helps you load shapes for many Brazilian geographies, including Census boundaries
+-   Package from [IPEA](https://www.ipea.gov.br/portal/) that helps you load shapes for many Brazilian geographies, including Census boundaries
 
 ```{r geobr, results = "hide", eval = FALSE}
 library(geobr)
@@ -219,25 +242,21 @@ library(geobr)
 rj_tracts <- read_census_tract(code_tract = 3304557)
 ```
 
+------------------------------------------------------------------------
 
-
----
-
-```r
+``` {.r}
 mapview::mapview(rj_tracts)
 ```
-<img src=img/rj_tracts.png style="width: 800px">
 
----
+<img src="img/rj_tracts.png" style="width: 800px"/>
+
+------------------------------------------------------------------------
 
 ## Kenya: RKenyaCensus
 
+-   The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) by [Shel Kariuki](https://shelkariuki.netlify.app/) makes indicators from the 2019 Kenya Population and Housing Census
 
-* The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) by [Shel Kariuki](https://shelkariuki.netlify.app/) makes indicators from the 2019 Kenya Population and Housing Census
-
-* Tables install directly with the package and can be accessed by name
-
-
+-   Tables install directly with the package and can be accessed by name
 
 ```{r kenya-1}
 # remotes::install_github("Shelmith-Kariuki/rKenyaCensus")
@@ -250,10 +269,7 @@ religion <- V4_T2.30 %>%
          prop_islam = Islam / Total)
 ```
 
-
-
-
----
+------------------------------------------------------------------------
 
 ## Visualizing Kenyan Census data
 
@@ -269,16 +285,15 @@ ggplot(religion, aes(x = prop_islam, y = reorder(county_title, prop_islam))) +
        caption = "Data source: rKenyaCensus R package")
 ```
 
----
+------------------------------------------------------------------------
 
-<img src=img/kenya_plot.png style="width: 900px">
+<img src="img/kenya_plot.png" style="width: 900px"/>
 
----
-
+------------------------------------------------------------------------
 
 ## Mapping Kenyan Census data
 
-* The rKenyaCensus package includes county boundaries to facilitate mapping of the various indicators in the Census
+-   The rKenyaCensus package includes county boundaries to facilitate mapping of the various indicators in the Census
 
 ```{r map-kenya, eval = FALSE}
 kenya_islam_map <- KenyaCounties_SHP %>%
@@ -296,21 +311,20 @@ tm_shape(kenya_islam_map) +
               alpha = 0.6)
 ```
 
+------------------------------------------------------------------------
 
----
+<img src="img/kenya_map.png" style="width: 700px"/>
 
-<img src=img/kenya_map.png style="width: 700px">
-
----
+------------------------------------------------------------------------
 
 ## Other data resources
 
-* Many other international data resources in R exist, e.g. [nomisr](https://github.com/ropensci/nomisr) for UK data and [afrimapr](https://afrimapr.github.io/afrimapr.website/) for Africa-wide datasets
+-   Many other international data resources in R exist, e.g. [nomisr](https://github.com/ropensci/nomisr) for UK data and [afrimapr](https://afrimapr.github.io/afrimapr.website/) for Africa-wide datasets
 
-* The [IPUMS International project](https://international.ipums.org/international/) has microdata for over 100 countries; use IPUMS data with the [ipumsr R package](https://github.com/mnpopcenter/ipumsr)
+-   The [IPUMS International project](https://international.ipums.org/international/) has microdata for over 100 countries; use IPUMS data with the [ipumsr R package](https://github.com/mnpopcenter/ipumsr)
 
----
+------------------------------------------------------------------------
 
 ## Part 3 exercises
 
-* Choose a country from the examples above and explore further.  Try making a map or a chart for a new variable for a country of your choice!  
+-   Choose a country from the examples above and explore further. Try making a map or a chart for a new variable for a country of your choice!
