@@ -29,7 +29,7 @@ A basic IDB query uses a country, specified as either an ISO-2 code or a country
 ```{r nigeria-pop}
 nigeria_pop <- get_idb(
   country = "Nigeria",
-  variables = "POP",
+  variables = "pop",
   year = 1990:2100
 )
 
@@ -52,79 +52,159 @@ ggplot(nigeria_pop, aes(x = year, y = pop)) +
 
 idbr includes functionality to help users look up variable codes for use in their function calls. The function `idb_variables()` returns a data frame with all variables available in the IDB, along with an informative label; the `idb_concepts()` function prints out a list of *concepts* that can be supplied to the `concept` parameter and will return a group of variables that belong to the same concept (e.g. mortality rates, components of population growth).
 
-For worldwide analyses, users can specify the argument `country = "all"` to return all available countries in the IDB.
+For worldwide analyses, users can specify the argument `country = "all"` to return all available countries in the IDB. In concert with tidyverse tools, this makes global comparative analyses straightforward. In the example below, we get data on life expectancy at birth for all countries in 2021, then view the top 10 and bottom 10 countries.
 
-## International data with idbr
+```{r world-lex}
 
--   Example: how has life expectancy at birth changed in Southeast Asia?
+world_lex <- get_idb(
+  country = "all",
+  variables = "e0",
+  year = 2021
+)
 
-```{r idbr-1, eval = FALSE}
+world_lex %>% slice_max(e0, n = 10)
+```
+
+```{r world-lex-min}
+world_lex %>% slice_min(e0, n = 10)
+```
+
+### Visualizing IDB data
+
+idbr aims to return data from the IDB in a structure suitable for creative data visualizations. This includes population pyramids (like those introduced in Chapter 4) and world maps.
+
+As mentioned earlier in this chapter, `get_idb()` can retrieve population data by age and sex in one-year age bands if the `age` or `sex` arguments are supplied but `variables` is left blank. An illustration of this is found in the example below, where `get_idb()` is used to get 1-year-of-age population data for 2021 in Japan, broken down by sex.
+
+```{r japan-pop-data}
+
+japan_data <- get_idb(
+  country = "Japan",
+  year = 2021,
+  age = 0:100,
+  sex = c("male", "female")
+) 
+
+japan_data
+```
+
+Following the example illustrated in Chapter 4, a population pyramid can be created by changing data values for one sex to negative, then plotting the data as back-to-back horizontal bar charts.
+
+```{r japan-pyramid}
+
+japan_data %>%
+  mutate(pop = ifelse(sex == "Male", pop * -1, pop)) %>%
+  ggplot(aes(x = pop, y = as.factor(age), fill = sex)) + 
+  geom_col(width = 1) + 
+  theme_minimal(base_size = 12) + 
+  scale_x_continuous(labels = function(x) paste0(abs(x / 1000000), "m")) + 
+  scale_y_discrete(breaks = scales::pretty_breaks(n = 10)) + 
+  scale_fill_manual(values = c("darkred", "navy")) + 
+  labs(title = "Population structure of Japan in 2021",
+       x = "Population",
+       y = "Age",
+       fill = "")
+```
+
+The aging structure of Japan's population is notable, especially the number of female centenarians (women aged 100 and up) that stand out on the chart, a number that is likely to grow in the years ahead.
+
+`get_idb()` also includes a `geometry` parameter to help users make world maps of demographic indicators. By setting `geometry = TRUE`, `get_idb()` returns a simple features object with a `geometry` column attached to the demographic data. Here, we fetch data on total fertility rate by country in 2021.
+
+```{r world-map-data}
+
 library(idbr)
 library(tidyverse)
 
-# Not necessary if you have the development version of idbr
-idb_api_key(Sys.getenv("CENSUS_API_KEY"))
-
-se_asia_lex <- idb5(
-  country = c("Laos", "Vietnam", "Cambodia", "Thailand"),
-  year = 1995:2021,
-  variable = "E0",
-  country_name = TRUE
-)
-
-ggplot(se_asia_lex, aes(x = time, y = E0, color = NAME)) + 
-  theme_minimal(base_size = 18) + 
-  geom_line(size = 2) + 
-  labs(title = "Change in life expectancy, 1995-2021",
-       y = "Life expectancy at birth",
-       x = "Year")
-```
-
-------------------------------------------------------------------------
-
-<img src="img/lex_plot.png" style="width: 850px"/>
-
-------------------------------------------------------------------------
-
-## International data with idbr
-
--   Example: what 10 countries have the highest total fertility rates in 2021?
-
-```{r idbr-2, eval = FALSE}
-top_tfr <- idb5(
+fertility_data <- get_idb(
   country = "all",
   year = 2021,
-  variable = "TFR",
-  country_name = TRUE
+  variables = "tfr",
+  geometry = TRUE,
+)
+
+fertility_data
+```
+
+There are a couple points of note with respect to the data returned. The dataset leaves out a number of small countries that would not appear on a zoomed-out world map. To ensure that they are retained, use the argument `resolution = "high"` for a higher-resolution dataset (which you may also want for regional mapping). There are also rows returned as `NA` in the dataset; this is to fill in areas that should appear on the map (like Antarctica) but do not have data in the IDB.
+
+The data returned can be mapped with `geom_sf()` from ggplot2 or any other mapping tool introduced in this book. Specifying a suitable map projection with `coord_sf()` for the whole world - like the Robinson projection used below - is recommended.
+
+```{r}
+
+ggplot(fertility_data, aes(fill = tfr)) + 
+  theme_bw() + 
+  geom_sf() + 
+  coord_sf(crs = 'ESRI:54030') + 
+  scale_fill_viridis_c() + 
+  labs(fill = "Total fertility\nrate (2021)")
+
+```
+
+### Interactive and animated visualization of global demographic data
+
+In Chapter 6, readers learned how to create interactive maps of US Census data with the tmap and leaflet packages.  While the same methods _can_ be applied to the global data returned by `get_idb()`, the Mercator projection used by the Leaflet library is not ideal for world maps as it inflates the area of countries near the poles relative to countries near the Equator.  In turn, it is preferable to turn to other interactive charting libraries such as plotly, discussed in Chapter 4.  
+
+Like plotly, the [ggiraph](https://davidgohel.github.io/ggiraph/index.html) package helps users create interactive visualizations from their ggplot2 plots.  ggiraph includes `*_interactive()` versions of ggplot2 geoms with package-specific aesthetics to allow for interactive visualization.  
+
+To get started, let's return to our global fertility data and create a new column that will store information we want to include in our tooltip that appears when a viewer hovers over a country.  
+
+```{r}
+fertility_data$tooltip <- paste0(fertility_data$name,
+                                 ": ",
+                                 round(fertility_data$tfr, 2))
+```
+
+We now set up the visualization.  Note that instead of using `geom_sf()`, we use ggiraph's `geom_sf_interactive()`, which includes some new aesthetics.  We map our new `tooltip` column to the `tooltip` aesthetic, which will generate a hover tooltip, and we map the `code` column to the `data_id` aesthetic, which will change the country's color when hovered over.  The `girafe()` function then renders the interactive graphic; we can specify that we want map zooming with `girafe_options()`.  
+
+```{r interactive-world-map}
+library(ggiraph)
+
+fertility_map <- ggplot(fertility_data, aes(fill = tfr)) + 
+  theme_bw() + 
+  geom_sf_interactive(aes(tooltip = tooltip, data_id = code), size = 0.1) + 
+  coord_sf(crs = 'ESRI:54030') + 
+  scale_fill_viridis_c() + 
+  labs(fill = "Total fertility\nrate (2021)")
+
+girafe(ggobj = fertility_map) %>%
+  girafe_options(opts_zoom(max = 10))
+```
+The time-series data availability in the IDB also works well for creating animated time-series graphics with help from the [gganimate package](https://gganimate.com/).  gganimate extends ggplot2 to animate sequences of plots using intuitive syntax to ggplot2 users.  Earlier in this chapter, we learned how to create a population pyramid from IDB data for a single year (2021). If data are requested instead for multiple years, gganimate can be used to transition from year to year in an animated population pyramid, showing how the population structure of a country has evolved (and is projected to evolve) over time.  
+
+```{r animated_pyramid, eval = FALSE}
+library(idbr)
+library(tidyverse)
+library(gganimate)
+
+mx_pyramid_data <- get_idb(
+  country = "Mexico",
+  sex = c("male", "female"),
+  age = 0:100,
+  year = 1990:2050
 ) %>%
-  slice_max(TFR, n = 10)
+  mutate(pop = ifelse(sex == "Male", pop * -1, pop))
+
+mx_animation <- ggplot(mx_pyramid_data, aes(x = pop, y = as.factor(age), fill = sex)) + 
+  geom_col(width = 1) + 
+  theme_minimal(base_size = 16) + 
+  scale_x_continuous(labels = function(x) paste0(abs(x / 1000000), "m")) + 
+  scale_y_discrete(breaks = scales::pretty_breaks(n = 10)) + 
+  scale_fill_manual(values = c("darkred", "darkgreen")) + 
+  transition_states(year) + 
+  labs(title = "Population structure of Mexico in {closest_state}",
+       x = "Population",
+       y = "Age",
+       fill = "")
+
+animate(mx_animation, height = 500, width = 800)
+
 ```
 
-```{r show-tfr, eval = FALSE}
-top_tfr
-```
+## Country-specific Census data packages
 
-```{r bypass-idbr-call, echo = FALSE}
-structure(list(TFR = c(6.9097, 5.8955, 5.7, 5.63, 5.57, 5.4716, 
-5.448, 5.4267, 5.4119, 5.1034), NAME = c("Niger", "Angola", "Congo (Kinshasa)", 
-"Mali", "Chad", "Benin", "Uganda", "South Sudan", "Somalia", 
-"Burundi"), FIPS = c("NG", "AO", "CG", "ML", "CD", "BN", "UG", 
-"OD", "SO", "BY"), time = c(2021, 2021, 2021, 2021, 2021, 2021, 
-2021, 2021, 2021, 2021)), row.names = c(NA, -10L), class = c("tbl_df", 
-"tbl", "data.frame"))
-```
+Analysts around the world need access to high-quality tabular and spatial demographic data to make decisions much like the data that are available from the US Census Bureau.  While Censuses are conducted by countries around the world, few countries expose their data by API in the way the US Census Bureau does.  Nonetheless, there are a number of R packages that help analysts acquire and work with country-specific Census data.  This section of the book covers a sampling of those packages, with examples given from Canada, Mexico, Kenya, and Brazil.  These examples will illustrate how to apply many of the techniques introduced in this book to a variety of non-US examples.  
 
-------------------------------------------------------------------------
+### Canada: cancensus
 
-## International population pyramids
-
-<img src="img/nigeria_pyramid-1.gif" style="width: 500px"/>
-
-.footnote[See more at [Ari Lamstein's blog](https://arilamstein.com/blog/2016/06/06/idbr-access-us-census-bureau-international-data-base-r/)]
-
-------------------------------------------------------------------------
-
-## Canada: cancensus
 
 <img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px"/>
 
@@ -140,9 +220,6 @@ options(cancensus.api_key = Sys.getenv("CANCENSUS_API_KEY"))
 
 ```
 
-------------------------------------------------------------------------
-
-## Canada: cancensus
 
 -   cancensus allows for different datasets, regions, and geographic levels to be queried
 
@@ -159,9 +236,6 @@ montreal_english <- get_census(
 ) 
 ```
 
-------------------------------------------------------------------------
-
-## Mapping Canadian Census data
 
 ```{r map-montreal-english, eval = FALSE}
 tmap_mode("view")
@@ -180,15 +254,12 @@ tm_shape(montreal_pct) +
 
 ------------------------------------------------------------------------
 
-## Mexico: mxmaps/inegiR
+### Mexico: mxmaps/inegiR
 
 -   Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) and [inegiR](https://github.com/Eflores89/inegiR) R packages allow for geographic analysis and visualization of Mexican Census data
 
--   Get an API token at <http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx>
+-   Get an API token at <http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx
 
-------------------------------------------------------------------------
-
-## Mexico: mxmaps/inegiR
 
 ```{r mxmaps, eval = FALSE}
 # remotes::install_github("diegovalle/mxmaps")

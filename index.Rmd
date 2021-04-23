@@ -1,5 +1,5 @@
 --- 
-title: "Analyzing Census Data with R"
+title: "Analyzing US Census Data with R"
 author: "Kyle E. Walker"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
@@ -10,7 +10,7 @@ bibliography: [book.bib]
 biblio-style: apalike
 link-citations: yes
 github-repo: walkerke/census-with-r-book
-description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model data Census data with the R programming language."
+description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model US Census data with the R programming language."
 ---
 
 # Overview {-}

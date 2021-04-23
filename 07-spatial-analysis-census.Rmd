@@ -15,7 +15,7 @@ Traditionally, spatial analytic tasks in R have been handled by the **sp** packa
 
 This chapter covers how to perform common spatial analysis tasks with Census data using the sf package. As with previous chapters, the examples will focus on data acquired with the tidycensus and tigris packages, and will cover common workflows of use to practitioners who work with US Census Bureau data.
 
-## Spatial overlay and spatial joins (June 22)
+## Spatial overlay and spatial joins 
 
 Spatial data analysis allows practitioners to consider how geographic datasets interrelate in geographic space. This analytic functionality facilitates answering a wide range of research and analytic questions that would otherwise prove difficult without reference to a dataset's geographic properties.
 
@@ -80,7 +80,7 @@ ggplot() +
   theme_void()
 ```
 
-## Group-wise spatial data analysis (June 23)
+## Group-wise spatial data analysis 
 
 Spatial data operations can also be embedded in workflows where analysts are interested in understanding how characteristics vary by group. For example, while demographic data for metropolitan areas can be readily acquired using tidycensus functions, we might also be interested in learning about how demographic characteristics of *neighborhoods within metropolitan areas* vary across the United States. We can accomplish this using a *spatial join*, which transfers attributes between spatial layers based on a relationship defined by a spatial predicate, as discussed above. Spatial joins in R are implemented in sf's `st_join()` function.
 
@@ -163,7 +163,7 @@ plot(median_by_metro[1,]$geometry)
 
 The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock). The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group. The typical name for this geometric process in geographic information systems is a *dissolve* operation, where geometries are identified by group and combined to return a single larger geometry. In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries. This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.
 
-## Distance and proximity analysis (June 24)
+## Distance and proximity analysis 
 
 A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from tigris, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
 
@@ -423,7 +423,7 @@ ggplot(ny_erase) +
 
 The map appears as before, but now with a more familiar representation of the extent of Manhattan.
 
-## Spatial neighborhoods and spatial weights matrices (June 25)
+## Spatial neighborhoods and spatial weights matrices 
 
 The spatial capabilities of tidycensus also allow for exploratory spatial data analysis (ESDA) within R. ESDA refers to the use of datasets' spatial properties in addition to their attributes to explore patterns and relationships. This may involve exploration of spatial patterns in datasets or identification of spatial clustering of a given demographic attribute.
 
@@ -508,7 +508,7 @@ weights$weights[[1]]
 
 Given that the Census tract at row index 1 has seven neighbors, each neighbor is assigned the weight 0.143.
 
-## Global and local spatial autocorrelation (June 26)
+## Global and local spatial autocorrelation 
 
 The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads:
 
