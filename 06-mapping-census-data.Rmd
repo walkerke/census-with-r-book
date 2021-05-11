@@ -293,6 +293,39 @@ tm_shape(boston_se_data) +
 ```
 
 
+## Interactive mapping
+
+```{r}
+library(tidycensus)
+library(tigris)
+library(ggiraph)
+library(tidyverse)
+
+us_median_age <- get_acs(
+  geography = "state",
+  variables = "B01002_001",
+  year = 2019,
+  survey = "acs1",
+  geometry = TRUE,
+  resolution = "20m"
+) %>%
+  shift_geometry() %>%
+  mutate(tooltip = paste(NAME, estimate, sep = ": "))
+
+gg <- ggplot(us_median_age, aes(fill = estimate)) + 
+  geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME)) + 
+  scale_fill_distiller(palette = "RdPu", 
+                       direction = 1) + 
+  labs(title = "Median Age by State, 2019",
+       caption = "Data source: 2019 1-year ACS, US Census Bureau",
+       fill = "ACS estimate") + 
+  theme_void() 
+  
+girafe(ggobj = gg) %>%
+  girafe_options(opts_hover(css = "fill:cyan;"))
+```
+
+
 
 ## Interactive mapping with Leaflet 
 

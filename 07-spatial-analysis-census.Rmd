@@ -460,7 +460,7 @@ ggplot(dfw_tracts) +
 Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a conceptualization of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is {spdep}, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, {spdep} supports a variety of neighborhood definitions. These definitions include:
 
 -   *Proximity-based neighbors*, where neighboring features are identified based on some measure of distance. Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as *k*-nearest neighbors (e.g. the nearest eight features to a given feature).
--   *Graph-based neighbors*, where neighbors are defined through network relationships (e.g. along a street network).\
+-   *Graph-based neighbors*, where neighbors are defined through network relationships (e.g. along a street network).
 -   *Contiguity-based neighbors*, used when geographic features are polygons. Options for contiguity-based spatial relationships include *queen's case neighbors*, where all polygons that share at least one vertex are considered neighbors; and *rook's case neighbors*, where polygons must share at least one line segment to be considered neighbors.
 
 In this example, we'll choose a queen's case contiguity-based neighborhood definition for our Census tracts. We implement this with the function `poly2nb()`, which can take an sf object as an argument and produce a neighbors list object. We use the argument `queen = TRUE` to request queen's case neighbors explicitly (though this is the function default).

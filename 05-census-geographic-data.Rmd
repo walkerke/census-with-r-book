@@ -6,7 +6,7 @@ options(tigris_use_cache = TRUE)
 ```
 
 
-As discussed in Chapters 1 and 3, Census and ACS data are associated with _geographies_, which are units at which the data are aggregated.  These defined geographies are represented in the US Census Bureau's TIGER/Line database.  The TIGER/Line database includes geometric representations of Census Bureau geographies made available as _shapefiles_, a common format for encoding geographic data. 
+As discussed in Chapters 1 and 3, Census and ACS data are associated with _geographies_, which are units at which the data are aggregated.  These defined geographies are represented in the US Census Bureau's TIGER/Line database, where the acronym __TIGER__ stands for _Topologically Integrated Geographic Encoding and Referencing_. This database includes a high-quality series of geographic datasets suitable for both spatial analysis and cartographic visualization.  Spatial datasets are made available as _shapefiles_, a common format for encoding geographic data. 
 
 The TIGER/Line shapefiles include three general types of data: 
 
@@ -17,45 +17,41 @@ The TIGER/Line shapefiles include three general types of data:
 Traditionally, TIGER/Line shapefiles are downloaded from a web interface as zipped folders, then unzipped for use in a Geographic Information System (GIS) or other software that can work with geographic data.  However, the R package __tigris__ allows R users to access these datasets directly from their R sessions without having to go through these steps.  
 
 This chapter will cover the core functionality of the tigris package for working with Census geographic data in R.  In doing so, it will highlight the __sf__ package (Pebesma 2017) for representing spatial data as R objects.  
-
 ## Basic usage of tigris 
 
 The tigris R package simplifies the process for R users of obtaining and using Census geographic datasets.  Functions in tigris _download_ a requested Census geographic dataset from the US Census Bureau website, then _load_ the dataset into R as a spatial object.  Generally speaking, each type of geographic dataset available in the Census Bureau's TIGER/Line database is available with a corresponding function in tigris.  For example, the `states()` function can be run without arguments to download a boundary file of US states and state equivalents. 
-
-```{r}
+```{r tigris-states}
 library(tigris)
 
 st <- states()
 ```
+
 Let's take a look at what we get back:
 
-```{r}
+```{r class-states}
 class(st)
 ```
 
 The returned object is of both class `"sf"` and `"data.frame"`.  We can print out the first 10 rows to inspect the object further:
 
-```{r}
+```{r show-states}
 st
 ```
-The object `st`, representing all US states and territories, includes a data frame with a series of columns representing characteristics of those states, like a name, postal code, and Census ID (the `GEOID` column).  It also contains a special list-column, `geometry`, which is made up of a sequence of coordinate of longitude/latitude coordinate pairs that collectively represent the boundary of each state.  
 
-The information above the data frame gives some additional geographic context to the coordinates in the `geometry` column.  The returned data is of geometry type `MULTIPOLYGON`, and is characterized by a bounding box and geographic coordinate reference system (CRS) of `NAD83`.  These spatial concepts help define how R represents the data geographically, and will be explored further later in this chapter.  
+The object `st`, representing all US states and territories, includes a data frame with a series of columns representing characteristics of those states, like a name, postal code, and Census ID (the `GEOID` column).  It also contains a special list-column, `geometry`, which is made up of a sequence of coordinate of longitude/latitude coordinate pairs that collectively represent the boundary of each state.  
 
 The `geometry` column can be visualized in R with the `plot()` function:
 
-```{r}
+```{r plot-states}
 plot(st$geometry)
 ```
-
-
 
 Other Census datasets may be available by state or by county within the state.  In some cases, this subsetting is optional; in other cases, `state` and/or `county` arguments will be required.  For example, the `counties()` function can be used to obtain county boundaries for the entirety of the United States, but also can be used with the `state` argument to return only those counties from a specific state, like New Mexico.  
 
 ```{r}
 nm_counties <- counties("NM")
 
-plot(nm_counties)
+plot(nm_counties$geometry)
 ```
 
 In this case the state postal code `"NM"` is used to instruct tigris to subset the counties dataset for counties in New Mexico.  The full name of the state, `"New Mexico"`, would work the same here as well.  Obtaining Census shapefiles programmatically requires inputting the Federal Information Processing Standard (FIPS) code; however, tigris translates postal codes and names of states and counties to their FIPS codes so that R users do not have to look them up.  
@@ -65,7 +61,7 @@ States and counties are examples of _legal entities_ that can be accessed with t
 ```{r}
 la_tracts <- tracts("NM", "Los Alamos")
 
-plot(la_tracts)
+plot(la_tracts$geometry)
 ```
 
 Several geographic features are available in tigris as well, including roads and water features which can be useful for thematic mapping.  For example, a user could request road data for Los Alamos County with the `roads()` function.  
@@ -73,8 +69,17 @@ Several geographic features are available in tigris as well, including roads and
 ```{r}
 la_water <- area_water("NM", "Los Alamos")
 
-plot(la_water)
+plot(la_water$geometry)
 ```
+
+### Understanding tigris and simple features
+
+Data returned by the tigris package are examples of _vector spatial data_, a spatial data model that represents geographic features as points, lines, and polygons.  The vector spatial data model is represented in R with the [sf package](https://r-spatial.github.io/sf/), an implementation of simple features in the R language.  
+
+As mentioned earlier, sf represents vector spatial data much like a regular R data frame, but with a special column, `geometry`, that represents the shape of each feature.  
+
+The information above the data frame gives some additional geographic context to the coordinates in the `geometry` column.  The returned data is of geometry type `MULTIPOLYGON`, and is characterized by a bounding box and geographic coordinate reference system (CRS) of `NAD83`.  These spatial concepts help define how R represents the data geographically, and will be explored further later in this chapter.  
+
 
 
 ## tigris workflows 

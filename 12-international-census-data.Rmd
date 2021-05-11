@@ -205,10 +205,9 @@ Analysts around the world need access to high-quality tabular and spatial demogr
 
 ### Canada: cancensus
 
-
 <img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px"/>
 
--   [The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
+[The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
 
 ```{r cancensus-1}
 library(cancensus)
