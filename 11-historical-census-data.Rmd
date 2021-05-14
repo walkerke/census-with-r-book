@@ -10,4 +10,87 @@ This chapter provides an overview of how to access and use historical US Census 
 
 ## Getting started with NHGIS
 
-To get started with NHGIS, visit
+To get started with NHGIS, visit...
+
+## Example
+
+```{r}
+library(ipumsr)
+library(tidyverse)
+
+nyc_1910 <- read_nhgis_sf(
+  data_file = "data/NHGIS/nhgis0099_csv.zip",
+  shape_file = "data/NHGIS/nhgis0099_shape.zip"
+) %>%
+  filter(!is.na(TRACTA))
+
+nyc_1910
+```
+
+
+```{r}
+plot(nyc_1910$geometry)
+```
+
+```{r}
+library(crsuggest)
+library(sf)
+
+nyc_crs <- suggest_top_crs(nyc_1910, inherit_gcs = FALSE)
+
+nyc_crs
+```
+
+```{r}
+nyc_pctfb <- nyc_1910 %>%
+  rowwise() %>%
+  mutate(total = sum(c_across(A60001:A60007))) %>%
+  ungroup() %>%
+  transmute(
+    tract_id = GISJOIN,
+    pct_fb = A60005 / total
+  ) %>%
+  st_transform(nyc_crs)
+```
+
+
+And visualize: 
+
+```{r}
+ggplot(nyc_pctfb, aes(fill = pct_fb)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c(option = "magma", labels = scales::percent) + 
+  theme_void(base_family = "Verdana") + 
+  labs(title = "Percent foreign-born by Census tract, 1910",
+       subtitle = "New York City",
+       caption =  "Data source: NHGIS",
+       fill = "Percentage")
+```
+
+Alternatively, a dot-density map of a group of immigrants:
+
+```{r}
+italy_dots <- nyc_1910 %>%
+  st_transform(nyc_crs) %>%
+  st_sample(size = as.integer(.$A6G014 / 100)) %>%
+  st_sf()
+
+nyc_base <- nyc_1910 %>%
+  st_transform(nyc_crs) %>%
+  st_union()
+```
+
+And visualize the result:
+
+```{r}
+ggplot() + 
+  geom_sf(data = nyc_base, size = 0.1) + 
+  geom_sf(data = italy_dots, shape = ".", color = "darkgreen") + 
+  theme_void(base_family = "Verdana") + 
+  labs(title = "Italy-born population in New York City, 1910",
+       subtitle = "1 dot = 100 people",
+       caption = "Data source: NHGIS")
+```
+
+## Historical microdata with IPUMS
+

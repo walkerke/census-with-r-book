@@ -12,15 +12,234 @@ The previous chapter included a range of examples illustrating methods for analy
 
 * Dissimilarity index
 * Entropy (diversity) index
-* Centralization index
 * Other applications
+
+The calculation of segregration and diversity indices are widely used in the social sciences.  {Cite literature here and give examples}
+
+```{r get-race-data-ch8}
+library(tidycensus)
+library(tidyverse)
+library(segregation)
+
+la_data <- get_acs(
+  geography = "tract",
+  variables = c(
+    white = "B03002_003",
+    black = "B03002_004",
+    asian = "B03002_006",
+    hispanic = "B03002_012"
+  ), 
+  state = "CA",
+  county = "Los Angeles"
+) 
+```
+Dissimilarity index: 
+
+```{r dissimilarity}
+la_data %>%
+  filter(variable %in% c("white", "black")) %>%
+  dissimilarity(
+    group = "variable",
+    unit = "GEOID",
+    weight = "estimate"
+  )
+```
+Multi-group entropy:
+
+```{r multi-entropy}
+la_data %>%
+  mutual_total(
+    group = "variable",
+    unit = "GEOID",
+    weight = "estimate"
+  )
+```
+
+Local segregation indices:
+
+```{r map-local-seg}
+library(tigris)
+
+la_tracts <- tracts("CA", "Los Angeles", cb = TRUE)
+
+la_local_seg <- la_data %>%
+  mutual_local(
+    group = "variable",
+    unit = "GEOID",
+    weight = "estimate", 
+    wide = TRUE
+  )
+
+glimpse(la_local_seg)
+```
+Map the results:
+
+```{r}
+catalinas <- c("06037599100", "06037599000")
+
+la_tracts %>%
+  left_join(la_local_seg, by = "GEOID") %>%
+  filter(!GEOID %in% catalinas) %>%
+  ggplot(aes(fill = ls)) + 
+  geom_sf(color = NA) + 
+  coord_sf(crs = 26946) + 
+  scale_fill_viridis_c(option = "inferno") + 
+  theme_void() + 
+  labs(fill = "Local\nsegregation index")
+```
+
 
 ## Regression modeling with US Census data 
 
+```{r}
+library(tidycensus)
+library(tidyverse)
+
+dfw_counties <- c("Collin County", "Dallas", "Denton", "Ellis", "Hunt", 
+                  "Kaufman", "Rockwall", "Johnson", "Parker", "Tarrant", "Wise")
+
+median_rooms <- get_acs(
+  geography = "tract",
+  variables = "B25018_001",
+  state = "TX",
+  county = dfw_counties,
+  geometry = TRUE
+)
+
+ggplot(median_rooms, aes(fill = estimate)) + 
+  geom_sf(color = NA) + 
+  coord_sf(crs = 26914) + 
+  scale_fill_viridis_c() + 
+  theme_void() + 
+  labs(fill = "Median #  \nof rooms")
+```
+
+
 * Fitting a simple regression model
-* Problems with regression modeling of Census data: multicollinearity, spatial autocorrelation of errors
-* Dimension reduction with principal components
-* Assessing spatial autocorrelation in residuals/mapping residuals
+
+```{r}
+library(sf)
+library(units)
+
+variables_to_get <- c(
+  median_rooms = "B25018_001",
+  median_income = "DP03_0062",
+  total_population = "B01003_001",
+  median_age = "B01002_001",
+  pct_college = "DP02_0068P",
+  pct_foreign_born = "DP02_0094P",
+  pct_white = "DP05_0077P",
+  median_year_built = "B25037_001",
+  percent_ooh = "DP04_0046P"
+)
+
+dfw_data <- get_acs(
+  geography = "tract",
+  variables = variables_to_get,
+  state = "TX",
+  county = dfw_counties,
+  geometry = TRUE,
+  output = "wide"
+) %>%
+  st_transform(26914) %>%
+  mutate(pop_density = as.numeric(set_units(total_populationE / st_area(.), "1/km2")),
+         median_structure_age = 2017 - median_year_builtE)
+
+glimpse(dfw_data)
+```
+
+
+```{r simple-model}
+dfw_data_for_model <- dfw_data %>%
+  select(!ends_with("M")) 
+
+formula <- "median_roomsE ~ median_ageE + median_incomeE + pct_collegeE + pct_foreign_bornE + pct_whiteE + median_structure_age + percent_oohE + pop_density"
+
+model1 <- lm(formula = formula, data = dfw_data_for_model)
+
+summary(model1)
+```
+
+
+```{r evaluate_model}
+library(corrr)
+
+dfw_estimates <- dfw_data_for_model %>%
+  select(-GEOID, -NAME, -median_roomsE) %>%
+  st_drop_geometry()
+
+correlations <- correlate(dfw_estimates)
+```
+
+
+```{r check-vif}
+car::vif(model1)
+```
+
+
+```{r components}
+
+pca <- prcomp(formula = ~., data = dfw_estimates, scale. = TRUE, na.action = na.exclude)
+
+summary(pca)
+```
+Perhaps plot the loadings then make a map of one of the components?
+
+```{r}
+pca$rotation
+```
+
+
+
+```{r pca_model}
+components <- predict(pca, dfw_estimates)
+
+dfw_pca <- dfw_data_for_model %>%
+  select(GEOID, median_roomsE) %>%
+  cbind(components)
+
+ggplot(dfw_pca, aes(fill = PC1)) +
+  geom_sf(color = NA) +
+  theme_void() +
+  scale_fill_viridis_c()
+```
+
+
+
+```{r new-model}
+pca_formula <- paste0("median_roomsE ~ ", paste0('PC', 1:8, collapse = ' + '))
+
+pca_model <- lm(formula = pca_formula, data = dfw_pca, na.action = na.exclude)
+
+summary(pca_model)
+
+```
+
+
+```{r residuals}
+
+dfw_pca$residuals <- residuals(pca_model)
+
+ggplot(dfw_pca, aes(fill = residuals)) +
+  geom_sf(color = NA) +
+  theme_void() +
+  scale_fill_viridis_c()
+
+```
+
+Check for spatial autocorrelation in residuals:
+
+```{r check-autocorrelation}
+library(spdep)
+
+nbrs <- dfw_pca %>%
+  poly2nb()
+
+wts <- nb2listw(nbrs, style = "W")
+
+moran.test(dfw_pca$residuals, wts, na.action = na.exclude)
+```
+
 
 ## Spatial regression 
 
@@ -28,17 +247,127 @@ The previous chapter included a range of examples illustrating methods for analy
 * Spatial lag vs. spatial error models
 * Intepreting results
 
+
+```{r}
+library(spatialreg)
+
+lag_model <- lagsarlm(formula = pca_formula, data = dfw_pca, listw = wts)
+
+summary(lag_model)
+```
+
+Error model: 
+
+```{r}
+error_model <- errorsarlm(formula = pca_formula, data = dfw_pca, listw = wts)
+
+summary(error_model)
+```
+
+Spatial Durbin model: 
+
+```{r}
+durbin_model <- lagsarlm(formula = pca_formula, data = dfw_pca, listw = wts,
+                         Durbin = TRUE)
+
+summary(durbin_model)
+```
+
+
 ## Geographically weighted regression 
 
 * Basic principles
 * Fitting model/mapping results
 * Dealing with potential issues (e.g. local multicollinearity)
 
-## Geodemographic classification (Spielman-Singleton method) 
 
-* General concepts
-* K-means clustering overview
-* Generating informative labels/applications
+```{r}
+library(GWmodel)
+
+dfw_pca_sp <- dfw_pca %>%
+  na.omit() %>%
+  as_Spatial()
+
+bw <- bw.gwr(formula = pca_formula, data = dfw_pca_sp, kernel = "gaussian")
+```
+
+Fit the model: 
+
+```{r}
+gw_model <- gwr.basic(formula = pca_formula, data = dfw_pca_sp, bw = bw,
+                      kernel = "gaussian")
+
+gw_model
+```
+
+Plot the results:
+
+```{r}
+gw_model_results <- gw_model$SDF %>%
+  st_as_sf() 
+
+
+ggplot(gw_model_results, aes(fill = PC5)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c() + 
+  theme_void()
+
+```
+
+```{r}
+bw2 <- bw.gwr(formula = pca_formula, data = dfw_pca_sp, kernel = "gaussian",
+              adaptive = TRUE)
+```
+
+Adaptive bandwidth model results:
+
+```{r, error = TRUE}
+gw_model2 <- gwr.basic(formula = pca_formula, data = dfw_pca_sp, bw = bw2,
+                      kernel = "gaussian", adaptive = TRUE)
+
+gw_model2
+```
+
+
+```{r}
+gw_model_results <- gw_model2$SDF %>%
+  st_as_sf() 
+
+
+ggplot(gw_model_results, aes(fill = PC5)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c() + 
+  theme_void()
+```
+
+
+
+## Geodemographic classification 
+
+```{r}
+set.seed(1983)
+
+dfw_kmeans <- dfw_pca %>%
+  st_drop_geometry() %>%
+  na.omit() %>%
+  select(PC1:PC8) %>%
+  kmeans(centers = 8)
+
+table(dfw_kmeans$cluster)
+```
+Map the clusters: 
+
+```{r}
+dfw_clusters <- dfw_pca %>%
+  na.omit() %>%
+  mutate(cluster = as.character(dfw_kmeans$cluster))
+
+ggplot(dfw_clusters, aes(fill = cluster)) + 
+  geom_sf(size = 0.1) + 
+  scale_fill_brewer(palette = "Set1") + 
+  theme_void()
+```
+
 
 ## Spatial clustering & regionalization 
 
@@ -47,6 +376,34 @@ The previous chapter included a range of examples illustrating methods for analy
 * Potential applications
 * Alternative approaches
 
+```{r}
+input_vars <- dfw_pca %>%
+  select(PC1:PC8) %>%
+  st_drop_geometry() %>%
+  as.data.frame() %>%
+  na.omit()
+
+skater_nbrs <- poly2nb(na.omit(dfw_pca), queen = TRUE)
+costs <- nbcosts(skater_nbrs, input_vars)
+skater_weights <- nb2listw(skater_nbrs, costs, style = "B")
+
+mst <- mstree(skater_weights)
+
+regions <- skater(mst[,1:2], input_vars, ncuts = 7,
+                  crit = 10)
+```
+
+
+Plot the regions:
+
+```{r}
+dfw_clusters$region <- as.character(regions$group)
+
+ggplot(dfw_clusters, aes(fill = region)) + 
+  geom_sf(size = 0.1) + 
+  scale_fill_brewer(palette = "Set1") + 
+  theme_void()
+```
 
 
 
