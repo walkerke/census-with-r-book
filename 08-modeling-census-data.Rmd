@@ -19,7 +19,7 @@ The calculation of segregration and diversity indices are widely used in the soc
 ```{r get-race-data-ch8}
 library(tidycensus)
 library(tidyverse)
-library(segregation)
+library(segregation) # remotes::install_github("elbersb/segregation")
 
 la_data <- get_acs(
   geography = "tract",
@@ -57,10 +57,26 @@ la_data %>%
 
 Local segregation indices:
 
+```{r}
+la_entropy <- la_data %>%
+  group_by(GEOID) %>%
+  summarize(
+    entropy = entropy(
+            group = "variable",
+            weight = "estimate",
+            base = 2)
+  )
+
+la_tracts <- tracts("CA", "Los Angeles")
+
+la_tracts$entropy <- la_entropy
+```
+
+
+
 ```{r map-local-seg}
 library(tigris)
 
-la_tracts <- tracts("CA", "Los Angeles", cb = TRUE)
 
 la_local_seg <- la_data %>%
   mutual_local(
@@ -246,6 +262,8 @@ moran.test(dfw_pca$residuals, wts, na.action = na.exclude)
 * Fitting a spatial regression model
 * Spatial lag vs. spatial error models
 * Intepreting results
+
+Show Lagrange multiplier test first
 
 
 ```{r}

@@ -427,7 +427,7 @@ The map appears as before, but now with a more familiar representation of the ex
 
 The spatial capabilities of tidycensus also allow for exploratory spatial data analysis (ESDA) within R. ESDA refers to the use of datasets' spatial properties in addition to their attributes to explore patterns and relationships. This may involve exploration of spatial patterns in datasets or identification of spatial clustering of a given demographic attribute.
 
-To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on the percent of the population age 25 and up with a bachelor's degree for Census tracts in the Dallas-Fort Worth, TX metropolitan area. Census tracts in the metro area will be identified using methods introduced earlier in this chapter.
+To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on median age by Census tract in the Dallas-Fort Worth, TX metropolitan area. Census tracts in the metro area will be identified using methods introduced earlier in this chapter.
 
 ```{r}
 library(tidycensus)
@@ -437,14 +437,14 @@ library(sf)
 library(spdep)
 options(tigris_use_cache = TRUE)
 
-dfw <- core_based_statistical_areas(cb = TRUE, year = 2018) %>%
+dfw <- core_based_statistical_areas(cb = TRUE, year = 2019) %>%
   filter(str_detect(NAME, "Dallas"))
 
 dfw_tracts <- get_acs(
   geography = "tract",
-  variables = "DP02_0067P",
+  variables = "B01002_001",
   state = "TX",
-  year = 2018,
+  year = 2019,
   geometry = TRUE
 ) %>%
   st_filter(dfw, .predicate = st_within) %>%
@@ -535,10 +535,10 @@ ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) +
   geom_point(alpha = 0.3) + 
   geom_abline(color = "red") + 
   theme_minimal() + 
-  labs(title = "Educational attainment, Dallas-Fort Worth TX",
-       x = "Percent with bachelor's degree",
-       y = "Spatial lag, percent with bachelor's degree", 
-       caption = "Data source: 2014-2018 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
+  labs(title = "Median age by Census tract, Dallas-Fort Worth TX",
+       x = "Median age",
+       y = "Spatial lag, median age", 
+       caption = "Data source: 2015-2019 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
 
 ```
 
@@ -550,11 +550,15 @@ $$ where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of sp
 
 Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
+
 ```{r}
 moran.test(dfw_tracts$estimate, weights)
 ```
 
-The Moran's I statistic of 0.74 is large and positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset. In a practical sense, this means that Census tracts with highly-educated populations tend to be located near one another, and Census tracts with low levels of educational attainment also tend to be found in the same areas.
+
+The Moran's I statistic of 0.359 is positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset. In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
+
+### Local spatial autocorrelation
 
 We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic, which is computed as follows:
 
@@ -565,9 +569,9 @@ $$ In summary, the equation computes a ratio of the weighted average of the neig
 
 ```{r}
 # For Gi*, re-compute the weights with `include.self()`
-weights <- nb2listw(include.self(neighbors))
+localg_weights <- nb2listw(include.self(neighbors))
 
-dfw_tracts$localG <- localG(dfw_tracts$estimate, weights)
+dfw_tracts$localG <- localG(dfw_tracts$estimate, localg_weights)
 
 ggplot(dfw_tracts) + 
   geom_sf(aes(fill = localG), color = NA) + 
@@ -588,3 +592,65 @@ ggplot(dfw_tracts) +
   scale_fill_manual(values = c("red", "blue", "grey")) + 
   theme_void()
 ```
+
+### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
+
+```{r}
+set.seed(1983)
+
+dfw_tracts$scaled_estimate <- as.numeric(scale(dfw_tracts$estimate))
+
+dfw_lisa <- localmoran_perm(dfw_tracts$scaled_estimate, weights, nsim = 999L, 
+                            alternative = "two.sided") %>%
+  as_tibble() %>%
+  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
+
+dfw_lisa_df <- dfw_tracts %>%
+  select(GEOID, scaled_estimate) %>%
+  mutate(lagged_estimate = lag.listw(weights, scaled_estimate)) %>%
+  bind_cols(dfw_lisa)
+
+dfw_lisa_df
+```
+Review the clusters and a cluster map:
+
+```{r}
+dfw_lisa_clusters <- dfw_lisa_df %>%
+  mutate(lisa_cluster = case_when(
+    p_i >= 0.05 ~ "Not significant",
+    scaled_estimate > 0 & local_i > 0 ~ "High-high",
+    scaled_estimate > 0 & local_i < 0 ~ "High-low",
+    scaled_estimate < 0 & local_i > 0 ~ "Low-low",
+    scaled_estimate < 0 & local_i < 0 ~ "Low-high"
+  ))
+```
+
+The "LISA scatterplot":
+
+```{r}
+color_values <- c(`High-high` = "red", 
+                  `High-low` = "pink", 
+                  `Low-low` = "blue", 
+                  `Low-high` = "lightblue", 
+                  `Not significant` = "white")
+
+ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
+                              color = lisa_cluster)) + 
+  geom_point() + 
+  theme_minimal() + 
+  geom_hline(yintercept = 0, style = "dashed") + 
+  geom_vline
+
+```
+
+
+
+And make the map:
+
+```{r}
+ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
+  geom_sf(size = 0.1) + 
+  theme_void() + 
+  scale_fill_manual(values = color_values)
+```
+

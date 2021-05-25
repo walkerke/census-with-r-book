@@ -47,18 +47,20 @@ __ggplot2__ version 3.0 (released in 2018) included support for mapping simple f
 
 One of the most common ways to visualize statistical information on a map is with _choropleth mapping_.  Choropleth maps use shading to represent how underlying data values vary by feature in a spatial dataset.  The income plot of Washington, DC shown earlier in this chapter is an example of a choropleth map.  
 
-In the example below, tidycensus is used to obtain linked ACS and spatial data on median age by state for the 50 US states plus the District of Columbia.  The additional argument used, `shift_geo = TRUE`, is available for states and counties when the 50 states + DC are requested.  This argument moves and re-scales Alaska and Hawaii to the south of Arizona and uses an Albers projection, courtesy of the [albersusa package](https://github.com/hrbrmstr/albersusa), to view US trends on the same graphic without setting up insets.  
+In the example below, tidycensus is used to obtain linked ACS and spatial data on median age by state for the 50 US states plus the District of Columbia and Puerto Rico.  For national maps, it is often preferable to generate insets of Alaska, Hawaii, and Puerto Rico so that they can all be viewed comparatively with the continental United States.  We'll use the `shift_geometry()` function in __tigris__ to shift and rescale these areas for national mapping.
 
 ```{r}
 library(tidycensus)
 library(tidyverse)
+library(tigris)
 
 us_median_age <- get_acs(geography = "state",
                          variables = "B01002_001",
                          year = 2019,
                          survey = "acs1",
                          geometry = TRUE,
-                         shift_geo = TRUE)
+                         resolution = "20m") %>%
+  shift_geometry()
 
 plot(us_median_age$geometry)
 
@@ -117,6 +119,7 @@ hennepin_race <- get_acs(
 hennepin_race
 
 ```
+
 We've returned ACS data in tidycensus's regular "tidy" or long format, which will be useful in a moment for comparative map-making.  To get started, we'll extract a single group from the dataset to illustrate how tmap works.  
 
 tmap's map-making syntax will be somewhat familiar to users of ggplot2, as it uses the concept of _layers_ to specify modifications to the map.  The map object is initialized with `tm_shape()`, which then allows us to view the Census tracts with `tm_polygons()`.  
@@ -145,6 +148,7 @@ You'll notice that tmap uses a classed color scheme rather than the continuous p
 ```{r}
 hist(hennepin_asian$estimate)
 ```
+
 As the histogram illustrates, most Census tracts in Hennepin County have Asian populations below 10 percent.  In turn, this makes it difficult to see meaningful variation on our map as most tracts fall into one class.  The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`).  Let's switch to quantiles below, where each class will contain the same number of Census tracts.  We can also change the color palette and add some contextual text as we did with ggplot2.  
 
 ```{r}
@@ -234,6 +238,7 @@ irs_data <- read_csv("https://www.irs.gov/pub/irs-soi/18zpallnoagi.csv")
 
 irs_data
 ```
+
 The dataset contains 153 columns [which are identified in the linked codebook](https://www.irs.gov/pub/irs-soi/18zpdoc.docx).  Geographies are identified by the `ZIPCODE` column, which shows aggregated data by state (`ZIPCODE == "000000"`) and by zip code. We might be interested in understanding the geography of self-employment income within a given region. We'll retain the variables `N09400`, which represents the number of tax returns with self-employment tax, and `N1`, which represents the total number of returns.
 
 ```{r}
@@ -255,6 +260,7 @@ boston_zctas <- zctas(cb = TRUE,
                       year = 2018)
 
 ```
+
 The ZCTA prefixes `021`, `022`, and `024` cover much of the Boston metropolitan area; "holes" in the region represent areas like Boston Common which are not covered by ZCTAs.  Let's take a quick look at its attributes: 
 
 ```{r}
@@ -295,39 +301,8 @@ tm_shape(boston_se_data) +
 
 ## Interactive mapping
 
-```{r}
-library(tidycensus)
-library(tigris)
-library(ggiraph)
-library(tidyverse)
 
-us_median_age <- get_acs(
-  geography = "state",
-  variables = "B01002_001",
-  year = 2019,
-  survey = "acs1",
-  geometry = TRUE,
-  resolution = "20m"
-) %>%
-  shift_geometry() %>%
-  mutate(tooltip = paste(NAME, estimate, sep = ": "))
-
-gg <- ggplot(us_median_age, aes(fill = estimate)) + 
-  geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME)) + 
-  scale_fill_distiller(palette = "RdPu", 
-                       direction = 1) + 
-  labs(title = "Median Age by State, 2019",
-       caption = "Data source: 2019 1-year ACS, US Census Bureau",
-       fill = "ACS estimate") + 
-  theme_void() 
-  
-girafe(ggobj = gg) %>%
-  girafe_options(opts_hover(css = "fill:cyan;"))
-```
-
-
-
-## Interactive mapping with Leaflet 
+### Interactive mapping with Leaflet 
 
 In Chapter 5, you learned how to quickly visualize geographic data obtained with tigris on an interactive map by using the `mapview()` function in the mapview package.  
 
@@ -395,6 +370,66 @@ leaflet() %>%
   )
 ```
 
+### Alternative approaches to interactive mapping
+
+```{r}
+us_value <- get_acs(
+  geography = "state",
+  variables = "B25077_001",
+  year = 2019,
+  survey = "acs1",
+  geometry = TRUE,
+  resolution = "20m"
+)
+```
+
+Trying the same Leaflet approach:
+
+```{r}
+us_pal <- colorNumeric(
+  palette = "plasma",
+  domain = us_value$estimate
+)
+
+leaflet() %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addPolygons(data = us_value,
+              color = ~us_pal(estimate),
+              weight = 0.5,
+              smoothFactor = 0.2,
+              fillOpacity = 0.5,
+              label = ~estimate) %>%
+  addLegend(
+    position = "bottomright",
+    pal = us_pal,
+    values = us_value$estimate,
+    title = "Median home value"
+  )
+```
+
+
+
+
+```{r}
+library(ggiraph)
+library(tidyverse)
+
+us_value_shifted <- us_value %>%
+  shift_geometry(position = "outside") %>%
+  mutate(tooltip = paste(NAME, estimate, sep = ": "))
+
+gg <- ggplot(us_value_shifted, aes(fill = estimate)) + 
+  geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME), 
+                      size = 0.4) + 
+  scale_fill_viridis_c(option = "plasma") + 
+  labs(title = "Median housing value by State, 2019",
+       caption = "Data source: 2019 1-year ACS, US Census Bureau",
+       fill = "ACS estimate") + 
+  theme_void() 
+  
+girafe(ggobj = gg) %>%
+  girafe_options(opts_hover(css = "fill:cyan;"))
+```
 
 ## Web mapping applications with shiny 
 
