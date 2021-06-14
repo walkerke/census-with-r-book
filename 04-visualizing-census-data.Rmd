@@ -4,134 +4,146 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
+The core visualization package within the **tidyverse** suite of packages is **ggplot2** (Wickham 2016). Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 25,000 downloads per day in March of 2019 from the RStudio CRAN mirror. ggplot2 allows R users to visualize data using a *layered grammar of graphics* approach, in which plot objects are initialized upon which the R user layers plot elements.
 
-The core visualization package within the __tidyverse__ suite of packages is __ggplot2__ (Wickham 2016).  Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 25,000 downloads per day in March of 2019 from the RStudio CRAN mirror.  ggplot2 allows R users to visualize data using a _layered grammar of graphics_ approach, in which plot objects are initialized upon which the R user layers plot elements.  
+ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the **tidycensus** package. It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).
 
-ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the __tidycensus__ package.  It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).  
-
-This chapter includes several examples of how R users can visualize data from the US Census Bureau using ggplot2.  Chart types explored in this chapter include basic chart types; faceted, or "small multiples" plots; population pyramids; margin of error plots for ACS data; and advanced visualizations using extensions to ggplot2.  Finally, the chapter introduces the __plotly__ package for interactive visualization, which can be used to convert ggplot2 objects to interactive web graphics.  
+This chapter includes several examples of how R users can visualize data from the US Census Bureau using ggplot2. Chart types explored in this chapter include basic chart types; faceted, or "small multiples" plots; population pyramids; margin of error plots for ACS data; and advanced visualizations using extensions to ggplot2. Finally, the chapter introduces the **plotly** package for interactive visualization, which can be used to convert ggplot2 objects to interactive web graphics.
 
 ## Basic Census visualization with ggplot2
 
-In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States.  The data come from the 2017 1-year American Community Survey, variable `DP03_0021P`.  To determine this information, we can use __tidyverse__ tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.  
+In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States. The data come from the 2019 1-year American Community Survey, variable `DP03_0021P`. To determine this information, we can use **tidyverse** tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.
 
 ```{r}
 library(tidycensus)
 library(tidyverse)
 
-metros <-
-  get_acs(
-    geography = "cbsa",
-    variables = "DP03_0021P",
-    summary_var = "B01003_001",
-    survey = "acs1"
-  ) %>%
-  filter(min_rank(desc(summary_est)) < 21)
+metros <-  get_acs(
+  geography = "cbsa",
+  variables = "DP03_0021P",
+  summary_var = "B01003_001",
+  survey = "acs1",
+  year = 2019
+) %>%
+  slice_max(summary_est, n = 20)
 
 
 glimpse(metros)
 ```
 
-The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `filter` command.  While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization.  The tidy format returned by `get_acs()` is well-suited for visualization with ggplot2.  
+The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `filter` command. While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization. The tidy format returned by `get_acs()` is well-suited for visualization with ggplot2.
 
-ggplot2 visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function.  Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.  
+ggplot2 visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an `aesthetic`, defined with the `aes()` function. Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.
 
-After initializing the ggplot object, users can layer plot elements onto the plot object.  Essential to the plot is a `geom`, which specifies one of many chart types available in ggplot2.  For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth.  Layers are linked to the ggplot object by using the `+` operator.  
+After initializing the ggplot object, users can layer plot elements onto the plot object. Essential to the plot is a `geom`, which specifies one of many chart types available in ggplot2. For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth. Layers are linked to the ggplot object by using the `+` operator.
 
-In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code.  The first argument to `ggplot()` in the example below is the name of our dataset; the second argument is an aesthetic mapping of columns to plot elements, specified inside the `aes()` function.  This plot initialization is then linked with the `+` operator to the `geom_point()` function to plot ACS estimates with dots.   
+In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code. The first argument to `ggplot()` in the example below is the name of our dataset; the second argument is an aesthetic mapping of columns to plot elements, specified inside the `aes()` function. This plot initialization is then linked with the `+` operator to the `geom_col()` function to create a bar chart.
 
 ```{r}
 p <- ggplot(metros, aes(x = NAME, y = estimate)) + 
-  geom_point()
+  geom_col()
 
 p
 ```
 
-While the above chart is a visualization of the `metros` dataset, it tells us little about the data given the lack of necessary formatting.  The x-axis labels are so lengthy that they overlap and are impossible to read; the axis titles are not intuitive; and the data are not sorted, making it difficult to compare similar observations.  
+While the above chart is a visualization of the `metros` dataset, it tells us little about the data given the lack of necessary formatting. The x-axis labels are so lengthy that they overlap and are impossible to read; the axis titles are not intuitive; and the data are not sorted, making it difficult to compare similar observations.
 
-Fortunately, the plot can be made more legible by cleaning up the metropolitan area name, re-ordering the data in descending order, then adding layers to the plot definition.  Additionally, ggplot2 visualization can be used in combination with __magrittr__ piping and tidyverse functions, allowing analysts to string together data manipulation and visualization processes.  
+Fortunately, the plot can be made more legible by cleaning up the metropolitan area name, re-ordering the data in descending order, then adding layers to the plot definition. Additionally, ggplot2 visualization can be used in combination with **magrittr** piping and tidyverse functions, allowing analysts to string together data manipulation and visualization processes.
 
-Our first step will be to format the `NAME` column in a more intuitive way.  The `NAME` column by default provides a description of each geography as formatted by the US Census Bureau.  However, a detailed description like `"Atlanta-Sandy Springs-Roswell, GA Metro Area"` is likely unnecessary for our chart, as the same metropolitan area can be represented on the chart by the name of its principal city, which in this case would be `"Atlanta"`.  To accomplish this, we can overwrite the `NAME` column by using the tidyverse function `str_replace()`, found in the __stringr__ package.  The example uses _regular expressions_ to first remove all the text after the first dash, then remove the text after the first comma if no dash was originally present.  
+Our first step will be to format the `NAME` column in a more intuitive way. The `NAME` column by default provides a description of each geography as formatted by the US Census Bureau. However, a detailed description like `"Atlanta-Sandy Springs-Roswell, GA Metro Area"` is likely unnecessary for our chart, as the same metropolitan area can be represented on the chart by the name of its first principal city, which in this case would be `"Atlanta"`. To accomplish this, we can overwrite the `NAME` column by using the tidyverse function `str_remove()`, found in the **stringr** package. The example uses *regular expressions* to first remove all the text after the first dash, then remove the text after the first comma if no dash was originally present. These two subsequent calls to `mutate()` will account for the various ways that metropolitan area names are specified.
 
-On the chart, the legibility can be further improved by mapping the metro name to the y-axis and the ACS estimate to the x-axis, and plotting the points in descending order of their estimate values.  The ordering of points in this way is accomplished with the `reorder()` function, used inside the call to `aes()`.  As the result of the `mutate()` operations is piped to the `ggplot()` function in this example with the `%>%` operator, the dataset argument to `ggplot()` is inferred by the function.  
+On the chart, the legibility can be further improved by mapping the metro name to the y-axis and the ACS estimate to the x-axis, and plotting the points in descending order of their estimate values. The ordering of points in this way is accomplished with the `reorder()` function, used inside the call to `aes()`. As the result of the `mutate()` operations is piped to the `ggplot()` function in this example with the `%>%` operator, the dataset argument to `ggplot()` is inferred by the function.
 
 ```{r}
 p <- metros %>%
-  mutate(NAME = str_replace(NAME, "-.*$", "")) %>%
-  mutate(NAME = str_replace(NAME, ",.*$", "")) %>%
+  mutate(NAME = str_remove(NAME, "-.*$")) %>%
+  mutate(NAME = str_remove(NAME, ",.*$")) %>%
   ggplot(aes(y = reorder(NAME, estimate), x = estimate)) + 
-  geom_point()
+  geom_col()
 
 
 p
 ```
 
+The plot is much more legible after our modifications. Metropolitan areas can be directly compared with one another, and the metro area labels convey enough information about the different places without overwhelming the plot with long axis labels. However, the plot still lacks information to inform the viewer about the plot's content. This can be accomplished by specifying *labels* inside the `labs()` function. In the example below, we'll specify a title and subtitle, and modify the X and Y axis labels from their defaults.
 
-The plot is much more legible after our modifications.  Metropolitan areas can be directly compared with one another, and the metro area labels convey enough information about the different places without overwhelming the plot with long axis labels.  However, the plot still lacks information to inform the viewer about the plot's content.  This can be accomplished by specifying _labels_ inside the `labs()` function.  In the example below, we'll specify a title and subtitle, and modify the X and Y axis labels from their defaults.  
-
-```{r}
+```{r polished-plot}
 
 p <- p +  
-  labs(title = "Percentage of residents who take public transportation to work", 
-       subtitle = "2017 1-year ACS estimates, major US metropolitan areas", 
+  labs(title = "Public transit commute share", 
+       subtitle = "2019 1-year ACS estimates", 
        y = "", 
        x = "ACS estimate (percent)", 
-       caption = "Source: ACS Data Profile variable DP03_0021P via the tidycensus R package")
+       caption = "Source: ACS Data Profile variable DP03_0021P via the tidycensus R package") + 
+  theme_minimal(base_family = "Waree")
   
 
 p
 
 ```
 
-The inclusion of labels provides key information about the contents of the plot and also gives it a more polished look for presentation.   
+The inclusion of labels provides key information about the contents of the plot and also gives it a more polished look for presentation.
 
 ## Visualizing margins of error
 
-As discussed in Chapter 3, handling margins of error appropriately is of significant importance for analysts working with ACS data.  While __tidycensus__ has tools available for working with margins of error in a data wrangling workflow, it is also often useful to visualize those margins of error to illustrate the degree of uncertainty around estimates, especially when making comparisons between those estimates.  
+As discussed in Chapter 3, handling margins of error appropriately is of significant importance for analysts working with ACS data. While **tidycensus** has tools available for working with margins of error in a data wrangling workflow, it is also often useful to visualize those margins of error to illustrate the degree of uncertainty around estimates, especially when making comparisons between those estimates.
 
-In the above example visualization of public transportation mode share by metropolitan area for the largest metros in the United States, estimates are associated with margins of error; however, these margins of error are relatively small given the large population size of the geographic units represented in the plot.  However, if studying demographic trends for geographies of smaller population size - like counties, Census tracts, or block groups - comparisons can be subject to a considerable degree of uncertainty.  
+In the above example visualization of public transportation mode share by metropolitan area for the largest metros in the United States, estimates are associated with margins of error; however, these margins of error are relatively small given the large population size of the geographic units represented in the plot. However, if studying demographic trends for geographies of smaller population size - like counties, Census tracts, or block groups - comparisons can be subject to a considerable degree of uncertainty.
 
-In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2013-2017 ACS.  Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population.  We can retrieve this information with tidycensus.  
+In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2013-2017 ACS. Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population. We can retrieve this information with tidycensus.
 
 ```{r}
-maine <- get_acs(state = "Maine", geography = "county", 
-                 variables = c(totalpop = "B01003_001")) %>%
+maine <- get_acs(
+  state = "Maine",
+  geography = "county",
+  variables = c(totalpop = "B01003_001")
+) %>%
   arrange(desc(estimate))
 
 maine
 ```
 
-There are sixteen counties in Maine, ranging in population from a maximum of 286,119 to a minimum of 17,156.  In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.  
+There are sixteen counties in Maine, ranging in population from a maximum of 286,119 to a minimum of 17,156. In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.
 
-Comparing median household incomes of these sixteen counties illustrates this point.  We can first obtain this data with tidycensus, then plot the result with a dot plot in a similar fashion to the previous section.  
+Comparing median household incomes of these sixteen counties illustrates this point. Let's firstbobtain this data with tidycensus.
 
 ```{r}
-inc <- get_acs(state = "Maine", geography = "county", 
-               variables = c(hhincome = "B19013_001")) %>%
-  mutate(NAME = str_replace(NAME, " County, Maine", ""))
+maine_income <- get_acs(
+  state = "Maine",
+  geography = "county",
+  variables = c(hhincome = "B19013_001"),
+  year = 2019
+) %>%
+  mutate(NAME = str_remove(NAME, " County, Maine"))
+```
 
-ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) + 
+Using some of the tips covered in the previous visualization section, we can produce a plot with appropriate styling and formatting to rank the counties.
+
+```{r}
+ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) + 
   geom_point(size = 3, color = "darkgreen") + 
   labs(title = "Median household income", 
        subtitle = "Counties in Maine", 
        x = "", 
        y = "ACS estimate") + 
+  theme_minimal() + 
   scale_x_continuous(labels = scales::dollar)
 ```
 
-The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis).  In several instances, the estimates of neighboring counties in the ranking is quite close.  Importantly, however, these estimates - represented by dots on the chart - are associated with varying margins of error.  We can explore this by looking directly at the data.  
+The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis). However, the data used to generate this chart is significantly different from the metropolitan area data used in the previous example. In our first example, ACS estimates covered the top 20 US metros by population - areas that all have populations exceeding 2.8 million. For these areas, margins of error are small enough that they do not meaningfully change the interpretation of the estimates given the large samples sizes used to generate them. However, as discussed in Chapter 3, smaller geographies may have large margins of error around their ACS estimates that may change their interpretation.
+
+On our chart, county estimates are quite close, which may mean that the ranking of counties is misleading given the margin of error around those estimates. We can explore this by looking directly at the data.
 
 ```{r}
-inc %>% arrange(desc(moe))
+maine_income %>% arrange(desc(moe))
 ```
 
+Specifically, margins of error around the estimated median household incomes vary from a low of \$1326 (Penobscot County) to a high of \$3240 (Sagadahoc County). In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.
 
-Specifically, margins of error around the estimated median household incomes vary from a low of $1115 (Cumberland County) to a high of $2953 (Sagadahoc County).  In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.  
-
-In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading.  However, using visualization tools in ggplot2, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking.  This is accomplished with the `geom_errorbarh()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate.  In this instance, we will use the `moe` column to determine the lengths of the error bars.  
+In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading. However, using visualization tools in ggplot2, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking. This is accomplished with the `geom_errorbarh()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate. In this instance, we will use the `moe` column to determine the lengths of the error bars.
 
 ```{r}
-ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) + 
+ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) + 
   geom_errorbarh(aes(xmin = estimate - moe, xmax = estimate + moe)) + 
   geom_point(size = 3, color = "darkgreen") + 
   labs(title = "Median household income", 
@@ -141,13 +153,13 @@ ggplot(inc, aes(x = estimate, y = reorder(NAME, estimate))) +
   scale_x_continuous(labels = scales::dollar)
 ```
 
-Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income.  For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties _could_ conceivably have lower median household incomes.  Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.   
+Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income. For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties *could* conceivably have lower median household incomes. Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.
 
 ## Exploring age and sex structure with population pyramids
 
-A common method for visualizing the demographic structure of a particular area is the _population pyramid_.  Population pyramids are typically constructed by visualizing population size or proportion on the x-axis; age cohort on the y-axis; and sex is represented categorically with male and female bars mirrored around a central axis.  
+A common method for visualizing the demographic structure of a particular area is the *population pyramid*. Population pyramids are typically constructed by visualizing population size or proportion on the x-axis; age cohort on the y-axis; and sex is represented categorically with male and female bars mirrored around a central axis.
 
-We can illustrate this type of visualization using data from the 2010 decennial US Census for the state of Utah.  We first obtain data using the `get_estimates()` function in tidycensus for 2017 population estimates from the Census Bureau's Population Estimates API, with a summary variable representing total population: 
+We can illustrate this type of visualization using data from the Population Estimates API for the state of Utah. We first obtain data using the `get_estimates()` function in tidycensus for 2019 population estimates from the Census Bureau's Population Estimates API.
 
 ```{r}
 library(tidycensus)
@@ -166,9 +178,9 @@ utah
 
 ```
 
-The function returns a tidy dataset in which each row represents population values broken down by age and sex for the state of Utah.  However, there are some key issues with this dataset that must be addressed before constructing a population pyramid.  First, several rows represent values that we don't need for our population pyramid visualization.  For example, the first few rows in the dataset represent population values for `"Both sexes"` or for `"All ages"`.  In turn, it will be necessary to isolate those rows that represent five-year age bands by sex, anmd remove the rows that do not.  This can be resolved with some data wrangling using tidyverse tools.  
+The function returns a tidy dataset in which each row represents population values broken down by age and sex for the state of Utah. However, there are some key issues with this dataset that must be addressed before constructing a population pyramid. First, several rows represent values that we don't need for our population pyramid visualization. For example, the first few rows in the dataset represent population values for `"Both sexes"` or for `"All ages"`. In turn, it will be necessary to isolate those rows that represent five-year age bands by sex, anmd remove the rows that do not. This can be resolved with some data wrangling using tidyverse tools.
 
-In the dataset returned by `get_estimates()`, five-year age bands are identified in the `AGEGROUP` column beginning with the word `"Age"`.  We can filter this dataset for rows that match this pattern, and remove those rows that represent both sexes.  This leaves us with rows that represent five-year age bands by sex.  However, to achieve the desired visual effect, data for one sex must mirror another, split by a central vertical axis.  To accomplish this, we can set the values for all `Male` values to negative.  
+In the dataset returned by `get_estimates()`, five-year age bands are identified in the `AGEGROUP` column beginning with the word `"Age"`. We can filter this dataset for rows that match this pattern, and remove those rows that represent both sexes. This leaves us with rows that represent five-year age bands by sex. However, to achieve the desired visual effect, data for one sex must mirror another, split by a central vertical axis. To accomplish this, we can set the values for all `Male` values to negative.
 
 ```{r}
 utah_filtered <- filter(utah, str_detect(AGEGROUP, "^Age"), 
@@ -178,36 +190,34 @@ utah_filtered <- filter(utah, str_detect(AGEGROUP, "^Age"),
 utah_filtered
 ```
 
-The data are now ready for visualization!  The core components of the pyramid visualization require mapping the population value and the age group to the chart axes.  Sex can be mapped to the `fill` aesthetic allowing for the plotting of these categories by color.  Importantly, to get the visualization to work correctly, `value` must be mapped to the `y` aesthetic and `AGEGROUP` to the `x` aesthetic, with the `coord_flip()` function then used to plot the bars horizontally instead of vertically.  
-
+The data are now ready for visualization! The core components of the pyramid visualization require mapping the population value and the age group to the chart axes. Sex can be mapped to the `fill` aesthetic allowing for the plotting of these categories by color. Importantly, to get the visualization to work correctly, `value` must be mapped to the `y` aesthetic and `AGEGROUP` to the `x` aesthetic, with the `coord_flip()` function then used to plot the bars horizontally instead of vertically.
 
 ```{r}
-ggplot(utah_filtered, aes(y = value, x = AGEGROUP, fill = SEX)) + 
-  geom_bar(stat = "identity") + 
-  coord_flip()
+ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) + 
+  geom_col()
 ```
 
-The visualization represents a functional population pyramid that is nonetheless in need of some cleanup.  In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse.  Cleaning up the plot allows us to use some additional visualization options in ggplot2.  In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in ggplot2 along with custom label formatters we define.  In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information.  We'll also make use of an alternative ggplot2 theme, `theme_minimal()`, which uses a white background with muted gridlines.  
+The visualization represents a functional population pyramid that is nonetheless in need of some cleanup. In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse. Cleaning up the plot allows us to use some additional visualization options in ggplot2. In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in ggplot2 along with custom label formatters we define. In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information. We'll also make use of an alternative ggplot2 theme, `theme_minimal()`, which uses a white background with muted gridlines.
 
 ```{r}
-ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) + 
-  geom_bar(stat = "identity", width = 0.95) + 
-  theme_minimal(base_family = "Roboto") + 
-  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
-  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
+utah_pyramid <- ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) + 
+  geom_col(width = 0.95, alpha = 0.75) + 
+  theme_minimal(base_family = "Verdana") + 
+  scale_x_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
+  scale_y_discrete(labels = function(x) gsub("Age | years", "", x)) + 
   scale_fill_manual(values = c("darkred", "navy")) + 
-  coord_flip() + 
   labs(x = "", 
        y = "2019 Census Bureau population estimate", 
        title = "Population structure in Utah", 
        fill = "", 
        caption = "Data source: US Census Bureau population estimates & tidycensus R package")
-```
 
+utah_pyramid
+```
 
 ## Making comparisons with faceted plots
 
-One of the most powerful features of ggplot2 is its ability to generate _faceted plots_, which are also commonly referred to as _small multiples_.  Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups.  This is particularly useful when examining how distributions of values vary across different geographies.  An example shown below involves a comparison of median home values by Census tract for three counties in the Portland, Oregon area: Multnomah, which contains the city of Portland, and the suburban counties of Clackamas and Washington.  
+One of the most powerful features of ggplot2 is its ability to generate *faceted plots*, which are also commonly referred to as *small multiples*. Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups. This is particularly useful when examining how distributions of values vary across different geographies. An example shown below involves a comparison of median home values by Census tract for three counties in the Portland, Oregon area: Multnomah, which contains the city of Portland, and the suburban counties of Clackamas and Washington.
 
 ```{r}
 housing_val <- get_acs(geography = "tract", 
@@ -218,7 +228,7 @@ housing_val <- get_acs(geography = "tract",
 housing_val
 ```
 
-As with other datasets obtained with tidycensus, the `NAME` column contains descriptive information that can be parsed to make comparisons.  In this case, Census tract ID, county, and state are separated with commas; in turn the tidyverse `separate()` function can split this column into three columns accordingly.  
+As with other datasets obtained with tidycensus, the `NAME` column contains descriptive information that can be parsed to make comparisons. In this case, Census tract ID, county, and state are separated with commas; in turn the tidyverse `separate()` function can split this column into three columns accordingly.
 
 ```{r}
 housing_val2 <- separate(housing_val, NAME, 
@@ -228,7 +238,7 @@ housing_val2 <- separate(housing_val, NAME,
 housing_val2
 ```
 
-As explored in previous chapters, a major strength of the tidyverse is its ability to perform group-wise data analysis.  The dimensions of median home values by Census tract in each of the three counties can be explored in this way. For example, a call to `group_by()` followed by `summarize()` facilitates the calculation of county minimums, means, medians, and maximums.    
+As explored in previous chapters, a major strength of the tidyverse is its ability to perform group-wise data analysis. The dimensions of median home values by Census tract in each of the three counties can be explored in this way. For example, a call to `group_by()` followed by `summarize()` facilitates the calculation of county minimums, means, medians, and maximums.
 
 ```{r}
 housing_val2 %>%
@@ -239,14 +249,14 @@ housing_val2 %>%
             max = max(estimate, na.rm = TRUE))
 ```
 
-While these basic summary statistics offer some insights into comparisons between the three counties, they are limited in their ability to help us understand the dynamics of the overall distribution of values.  This task can in turn be augmented through visualization, which allows for quick visual comparison of these distributions.  Group-wise visualization in ggplot2 can be accomplished with the `facet_wrap()` function added onto any existing ggplot2 code that has salient groups to visualize.  For example, a kernel density plot can show the overall shape of the distribution of median home values in our dataset: 
+While these basic summary statistics offer some insights into comparisons between the three counties, they are limited in their ability to help us understand the dynamics of the overall distribution of values. This task can in turn be augmented through visualization, which allows for quick visual comparison of these distributions. Group-wise visualization in ggplot2 can be accomplished with the `facet_wrap()` function added onto any existing ggplot2 code that has salient groups to visualize. For example, a kernel density plot can show the overall shape of the distribution of median home values in our dataset:
 
 ```{r}
 ggplot(housing_val2, aes(x = estimate)) + 
   geom_density()
 ```
 
-Adding the `facet_wrap()` function, and specifying `county` as the column used to group the data, splits this visualization into side-by-side graphics based on the counties to which each Census tract belongs.  
+Adding the `facet_wrap()` function, and specifying `county` as the column used to group the data, splits this visualization into side-by-side graphics based on the counties to which each Census tract belongs.
 
 ```{r}
 ggplot(housing_val2, aes(x = estimate)) +
@@ -255,11 +265,11 @@ ggplot(housing_val2, aes(x = estimate)) +
   
 ```
 
-The side-by-side comparative graphics show how the value distributions vary between the three counties.  Home values in all three counties are common around $250,000, but Multnomah County has some Census tracts that represent the highest values in the dataset.  
+The side-by-side comparative graphics show how the value distributions vary between the three counties. Home values in all three counties are common around \$250,000, but Multnomah County has some Census tracts that represent the highest values in the dataset.
 
 ## Advanced visualization with ggplot2 extensions
 
-Beeswarm plot: 
+Beeswarm plot:
 
 ```{r}
 library(tidycensus)
@@ -331,27 +341,11 @@ ggplot(us_pyramid_data, aes(x = AGEGROUP, y = prop, fill = SEX)) +
        caption = "Data source: US Census Bureau population estimates & tidycensus R package")
 ```
 
-
 ## Interactive visualization with plotly
-
 
 ```{r}
 library(plotly)
 
-utah_pyramid <- ggplot(utah_filtered, aes(x = AGEGROUP, y = value, fill = SEX)) + 
-  geom_bar(stat = "identity", width = 0.95) + 
-  theme_minimal(base_family = "Roboto") + 
-  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
-  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
-  scale_fill_manual(values = c("darkred", "navy")) + 
-  coord_flip() + 
-  labs(x = "", 
-       y = "2017 Census Bureau population estimate", 
-       title = "Population structure in Utah", 
-       fill = "", 
-       caption = "Data source: US Census Bureau population estimates & tidycensus R package")
-
 ggplotly(utah_pyramid)
 
 ```
-

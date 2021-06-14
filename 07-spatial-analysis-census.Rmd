@@ -595,6 +595,12 @@ ggplot(dfw_tracts) +
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
+Formula:
+
+$$
+I_i = \frac{(x_i-\bar{x})}{{∑_{k=1}^{n}(x_k-\bar{x})^2}/(n-1)}{∑_{j=1}^{n}w_{ij}(x_j-\bar{x})}
+$$
+
 ```{r}
 set.seed(1983)
 
@@ -635,11 +641,15 @@ color_values <- c(`High-high` = "red",
                   `Not significant` = "white")
 
 ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
-                              color = lisa_cluster)) + 
-  geom_point() + 
+                              fill = lisa_cluster)) + 
+  geom_point(color = "black", shape = 21, size = 2) + 
   theme_minimal() + 
-  geom_hline(yintercept = 0, style = "dashed") + 
-  geom_vline
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  scale_fill_manual(values = color_values) + 
+  labs(x = "Median age (z-score)",
+       y = "Spatial lag of median age (z-score)",
+       fill = "Cluster type")
 
 ```
 
@@ -651,6 +661,33 @@ And make the map:
 ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
   geom_sf(size = 0.1) + 
   theme_void() + 
-  scale_fill_manual(values = color_values)
+  scale_fill_manual(values = color_values) + 
+  labs(fill = "Cluster type")
+```
+
+Linked brushing:
+
+```{r}
+library(ggiraph)
+library(patchwork)
+
+lisa_plot <- ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
+                              fill = lisa_cluster)) + 
+  geom_point_interactive(aes(data_id = GEOID), color = "black", shape = 21, size = 2) + 
+  theme_minimal() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  scale_fill_manual(values = color_values) + 
+  labs(x = "Median age (z-score)",
+       y = "Spatial lag of median age (z-score)",
+       fill = "Cluster type")
+
+lisa_map <- ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
+  geom_sf_interactive(aes(data_id = GEOID), size = 0.1) + 
+  theme_void() + 
+  scale_fill_manual(values = color_values) + 
+  labs(fill = "Cluster type")
+
+girafe(ggobj = lisa_plot + lisa_map, width_svg = 10, height_svg = 4) 
 ```
 

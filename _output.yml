@@ -1,4 +1,6 @@
 bookdown::bs4_book:
   theme:
     primary: "#035004"
+  split_by: chapter
+  split_bib: yes
 bookdown::epub_book: default

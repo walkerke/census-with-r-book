@@ -1,22 +1,104 @@
 --- 
-title: "Analyzing US Census Data with R"
+title: "Analyzing the US Census with R"
 author: "Kyle E. Walker"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 knit: bookdown::render_book
 output: bookdown::bs4_book
 documentclass: book
-bibliography: [book.bib]
+bibliography: [references.bib]
 biblio-style: apalike
 link-citations: yes
 github-repo: walkerke/census-with-r-book
 description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model US Census data with the R programming language."
 ---
 
-# Overview {-}
+# Preface {-}
 
-This book is an overview of how practitioners can work with Census data around the world using the R programming language.  The book will focus on data acquisition and wrangling as well as data analysis and modeling of aggregate and individual-level data.  It will include a focus on US decennial Census and American Community Survey data along with a selection of other countries around the world.  It is designed to be useful for both beginners and advanced users of both R and Census data.  Beginners will find Part 1 more useful, as it covers the basics of R and Censuses and how to work with them together.  Advanced readers will find Parts 2 and 3 more useful, as these parts cover applications from exploratory mapping and visualization to advanced data modeling.  
+Census data are used widely in the United States across many research and applied fields, including education, business, journalism, and many others. Until recently, the process of working with US Census data has commonly required the use of a wide array of web interfaces and software platforms to prepare, map, and present the data products. The goal of this book is to illustrate the utility of the R programming language for handling these tasks, allowing Census data users to manage their projects in a single computing environment.
 
-The growing popularity of the R programming language for exploratory data analysis and data science has led many practitioners to turn to R to work with Census data.  To date, however, no book exists as a reference manual for how to use Census data in R; as such, resources are scattered across blog posts, webinars, and journal articles.  This proposed book aims to fill this gap as a reference manual for a wide range of use cases for practitioners using Census data in R.  
+The book focuses on two types of Census data products commonly used by practitioners:
 
-Additionally, the book will take advantage of cutting-edge developments in both data wrangling and spatial data analysis in R.  The book’s approach will be oriented around two major R ecosystems.  The first is the tidyverse, a suite of packages authored by Hadley Wickham and colleagues at RStudio that are designed to work together seamlessly in data science projects.  The second is sf, a re-imagination of the spatial ecosystem in R that works very well with the tidyverse.  Book readers will learn to work with US Census data using visualization, spatial analysis, and functional programming tools available in these packages.  
+* __Aggregate data__, which involve counts or estimates released by the Census Bureau that are aggregated to some geographic unit of interest, such as a state;
+
+* __Microdata__, which are individual, anonymized Census records that commonly represent a sample of a given Census dataset.
+
+In turn, the book is organized into three general sections that cover key areas of interest for practitioners working with US Census data in R.  Section I covers the process of working with Census data tables within R. After a brief introduction to US Census Bureau data and the R computing environment, readers will learn how to acquire, wrangle, and visualize aggregate US Census data. Section II focuses on spatial Census data analysis. Readers will learn about US Census Bureau spatial data, and then learn how to use this data to make maps, perform spatial analyses, and design spatial statistical and machine learning models. Section III covers datasets outside the decennial Census and American Community Survey. In Section III, readers will learn how to use the Census Bureau's Public Use Microdata Series datasets and then model this data using specialized tools within R for working with complex survey samples. Section III also covers historical Census data analysis and explores Census data resources outside the United States.  
+
+## An overview of the book
+
+Readers new to R and Census data should read the book in order, as each chapter includes concepts that build upon examples introduced in previous chapters.  More experienced analysts might use chapters as standalone manuals tailored to specific tasks and topics of interest to them.  A brief overview of each chapter follows below. 
+
+__Section 1__: 
+
+* Chapter 1 is a general overview of US Census data terms and definitions, and gives some brief background about the R language and why R is an excellent environment for working with US Census data.  It ends with an overview of the R packages highlighted in this book along with some recommendations for other Census data packages that are not covered in depth in the book.
+
+* Chapter 2 introduces tidycensus, an R package for working with US Census Bureau data in a tidy format.  Readers will learn how to make basic data requests with the package and understand various options in the package.  
+
+* Chapter 3 covers analysis of US Census data using the tidyverse, an integrated framework of packages for data preparation and wrangling.  It includes both simple and more complex examples of common tidyverse data wrangling tasks, and discusses workflows for handling margins of error in the American Community Survey.  
+
+* Chapter 4 introduces workflows for Census data visualization with a focus on the ggplot2 package.  Examples focus on best practices for preparing data for visualization and building charts well-suited for presenting Census data analyses.  
+
+__Section 2__: 
+
+* Chapter 5 introduces the tigris package for working with US Census Bureau geographic data in R. It includes an overview of spatial data structures in R with the sf package and covers key geospatial data topics like coordinate reference systems.  
+
+* Chapter 6 is all about mapping in R. Readers learn how to make simple shaded maps with US Census data using packages like ggplot2 and tmap; maps with more complex data requirements like dot-density maps; and interactive geographic visualizations and apps.  
+
+* Chapter 7 covers spatial data analysis. Topics include geographic data overlay; distance and proximity analysis; and exploratory spatial data analysis with the spdep package.  
+
+* Chapter 8's topic is modeling of geographic data. Readers learn how to compute indices of segregation and diversity with Census data; fit linear, spatial, and geographically weighted regression models; and develop workflows for geodemographic segmentation and regionalization.  
+__Section 3__: 
+
+* Chapter 9 focuses on individual-level _microdata_ from the US Census Bureau's Public Use Microdata Sample. Readers will learn how to acquire these datasets with tidycensus and use them to generate unique insights.  
+
+* Chapter 10 covers analysis of microdata with a focus on methods for analyzing and modeling complex survey samples.  Topics include estimation of standard errors with replicate weights, mapping microdata, and modeling microdata appropriately with the survey and srvyr packages. 
+
+* Chapter 11's focus is historical Census data analysis with examples using data from the IPUMS project. Topics covered include historical mapping with the National Historical Geographic Information System (NHGIS) and historical microdata analysis with IPUMS-USA; readers learn how to use the ipumsr r package to assist with these tasks.
+
+* Chapter 12 covers Census data resources for regions outside the United States.  It covers global demographic analysis with the US Census Bureau's International Data Base as well as country-specific examples from Canada, Mexico, Brazil, and Kenya.  
+
+ 
+## Who this book is for
+
+This book is designed for practitioners interested in working efficiently with data from the United States Census Bureau.  It defines "practitioners" quite broadly, and analysts at all levels of expertise should find topics within this book useful.  While the book focuses on examples from the United States, the topics covered are designed to be more general and applicable to use-cases outside the United States and also outside the domain of working with Census data.  
+
+* Students and analysts newer to R will likely want to start with Chapters 2 through 4 which cover the basics of tidycensus and give examples of several tidyverse-centric workflows. 
+
+* Chapters 5 and 6 will likely appeal to analysts from a Geographic Information Systems (GIS) background, as these chapters introduce methods for handling and mapping spatial data that might alternatively be done in desktop GIS software like ArcGIS or QGIS.
+
+* More experienced social science researchers will find Chapters 9 through 11 useful as they cover ACS microdata, an essential resource for many social science disciplines.  Analysts coming to R from Stata or SAS will also learn how to use R's survey data modeling tools in these chapters.  
+
+* Data scientists interested in integrating spatial analysis into their work may want to focus on Chapters 7 and 8, which cover a range of methods that can be incorporated into business intelligence workflows.  
+
+* Journalists will find value throughout the book, though Chapters 2, 5-6, 9, and 12 may prove especially useful as they focus on rapid retrieval of US and international Census data that can be incorporated into articles and reports.  
+
+Of course, there are many other use cases for Census data that are not covered in this overview.  If you are using the examples in this book for unique applications, please reach out!
+
+## Technical details
+
+This book was most recently built at `r Sys.time()` using the following R version:
+
+```{r version-info, echo = FALSE}
+system("R --version")
+```
+
+To run all the examples in this book, you will need the following packages:
+
+```{r pkgs, eval = FALSE}
+
+packages_in_book <- c("")
+
+install.packages("packages", dependencies = TRUE)
+
+```
+
+
+At the time of the most recent book build, the following package versions were used:
+
+```{r pkg-versions}
+
+```
+
+
+
