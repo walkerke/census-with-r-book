@@ -6,26 +6,51 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 One of the most popular frameworks for data analysis in R is the **tidyverse**, a suite of packages designed for integrated data wrangling, visualization, and modeling. The "tidy" or long-form data returned by default in tidycensus is designed to work well with tidyverse analytic workflows. This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with tidycensus. It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
 
+## The tidyverse
+
+[The tidyverse](https://www.tidyverse.org/) is a collection of R packages that are designed to work together in common data wrangling, analysis, and visualization projects. These R packages are maintained by RStudio, many of which are among the most popular R packages worldwide. Some of the key packages you'll use in the tidyverse include:
+
+-   readr, which contains tools for importing and exporting datasets;
+
+-   dplyr, a powerful framework for data wrangling tasks;
+
+-   tidyr, a package for reshaping data;
+
+-   purrr, a comprehensive framework for functional programming and iteration;
+
+-   ggplot2, a data visualization package based on the Grammar of Graphics
+
+The core data structure used in the tidyverse is the *tibble*, which is an R data frame with some small enhancements to improve the user experience. tidycensus returns tibbles by default.
+
+A full treatment of the tidyverse and its functionality is beyond the scope of this book; however, the examples in this chapter will introduce you to several key tidyverse features using US Census Bureau data. For a more general and broader treatment of the tidyverse, I recommend the [*R for Data Science*](https://r4ds.had.co.nz/index.html)text (cite here)
+
 ## Exploring Census data with tidyverse tools
 
-Census data queries using tidycensus, combined with core tidyverse functions, are excellent ways to explore downloaded Census data.
+Census data queries using tidycensus, combined with core tidyverse functions, are excellent ways to explore downloaded Census data. Chapter 2 covered how to download data from various Census datasets using tidycensus and return the data in a desired format. A common next step in an analytic process will involve data exploration, which is handled by a wide range of tools in the tidyverse.  
 
-```{r}
+To get started, the tidycensus and tidyverse packages are loaded.  "tidyverse" is not specifically a package itself, but rather loads several core packages within the tidyverse.  The package load message gives you more information:
+
+```{r load-tidyverse, message = TRUE}
 library(tidycensus)
+library(tidyverse)
+```
+Eight tidyverse packages are loaded: ggplot2, tibble, purrr, dplyr, readr, and tidyr are included along with stringr for string manipulation and forcats for working with factors. These tools collectively can be used for many core Census data analysis tasks.  
 
+For a first example, let's request data on median age from the 2015-2019 ACS with `get_acs()` for all counties in the United States.  This requires specifying `geography = "county"` and leaving state set to `NULL`, the default.  
+
+```{r, median-age}
 median_age <- get_acs(
   geography = "county",
-  variables = "B01002_001"
+  variables = "B01002_001",
+  year = 2019
 )
 
 median_age
 ```
 
-What are the youngest counties in the US?
+The default method for printing data used by the tibble package shows the first 10 rows of the dataset, which in this case prints counties in Alabama.  A first exploratory data analysis question might involve understanding which counties are the _youngest_ and _oldest_ in the United States as measured by median age.  This task can be accomplished with the `arrange()` function found in the dplyr package.  `arrange()` sorts a dataset by values in one or more columns and returns the sorted result.  To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
 
 ```{r}
-library(tidyverse)
-
 arrange(median_age, estimate)
 ```
 
