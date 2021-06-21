@@ -1,8 +1,6 @@
 # Wrangling Census data with tidyverse tools
 
-```{r setup-ch3, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
-```
+
 
 One of the most popular frameworks for data analysis in R is the **tidyverse**, a suite of packages designed for integrated data wrangling, visualization, and modeling. The "tidy" or long-form data returned by default in tidycensus is designed to work well with tidyverse analytic workflows. This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with tidycensus. It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
 
@@ -30,9 +28,27 @@ Census data queries using tidycensus, combined with core tidyverse functions, ar
 
 To get started, the tidycensus and tidyverse packages are loaded. "tidyverse" is not specifically a package itself, but rather loads several core packages within the tidyverse. The package load message gives you more information:
 
-```{r load-tidyverse, message = TRUE}
+
+```r
 library(tidycensus)
 library(tidyverse)
+```
+
+```
+## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+```
+
+```
+## ✓ ggplot2 3.3.3     ✓ purrr   0.3.4
+## ✓ tibble  3.1.2     ✓ dplyr   1.0.6
+## ✓ tidyr   1.1.3     ✓ stringr 1.4.0
+## ✓ readr   1.4.0     ✓ forcats 0.5.1
+```
+
+```
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
 ```
 
 Eight tidyverse packages are loaded: ggplot2, tibble, purrr, dplyr, readr, and tidyr are included along with stringr for string manipulation and forcats for working with factors. These tools collectively can be used for many core Census data analysis tasks.
@@ -41,7 +57,8 @@ Eight tidyverse packages are loaded: ggplot2, tibble, purrr, dplyr, readr, and t
 
 For a first example, let's request data on median age from the 2015-2019 ACS with `get_acs()` for all counties in the United States. This requires specifying `geography = "county"` and leaving state set to `NULL`, the default.
 
-```{r, median-age}
+
+```r
 median_age <- get_acs(
   geography = "county",
   variables = "B01002_001",
@@ -51,37 +68,126 @@ median_age <- get_acs(
 median_age
 ```
 
+```
+## # A tibble: 3,220 x 5
+##    GEOID NAME                     variable   estimate   moe
+##    <chr> <chr>                    <chr>         <dbl> <dbl>
+##  1 01001 Autauga County, Alabama  B01002_001     38.2   0.6
+##  2 01003 Baldwin County, Alabama  B01002_001     43     0.3
+##  3 01005 Barbour County, Alabama  B01002_001     40.4   0.5
+##  4 01007 Bibb County, Alabama     B01002_001     40.9   1.3
+##  5 01009 Blount County, Alabama   B01002_001     40.7   0.3
+##  6 01011 Bullock County, Alabama  B01002_001     40.2   2.3
+##  7 01013 Butler County, Alabama   B01002_001     40.8   0.7
+##  8 01015 Calhoun County, Alabama  B01002_001     39.6   0.3
+##  9 01017 Chambers County, Alabama B01002_001     42     0.7
+## 10 01019 Cherokee County, Alabama B01002_001     46.5   0.5
+## # … with 3,210 more rows
+```
+
 The default method for printing data used by the tibble package shows the first 10 rows of the dataset, which in this case prints counties in Alabama. A first exploratory data analysis question might involve understanding which counties are the *youngest* and *oldest* in the United States as measured by median age. This task can be accomplished with the `arrange()` function found in the dplyr package. `arrange()` sorts a dataset by values in one or more columns and returns the sorted result. To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
 
-```{r youngest-counties}
+
+```r
 arrange(median_age, estimate)
+```
+
+```
+## # A tibble: 3,220 x 5
+##    GEOID NAME                          variable   estimate   moe
+##    <chr> <chr>                         <chr>         <dbl> <dbl>
+##  1 51678 Lexington city, Virginia      B01002_001     22.3   0.7
+##  2 51750 Radford city, Virginia        B01002_001     23.4   0.5
+##  3 16065 Madison County, Idaho         B01002_001     23.5   0.2
+##  4 46121 Todd County, South Dakota     B01002_001     23.8   0.4
+##  5 02158 Kusilvak Census Area, Alaska  B01002_001     24.1   0.2
+##  6 13053 Chattahoochee County, Georgia B01002_001     24.5   0.5
+##  7 53075 Whitman County, Washington    B01002_001     24.7   0.3
+##  8 49049 Utah County, Utah             B01002_001     24.8   0.1
+##  9 46027 Clay County, South Dakota     B01002_001     24.9   0.4
+## 10 51830 Williamsburg city, Virginia   B01002_001     24.9   0.7
+## # … with 3,210 more rows
 ```
 
 Per the 2015-2019 ACS, the two youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University. The youngest *county* then by median age is Madison County Idaho.
 
 To retrieve the *oldest* counties in the United States by median age, an analyst can use the `desc()` function available in dplyr to sort the `estimate` column in descending order.
 
-```{r oldest-counties}
+
+```r
 arrange(median_age, desc(estimate))
+```
+
+```
+## # A tibble: 3,220 x 5
+##    GEOID NAME                            variable   estimate   moe
+##    <chr> <chr>                           <chr>         <dbl> <dbl>
+##  1 12119 Sumter County, Florida          B01002_001     67.4   0.2
+##  2 51091 Highland County, Virginia       B01002_001     60.9   3.5
+##  3 08027 Custer County, Colorado         B01002_001     59.7   2.6
+##  4 12015 Charlotte County, Florida       B01002_001     59.1   0.2
+##  5 41069 Wheeler County, Oregon          B01002_001     59     3.3
+##  6 51133 Northumberland County, Virginia B01002_001     58.9   0.7
+##  7 26131 Ontonagon County, Michigan      B01002_001     58.6   0.4
+##  8 35021 Harding County, New Mexico      B01002_001     58.5   5.5
+##  9 53031 Jefferson County, Washington    B01002_001     58.3   0.7
+## 10 26001 Alcona County, Michigan         B01002_001     58.2   0.3
+## # … with 3,210 more rows
 ```
 
 The oldest county in the United States by almost 7 years over the second-oldest is Sumter County, Florida. Sumter County is home to The Villages, a Census-designated place that includes a large age-restricted community [also called The Villages](https://www.thevillages.com/).
 
 The tidyverse includes several tools for parsing datasets that allow for exploration beyond sorting and browsing data. The `filter()` function in dplyr queries a dataset for rows where a given condition evaluates to `TRUE`, and retains those rows only. For analysts who are familiar with databases and SQL, this is equivalent to a `WHERE` clause. This helps analysts subset their data for specific areas by their characteristics, and answer questions like "how many counties in the US have a median age of 50 or older?"
 
-```{r fifty-or-over}
+
+```r
 filter(median_age, estimate >= 50)
+```
+
+```
+## # A tibble: 216 x 5
+##    GEOID NAME                        variable   estimate   moe
+##    <chr> <chr>                       <chr>         <dbl> <dbl>
+##  1 04007 Gila County, Arizona        B01002_001     50.2   0.2
+##  2 04012 La Paz County, Arizona      B01002_001     56.5   0.5
+##  3 04015 Mohave County, Arizona      B01002_001     51.6   0.3
+##  4 04025 Yavapai County, Arizona     B01002_001     53.4   0.1
+##  5 05005 Baxter County, Arkansas     B01002_001     52.2   0.3
+##  6 05089 Marion County, Arkansas     B01002_001     52.2   0.5
+##  7 05097 Montgomery County, Arkansas B01002_001     50.4   0.8
+##  8 05137 Stone County, Arkansas      B01002_001     50.1   0.7
+##  9 06003 Alpine County, California   B01002_001     52.2   8.8
+## 10 06005 Amador County, California   B01002_001     50.5   0.4
+## # … with 206 more rows
 ```
 
 Functions like `arrange()` and `filter()` operate on row values and organize data by row. Other tidyverse functions, like tidyr's `separate()`, operate on columns. The `NAME` column, returned by default by most tidycensus functions, contains a basic description of the location that can be more intuitive than the `GEOID`. For the 2015-2019 ACS, `NAME` is formatted as "X County, Y", where X is the county name and Y is the state name. `separate()` can split this column into two columns where one retains the county name and the other retains the state; this can be useful for analysts who need to complete a comparative analysis by state.
 
-```{r}
+
+```r
 separate(
   median_age,
   NAME,
   into = c("county", "state"),
   sep = ", "
 )
+```
+
+```
+## # A tibble: 3,220 x 6
+##    GEOID county          state   variable   estimate   moe
+##    <chr> <chr>           <chr>   <chr>         <dbl> <dbl>
+##  1 01001 Autauga County  Alabama B01002_001     38.2   0.6
+##  2 01003 Baldwin County  Alabama B01002_001     43     0.3
+##  3 01005 Barbour County  Alabama B01002_001     40.4   0.5
+##  4 01007 Bibb County     Alabama B01002_001     40.9   1.3
+##  5 01009 Blount County   Alabama B01002_001     40.7   0.3
+##  6 01011 Bullock County  Alabama B01002_001     40.2   2.3
+##  7 01013 Butler County   Alabama B01002_001     40.8   0.7
+##  8 01015 Calhoun County  Alabama B01002_001     39.6   0.3
+##  9 01017 Chambers County Alabama B01002_001     42     0.7
+## 10 01019 Cherokee County Alabama B01002_001     46.5   0.5
+## # … with 3,210 more rows
 ```
 
 \`\`\`{block2, note-text, type='rmdtip'}
@@ -100,7 +206,8 @@ In tidycensus, this can be accomplished by supplying a variable ID to the `summa
 
 With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2015-2019 ACS.
 
-```{r}
+
+```r
 race_vars <- c(
   White = "B03002_003",
   Black = "B03002_004",
@@ -118,17 +225,51 @@ az_race <- get_acs(
 ) 
 
 az_race
+```
 
+```
+## # A tibble: 90 x 7
+##    GEOID NAME                    variable estimate   moe summary_est summary_moe
+##    <chr> <chr>                   <chr>       <dbl> <dbl>       <dbl>       <dbl>
+##  1 04001 Apache County, Arizona  White       13022     4       71511          NA
+##  2 04001 Apache County, Arizona  Black         373   138       71511          NA
+##  3 04001 Apache County, Arizona  Native      52285   234       71511          NA
+##  4 04001 Apache County, Arizona  Asian         246    78       71511          NA
+##  5 04001 Apache County, Arizona  HIPI           16    16       71511          NA
+##  6 04001 Apache County, Arizona  Hispanic     4531    NA       71511          NA
+##  7 04003 Cochise County, Arizona White       69216   235      125867          NA
+##  8 04003 Cochise County, Arizona Black        4620   247      125867          NA
+##  9 04003 Cochise County, Arizona Native       1142   191      125867          NA
+## 10 04003 Cochise County, Arizona Asian        2431   162      125867          NA
+## # … with 80 more rows
 ```
 
 By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2015-2019. The `select()` function, also in dplyr, retains only those columns that we need to view.
 
-```{r}
+
+```r
 az_race_percent <- az_race %>%
   mutate(percent = 100 * (estimate / summary_est)) %>%
   select(NAME, variable, percent)
 
 az_race_percent
+```
+
+```
+## # A tibble: 90 x 3
+##    NAME                    variable percent
+##    <chr>                   <chr>      <dbl>
+##  1 Apache County, Arizona  White    18.2   
+##  2 Apache County, Arizona  Black     0.522 
+##  3 Apache County, Arizona  Native   73.1   
+##  4 Apache County, Arizona  Asian     0.344 
+##  5 Apache County, Arizona  HIPI      0.0224
+##  6 Apache County, Arizona  Hispanic  6.34  
+##  7 Cochise County, Arizona White    55.0   
+##  8 Cochise County, Arizona Black     3.67  
+##  9 Cochise County, Arizona Native    0.907 
+## 10 Cochise County, Arizona Asian     1.93  
+## # … with 80 more rows
 ```
 
 The above example introduces some additional syntax common to tidyverse data analyses. The `%>%` operator from the magrittr R package is a *pipe* operator that allows for analysts to develop *analytic pipelines*, which are deeply embedded in tidyverse-centric data analytic workflows. The pipe operator passes the result of a given line of code as the first argument of the code on the next line. In turn, analysts can develop data analysis pipelines of related operations that fit together in a coherent way.
@@ -157,7 +298,8 @@ The `az_race_percent` dataset created above is an example of a dataset suitable 
 
 In a first example, we can deploy group-wise data analysis to identify the largest racial or ethnic group in each county in Arizona.  This involves setting up a data analysis pipeline with the magrittr pipe and calculating a _grouped filter_ where the `filter()` operation will be applied specific to each group.  In this example, the filter condition will be specified as `percent == max(percent)`.  We can read the analytic pipeline then as "Create a new dataset, `largest_group`, by using the `az_race_dataset` THEN grouping the dataset by the `NAME` column THEN filtering for rows that are equal to the maximum value of `percent` for each group."
 
-```{r largest-group}
+
+```r
 largest_group <- az_race_percent %>%
   group_by(NAME) %>%
   filter(percent == max(percent))
@@ -165,14 +307,49 @@ largest_group <- az_race_percent %>%
 largest_group
 ```
 
+```
+## # A tibble: 15 x 3
+## # Groups:   NAME [15]
+##    NAME                       variable percent
+##    <chr>                      <chr>      <dbl>
+##  1 Apache County, Arizona     Native      73.1
+##  2 Cochise County, Arizona    White       55.0
+##  3 Coconino County, Arizona   White       54.1
+##  4 Gila County, Arizona       White       62.3
+##  5 Graham County, Arizona     White       50.9
+##  6 Greenlee County, Arizona   Hispanic    46.8
+##  7 La Paz County, Arizona     White       57.4
+##  8 Maricopa County, Arizona   White       55.2
+##  9 Mohave County, Arizona     White       77.3
+## 10 Navajo County, Arizona     Native      43.5
+## 11 Pima County, Arizona       White       51.7
+## 12 Pinal County, Arizona      White       56.8
+## 13 Santa Cruz County, Arizona Hispanic    83.5
+## 14 Yavapai County, Arizona    White       80.5
+## 15 Yuma County, Arizona       Hispanic    63.8
+```
+
 The result of the grouped filter allows us to review the most common racial or ethnic group in each Arizona County along with how their percentages vary.  For example, in two Arizona counties (Greenlee and Navajo), none of the racial or ethnic groups form a majority of the population.  
 
 `group_by()` is commonly paired with the `summarize()` function in data analysis pipelines.  `summarize()` generates a new, compressed dataset that by default returns a column for the grouping variable(s) and columns representing the results of one or more functions applied to those groups.  In the example below, the `median()` function is used to identify the median percentage for each of the racial & ethnic groups in the dataset across counties in Arizona.  In turn, `variable` is passed to `group_by()` as the grouping variable.  
 
-```{r median-by-group}
+
+```r
 az_race_percent %>%
   group_by(variable) %>%
   summarize(median_pct = median(percent))
+```
+
+```
+## # A tibble: 6 x 2
+##   variable median_pct
+##   <chr>         <dbl>
+## 1 Asian         0.924
+## 2 Black         1.12 
+## 3 HIPI          0.121
+## 4 Hispanic     30.2  
+## 5 Native        3.58 
+## 6 White        54.1
 ```
 The result of this operation tells us the median county percentage of each racial and ethnic group for the state of Arizona.  A broader analysis might involve the calculation of these percentages hierarchically, finding the median county percentage of given attributes across states, for example.  
 
@@ -182,7 +359,8 @@ In the examples above, suitable groups in the `NAME` and `variable` columns were
 
 Consider the following example, using household income data for Minnesota counties from the 2012-2016 ACS:
 
-```{r}
+
+```r
 mn_hh_income <- get_acs(
   geography = "county",
   table = "B19001",
@@ -193,13 +371,31 @@ mn_hh_income <- get_acs(
 mn_hh_income
 ```
 
+```
+## # A tibble: 1,479 x 5
+##    GEOID NAME                     variable   estimate   moe
+##    <chr> <chr>                    <chr>         <dbl> <dbl>
+##  1 27001 Aitkin County, Minnesota B19001_001     7640   262
+##  2 27001 Aitkin County, Minnesota B19001_002      562    77
+##  3 27001 Aitkin County, Minnesota B19001_003      544    72
+##  4 27001 Aitkin County, Minnesota B19001_004      472    69
+##  5 27001 Aitkin County, Minnesota B19001_005      508    68
+##  6 27001 Aitkin County, Minnesota B19001_006      522    92
+##  7 27001 Aitkin County, Minnesota B19001_007      447    61
+##  8 27001 Aitkin County, Minnesota B19001_008      390    49
+##  9 27001 Aitkin County, Minnesota B19001_009      426    64
+## 10 27001 Aitkin County, Minnesota B19001_010      415    65
+## # … with 1,469 more rows
+```
+
 Our data include household income categories for each county in the rows. However, let's say we only need three income categories for purposes of analysis: below \$35,000/year, between \$35,000/year and \$75,000/year, and \$75,000/year and up.
 
 We first need to do some transformation of our data to recode the variables appropriately. First, we will remove variable `B19001_001`, which represents the total number of households for each county. Second, we use the `case_when()` function from the **dplyr** package to identify groups of variables that correspond to our desired groupings.  Given that the variables are ordered in the ACS table in relationship to the household income values, the less than operator can be used to identify groups.  
 
 The syntax of `case_when()` can appear complex to beginners, so it is worth stepping through how the function works.  Inside the `mutate()` function, which is used to create a new variable named `incgroup`, `case_when()` steps through a series of logical conditions that are evaluated in order similar to a series of if/else statements.  The first condition is evaluated, telling the function to assign the value of `below35k` to all rows with a `variable` value that comes before `"B19001_008"` - which in this case will be `B19001_002` (income less than $10,000) through `B19001_007` (income between $30,000 and $34,999).  The second condition is then evaluated _for all those rows not accounted for by the first condition_.  This means that `case_when()` knows not to assign `"bw35kand75k"` to the income group of $10,000 and below even though its variable comes before `B19001_013`.  The final condition in `case_when()` can be set to `TRUE` which in this scenario translates as "all other values."  
 
-```{r}
+
+```r
 mn_hh_income_recode <- mn_hh_income %>%
   filter(variable != "B19001_001") %>%
   mutate(incgroup = case_when(
@@ -211,15 +407,50 @@ mn_hh_income_recode <- mn_hh_income %>%
 mn_hh_income_recode
 ```
 
+```
+## # A tibble: 1,392 x 6
+##    GEOID NAME                     variable   estimate   moe incgroup   
+##    <chr> <chr>                    <chr>         <dbl> <dbl> <chr>      
+##  1 27001 Aitkin County, Minnesota B19001_002      562    77 below35k   
+##  2 27001 Aitkin County, Minnesota B19001_003      544    72 below35k   
+##  3 27001 Aitkin County, Minnesota B19001_004      472    69 below35k   
+##  4 27001 Aitkin County, Minnesota B19001_005      508    68 below35k   
+##  5 27001 Aitkin County, Minnesota B19001_006      522    92 below35k   
+##  6 27001 Aitkin County, Minnesota B19001_007      447    61 below35k   
+##  7 27001 Aitkin County, Minnesota B19001_008      390    49 bw35kand75k
+##  8 27001 Aitkin County, Minnesota B19001_009      426    64 bw35kand75k
+##  9 27001 Aitkin County, Minnesota B19001_010      415    65 bw35kand75k
+## 10 27001 Aitkin County, Minnesota B19001_011      706    81 bw35kand75k
+## # … with 1,382 more rows
+```
+
 Our result illustrates how the different variable IDs are mapped to the new, recoded categories that we specified in `case_when()`.  The `group_by() %>% summarize()` workflow can now be applied to the recoded categories by county to tabulate the data into a smaller number of groups.  
 
-```{r}
+
+```r
 mn_group_sums <- mn_hh_income_recode %>%
   group_by(GEOID, incgroup) %>%
   summarize(estimate = sum(estimate))
 
 mn_group_sums
-  
+```
+
+```
+## # A tibble: 261 x 3
+## # Groups:   GEOID [87]
+##    GEOID incgroup    estimate
+##    <chr> <chr>          <dbl>
+##  1 27001 above75k        1706
+##  2 27001 below35k        3055
+##  3 27001 bw35kand75k     2879
+##  4 27003 above75k       61403
+##  5 27003 below35k       24546
+##  6 27003 bw35kand75k    39311
+##  7 27005 above75k        4390
+##  8 27005 below35k        4528
+##  9 27005 bw35kand75k     4577
+## 10 27007 above75k        4491
+## # … with 251 more rows
 ```
 
 Our data now reflect the new estimates by group by county.
@@ -232,7 +463,8 @@ A common task when working with Census data is to examine demographic change ove
 
 One advantage to working with ACS data is that it includes a rich yearly time series going back to 2005 for the 1-year ACS and 2005-2009 for the 5-year ACS.  This allows analysts to examine recent demographic shifts in a relatively consistent way.  However, it is important to take care when performing time series analysis.  For example, the ACS Data Profile is commonly used for pre-computed normalized ACS estimates.  Let's say that we are interested in analyzing the percentage of residents age 25 and up with a 4-year college degree for counties in Colorado from the 2019 1-year ACS.  We'd first look up the appropriate variable ID with `load_variables(2019, "acs1/profile")` then use `get_acs()`:
 
-```{r}
+
+```r
 co_college19 <- get_acs(
   geography = "county",
   variables = "DP02_0068P",
@@ -243,9 +475,28 @@ co_college19 <- get_acs(
 
 co_college19
 ```
+
+```
+## # A tibble: 12 x 5
+##    GEOID NAME                        variable   estimate   moe
+##    <chr> <chr>                       <chr>         <dbl> <dbl>
+##  1 08001 Adams County, Colorado      DP02_0068P     25.4   1.3
+##  2 08005 Arapahoe County, Colorado   DP02_0068P     43.8   1.3
+##  3 08013 Boulder County, Colorado    DP02_0068P     64.8   1.8
+##  4 08014 Broomfield County, Colorado DP02_0068P     56.9   3.3
+##  5 08031 Denver County, Colorado     DP02_0068P     53.1   1.1
+##  6 08035 Douglas County, Colorado    DP02_0068P     58.1   1.8
+##  7 08041 El Paso County, Colorado    DP02_0068P     39     1.3
+##  8 08059 Jefferson County, Colorado  DP02_0068P     47.6   1.2
+##  9 08069 Larimer County, Colorado    DP02_0068P     49     1.8
+## 10 08077 Mesa County, Colorado       DP02_0068P     29.8   2.6
+## 11 08101 Pueblo County, Colorado     DP02_0068P     23.4   2  
+## 12 08123 Weld County, Colorado       DP02_0068P     29.9   1.6
+```
 We get back data for counties of population 65,000 and greater as these are the geographies available in the 1-year ACS. The data make sense: Boulder County, home to the University of Colorado, has a very high percentage of its population with a 4-year degree or higher. However, when we run the exact same query for the 2018 1-year ACS:
 
-```{r}
+
+```r
 co_college18 <- get_acs(
   geography = "county",
   variables = "DP02_0068P",
@@ -256,6 +507,24 @@ co_college18 <- get_acs(
 
 co_college18
 ```
+
+```
+## # A tibble: 12 x 5
+##    GEOID NAME                        variable   estimate   moe
+##    <chr> <chr>                       <chr>         <dbl> <dbl>
+##  1 08001 Adams County, Colorado      DP02_0068P   375798    NA
+##  2 08005 Arapahoe County, Colorado   DP02_0068P   497198    NA
+##  3 08013 Boulder County, Colorado    DP02_0068P   263938    NA
+##  4 08014 Broomfield County, Colorado DP02_0068P    53400    NA
+##  5 08031 Denver County, Colorado     DP02_0068P   575870    NA
+##  6 08035 Douglas County, Colorado    DP02_0068P   252922    NA
+##  7 08041 El Paso County, Colorado    DP02_0068P   513528    NA
+##  8 08059 Jefferson County, Colorado  DP02_0068P   465615    NA
+##  9 08069 Larimer County, Colorado    DP02_0068P   281086    NA
+## 10 08077 Mesa County, Colorado       DP02_0068P   119498    NA
+## 11 08101 Pueblo County, Colorado     DP02_0068P   129899    NA
+## 12 08123 Weld County, Colorado       DP02_0068P   231613    NA
+```
 The values are completely different, and clearly not percentages!  This is because variable IDs for the Data Profile __are unique to each year__ and in turn should not be used for time-series analysis.  The returned results above represent the civilian population age 18 and up, and have nothing to do with educational attainment.  
 
 ### Preparing time-series ACS estimates
@@ -264,7 +533,8 @@ A safer way to perform time-series analysis of the ACS, then, is to use the Deta
 
 Let's re-engineer the analysis above on educational attainment in Colorado counties, which below will be computed for a time series from 2010 to 2019.  Information on "bachelor's degree or higher" is split by sex and across different tiers of educational attainment in the detailed tables, found in ACS table 15002.  Given that we only need a few variables (representing estimates of populations age 25+ who have finished a 4-year degree or graduate degrees, by sex), we'll request those variables directly rather than the entire B15002 table.  
 
-```{r}
+
+```r
 college_vars <- c("B15002_015",
                   "B15002_016",
                   "B15002_017",
@@ -279,7 +549,8 @@ We'll now use these variables to request data on college degree holders from the
 
 The tidyverse approach to iteration is found in the purrr package.  purrr includes a variety of functions that are designed to integrate well in workflows that require iteration and use other tidyverse tools.  The `map_()` family of functions iterate over values and try to return a desired result; `map()` returns a list, `map_int()` returns an integer vector, and `map_chr()` returns a character vector, for example.  With tidycensus, the `map_dfr()` function is particularly useful.  `map_dfr()` iterates over an input and applies it to a function or process defined by the user, then row-binds the result into a single data frame.  The example below illustrates how this works for the years 2010 through 2019.   
 
-```{r purrr-example}
+
+```r
 years <- 2010:2019
 names(years) <- years
 
@@ -305,13 +576,28 @@ For users newer to R, iteration and purrr syntax can feel complex, so it is wort
 
 Let's review the result:
   
-```{r}
+
+```r
 college_by_year %>% arrange(NAME, variable, year) %>% glimpse()
+```
+
+```
+## Rows: 920
+## Columns: 8
+## $ year        <chr> "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2…
+## $ GEOID       <chr> "08001", "08001", "08001", "08001", "08001", "08001", "080…
+## $ NAME        <chr> "Adams County, Colorado", "Adams County, Colorado", "Adams…
+## $ variable    <chr> "B15002_015", "B15002_015", "B15002_015", "B15002_015", "B…
+## $ estimate    <dbl> 20501, 21233, 19238, 23818, 20255, 22962, 25744, 26159, 28…
+## $ moe         <dbl> 1983, 2124, 2020, 2445, 1928, 2018, 2149, 2320, 2078, 2070…
+## $ summary_est <dbl> 275849, 281231, 287924, 295122, 304394, 312281, 318077, 32…
+## $ summary_moe <dbl> 790, 865, 693, 673, 541, 705, 525, 562, 955, 705, 790, 865…
 ```
 
 The result is a long-form dataset that contains a time series of each requested ACS variable for each county in Colorado that is available in the 1-year ACS.  The code below outlines a `group_by() %>% summarize()` workflow for calculating the percentage of the population age 25 and up with a 4-year college degree, then uses the `pivot_wider()` function from the tidyr package to spread the years across the columns for tabular data display.  
 
-```{r}
+
+```r
 percent_college_by_year <- college_by_year %>%
   group_by(NAME, year) %>%
   summarize(numerator = sum(estimate),
@@ -322,9 +608,181 @@ percent_college_by_year <- college_by_year %>%
               values_from = pct_college)
 ```
 
-```{r, echo = FALSE}
-knitr::kable(percent_college_by_year, digits = 1) %>% kableExtra::kable_styling()
-```
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> NAME </th>
+   <th style="text-align:right;"> 2010 </th>
+   <th style="text-align:right;"> 2011 </th>
+   <th style="text-align:right;"> 2012 </th>
+   <th style="text-align:right;"> 2013 </th>
+   <th style="text-align:right;"> 2014 </th>
+   <th style="text-align:right;"> 2015 </th>
+   <th style="text-align:right;"> 2016 </th>
+   <th style="text-align:right;"> 2017 </th>
+   <th style="text-align:right;"> 2018 </th>
+   <th style="text-align:right;"> 2019 </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Adams County, Colorado </td>
+   <td style="text-align:right;"> 20.6 </td>
+   <td style="text-align:right;"> 20.5 </td>
+   <td style="text-align:right;"> 20.6 </td>
+   <td style="text-align:right;"> 23.1 </td>
+   <td style="text-align:right;"> 22.2 </td>
+   <td style="text-align:right;"> 22.8 </td>
+   <td style="text-align:right;"> 23.0 </td>
+   <td style="text-align:right;"> 22.9 </td>
+   <td style="text-align:right;"> 25.7 </td>
+   <td style="text-align:right;"> 25.4 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Arapahoe County, Colorado </td>
+   <td style="text-align:right;"> 37.0 </td>
+   <td style="text-align:right;"> 38.2 </td>
+   <td style="text-align:right;"> 39.3 </td>
+   <td style="text-align:right;"> 39.4 </td>
+   <td style="text-align:right;"> 40.9 </td>
+   <td style="text-align:right;"> 41.0 </td>
+   <td style="text-align:right;"> 41.5 </td>
+   <td style="text-align:right;"> 43.7 </td>
+   <td style="text-align:right;"> 42.7 </td>
+   <td style="text-align:right;"> 43.8 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Boulder County, Colorado </td>
+   <td style="text-align:right;"> 57.5 </td>
+   <td style="text-align:right;"> 59.1 </td>
+   <td style="text-align:right;"> 57.9 </td>
+   <td style="text-align:right;"> 58.5 </td>
+   <td style="text-align:right;"> 58.0 </td>
+   <td style="text-align:right;"> 60.6 </td>
+   <td style="text-align:right;"> 60.6 </td>
+   <td style="text-align:right;"> 63.2 </td>
+   <td style="text-align:right;"> 62.5 </td>
+   <td style="text-align:right;"> 64.8 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Broomfield County, Colorado </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:right;"> 56.1 </td>
+   <td style="text-align:right;"> 51.9 </td>
+   <td style="text-align:right;"> 55.1 </td>
+   <td style="text-align:right;"> 56.3 </td>
+   <td style="text-align:right;"> 56.9 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Denver County, Colorado </td>
+   <td style="text-align:right;"> 40.9 </td>
+   <td style="text-align:right;"> 43.0 </td>
+   <td style="text-align:right;"> 44.7 </td>
+   <td style="text-align:right;"> 44.4 </td>
+   <td style="text-align:right;"> 44.3 </td>
+   <td style="text-align:right;"> 47.1 </td>
+   <td style="text-align:right;"> 47.4 </td>
+   <td style="text-align:right;"> 49.3 </td>
+   <td style="text-align:right;"> 51.3 </td>
+   <td style="text-align:right;"> 53.1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Douglas County, Colorado </td>
+   <td style="text-align:right;"> 55.0 </td>
+   <td style="text-align:right;"> 53.3 </td>
+   <td style="text-align:right;"> 55.1 </td>
+   <td style="text-align:right;"> 57.7 </td>
+   <td style="text-align:right;"> 56.5 </td>
+   <td style="text-align:right;"> 56.1 </td>
+   <td style="text-align:right;"> 59.4 </td>
+   <td style="text-align:right;"> 58.5 </td>
+   <td style="text-align:right;"> 58.4 </td>
+   <td style="text-align:right;"> 58.1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> El Paso County, Colorado </td>
+   <td style="text-align:right;"> 34.1 </td>
+   <td style="text-align:right;"> 35.7 </td>
+   <td style="text-align:right;"> 34.9 </td>
+   <td style="text-align:right;"> 35.5 </td>
+   <td style="text-align:right;"> 36.5 </td>
+   <td style="text-align:right;"> 36.4 </td>
+   <td style="text-align:right;"> 38.7 </td>
+   <td style="text-align:right;"> 39.2 </td>
+   <td style="text-align:right;"> 38.8 </td>
+   <td style="text-align:right;"> 39.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Jefferson County, Colorado </td>
+   <td style="text-align:right;"> 40.8 </td>
+   <td style="text-align:right;"> 39.5 </td>
+   <td style="text-align:right;"> 41.4 </td>
+   <td style="text-align:right;"> 41.0 </td>
+   <td style="text-align:right;"> 42.0 </td>
+   <td style="text-align:right;"> 43.2 </td>
+   <td style="text-align:right;"> 43.5 </td>
+   <td style="text-align:right;"> 45.6 </td>
+   <td style="text-align:right;"> 45.8 </td>
+   <td style="text-align:right;"> 47.6 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Larimer County, Colorado </td>
+   <td style="text-align:right;"> 45.8 </td>
+   <td style="text-align:right;"> 42.8 </td>
+   <td style="text-align:right;"> 44.7 </td>
+   <td style="text-align:right;"> 43.3 </td>
+   <td style="text-align:right;"> 42.7 </td>
+   <td style="text-align:right;"> 46.2 </td>
+   <td style="text-align:right;"> 46.8 </td>
+   <td style="text-align:right;"> 47.9 </td>
+   <td style="text-align:right;"> 47.6 </td>
+   <td style="text-align:right;"> 49.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Mesa County, Colorado </td>
+   <td style="text-align:right;"> 25.0 </td>
+   <td style="text-align:right;"> 25.8 </td>
+   <td style="text-align:right;"> 23.0 </td>
+   <td style="text-align:right;"> 27.6 </td>
+   <td style="text-align:right;"> 25.1 </td>
+   <td style="text-align:right;"> 30.3 </td>
+   <td style="text-align:right;"> 25.0 </td>
+   <td style="text-align:right;"> 25.8 </td>
+   <td style="text-align:right;"> 30.0 </td>
+   <td style="text-align:right;"> 29.8 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Pueblo County, Colorado </td>
+   <td style="text-align:right;"> 19.5 </td>
+   <td style="text-align:right;"> 23.5 </td>
+   <td style="text-align:right;"> 19.9 </td>
+   <td style="text-align:right;"> 21.3 </td>
+   <td style="text-align:right;"> 23.6 </td>
+   <td style="text-align:right;"> 21.6 </td>
+   <td style="text-align:right;"> 21.2 </td>
+   <td style="text-align:right;"> 22.2 </td>
+   <td style="text-align:right;"> 21.8 </td>
+   <td style="text-align:right;"> 23.4 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Weld County, Colorado </td>
+   <td style="text-align:right;"> 25.1 </td>
+   <td style="text-align:right;"> 24.7 </td>
+   <td style="text-align:right;"> 26.3 </td>
+   <td style="text-align:right;"> 27.4 </td>
+   <td style="text-align:right;"> 25.7 </td>
+   <td style="text-align:right;"> 25.9 </td>
+   <td style="text-align:right;"> 27.2 </td>
+   <td style="text-align:right;"> 27.5 </td>
+   <td style="text-align:right;"> 27.4 </td>
+   <td style="text-align:right;"> 29.9 </td>
+  </tr>
+</tbody>
+</table>
 
 This particular format is suitable for data display or writing to an Excel spreadsheet for colleagues who are not R-based.  In addition, Chapter 4 will address appropriate methods for visualization of this data.
 
@@ -336,7 +794,8 @@ As discussed in Chapter 2, tidycensus takes an opinionated approach to margins o
 
 The confidence level of the MOE can be controlled with the `moe_level` argument in `get_acs()`.  The default `moe_level` is 90, which is what the Census Bureau returns by default.  tidycensus can also return MOEs at a confidence level of `95` or `99` which uses Census Bureau-recommended formulas to adjust the MOE.  For example, we might look at data on median household income by county in Rhode Island using the default `moe_level` of 90: 
 
-```{r default-moe}
+
+```r
 library(tidycensus)
 
 get_acs(
@@ -346,9 +805,21 @@ get_acs(
 )
 ```
 
+```
+## # A tibble: 5 x 5
+##   GEOID NAME                            variable   estimate   moe
+##   <chr> <chr>                           <chr>         <dbl> <dbl>
+## 1 44001 Bristol County, Rhode Island    B19013_001    83092  4339
+## 2 44003 Kent County, Rhode Island       B19013_001    73521  1703
+## 3 44005 Newport County, Rhode Island    B19013_001    79454  2611
+## 4 44007 Providence County, Rhode Island B19013_001    58974  1051
+## 5 44009 Washington County, Rhode Island B19013_001    85531  2042
+```
+
 A stricter margin of error will increase the size of the MOE relative to its estimate.
 
-```{r moe-level-99}
+
+```r
 get_acs(
   geography = "county",
   state = "Rhode Island",
@@ -357,11 +828,23 @@ get_acs(
 )
 ```
 
+```
+## # A tibble: 5 x 5
+##   GEOID NAME                            variable   estimate   moe
+##   <chr> <chr>                           <chr>         <dbl> <dbl>
+## 1 44001 Bristol County, Rhode Island    B19013_001    83092 6752.
+## 2 44003 Kent County, Rhode Island       B19013_001    73521 2650.
+## 3 44005 Newport County, Rhode Island    B19013_001    79454 4063.
+## 4 44007 Providence County, Rhode Island B19013_001    58974 1636.
+## 5 44009 Washington County, Rhode Island B19013_001    85531 3178.
+```
+
 ### Calculating derived margins of error in tidycensus
 
 For small geographies or small populations, margins of error can get quite large, in some cases exceeding their corresponding estimates.  In the example below, we can examine data on age groups by sex for the population age 65 and older for Census tracts in Salt Lake County, Utah. 
 
-```{r}
+
+```r
 library(tidyverse)
 
 vars <- paste0("B01001_0", c(20:25, 44:49))
@@ -380,6 +863,24 @@ example_tract <- salt_lake %>%
 example_tract %>% select(-NAME)
 ```
 
+```
+## # A tibble: 12 x 4
+##    GEOID       variable   estimate   moe
+##    <chr>       <chr>         <dbl> <dbl>
+##  1 49035100100 B01001_020       12    13
+##  2 49035100100 B01001_021       36    23
+##  3 49035100100 B01001_022        8    11
+##  4 49035100100 B01001_023        5     8
+##  5 49035100100 B01001_024        0    11
+##  6 49035100100 B01001_025       22    23
+##  7 49035100100 B01001_044        0    11
+##  8 49035100100 B01001_045       11    13
+##  9 49035100100 B01001_046       27    20
+## 10 49035100100 B01001_047       10    12
+## 11 49035100100 B01001_048        7    11
+## 12 49035100100 B01001_049        0    11
+```
+
 In many cases, the margins of error exceed their corresponding estimates.  For example, the ACS data suggest that in Census tract 49035100100, for the male population age 85 and up (variable ID `B01001_0025`), there are anywhere between 0 and 45 people in that Census tract.  This can make ACS data for small geographies problematic for planning and analysis purposes.  
 
 A potential solution to large margins of error for small estimates in the ACS is to aggregate data upwards until a satisfactory margin of error to estimate ratio is reached.  [The US Census Bureau publishes formulas for appropriately calculating margins of error around such derived estimates](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2018_Instructions_for_Stat_Testing_ACS.pdf?), which are included in tidycensus with the following functions: 
@@ -391,8 +892,13 @@ A potential solution to large margins of error for small estimates in the ACS is
 
 In their most basic form, these functions can be used with constants.  For example, let's say we had an ACS estimate of 25 with a margin of error of 5 around that estimate.  The appropriate denominator for this estimate is 100 with a margin of error of 3.  To determine the margin of error around the derived proportion of 0.25, we can use `moe_prop()`: 
 
-```{r moe-prop}
+
+```r
 moe_prop(25, 100, 5, 3)
+```
+
+```
+## [1] 0.0494343
 ```
 
 Our margin of error around the derived estimate of 0.25 is approximately 0.049.  
@@ -403,7 +909,8 @@ These margin of error functions in tidycensus can in turn be integrated into tid
 
 In the code below, we use the `if_else()` function to create a new column, `sex`, that represents a mapping of the variables we pulled from the ACS to their sex categories.  We then employ a familiar `group_by() %>% summarize()` method to aggregate our data by Census tract and sex.  Notably, the call to `summarize()` includes a call to tidycensus's `moe_sum()` function, which will generate a new column that represents the margin of error around the derived sum.  
 
-```{r summarize-moe}
+
+```r
 salt_lake_grouped <- salt_lake %>%
   mutate(sex = if_else(str_sub(variable, start = -2) < "26",
                        "Male", 
@@ -414,6 +921,24 @@ salt_lake_grouped <- salt_lake %>%
 
 
 salt_lake_grouped
+```
+
+```
+## # A tibble: 424 x 4
+## # Groups:   GEOID [212]
+##    GEOID       sex    sum_est sum_moe
+##    <chr>       <chr>    <dbl>   <dbl>
+##  1 49035100100 Female      55    30.9
+##  2 49035100100 Male        83    39.2
+##  3 49035100200 Female     167    57.5
+##  4 49035100200 Male       153    50.9
+##  5 49035100306 Female     273   109. 
+##  6 49035100306 Male       225    90.3
+##  7 49035100307 Female     188    70.2
+##  8 49035100307 Male       117    64.5
+##  9 49035100308 Female     164    98.7
+## 10 49035100308 Male       129    77.9
+## # … with 414 more rows
 ```
 The margins of error relative to their estimates are now much more reasonable than in the disaggregated data.  
 
