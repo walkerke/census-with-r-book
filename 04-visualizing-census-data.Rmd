@@ -271,10 +271,14 @@ utah_pyramid
 One of the most powerful features of ggplot2 is its ability to generate *faceted plots*, which are also commonly referred to as *small multiples*. Faceted plots allow for the sub-division of a dataset into groups, which are then plotted side-by-side to facilitate comparisons between those groups. This is particularly useful when examining how distributions of values vary across different geographies. An example shown below involves a comparison of median home values by Census tract for three counties in the Portland, Oregon area: Multnomah, which contains the city of Portland, and the suburban counties of Clackamas and Washington.
 
 ```{r}
+library(tidycensus)
+library(tidyverse)
+
 housing_val <- get_acs(geography = "tract", 
                        variables = "B25077_001", 
                        state = "OR", 
-                       county = c("Multnomah", "Clackamas", "Washington"))
+                       county = c("Multnomah", "Clackamas", "Washington",
+                                  "Yamhill", "Marion", "Columbia"))
 
 housing_val
 ```
@@ -284,7 +288,7 @@ As with other datasets obtained with tidycensus, the `NAME` column contains desc
 ```{r}
 housing_val2 <- separate(housing_val, NAME, 
                          into = c("tract", "county", "state"), 
-                         sep = ",")
+                         sep = ", ")
 
 housing_val2
 ```
@@ -307,12 +311,23 @@ ggplot(housing_val2, aes(x = estimate)) +
   geom_density()
 ```
 
+```{r}
+ggplot(housing_val2, aes(x = estimate, fill = county)) + 
+  geom_density(alpha = 0.3)
+```
+
 Adding the `facet_wrap()` function, and specifying `county` as the column used to group the data, splits this visualization into side-by-side graphics based on the counties to which each Census tract belongs.
 
-```{r}
+```{r faceted-housing}
 ggplot(housing_val2, aes(x = estimate)) +
   geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
-  facet_wrap(~county)
+  facet_wrap(~county) + 
+  scale_x_continuous(labels = function(x) paste0("$", x / 1000, "k")) + 
+  theme_minimal() + 
+  theme(axis.text.y = element_blank()) + 
+  labs(x = "ACS estimate",
+       y = "",
+       title = "Median home values by Census tract, 2015-2019 ACS")
   
 ```
 
@@ -322,11 +337,24 @@ The side-by-side comparative graphics show how the value distributions vary betw
 
 While the core functionality of ggplot2 is very powerful, a notable advantage of using ggplot2 for visualization is the contributions made by its user community in the form of *extensions*. ggplot2 extensions are packages developed by practitioners outside the core ggplot2 development team that add functionality to the package. I encourage you to [review the gallery of ggplot2 extensions from the extensions website](https://exts.ggplot2.tidyverse.org/); I highlight some notable examples below.
 
+### ggridges
+
+```{r ggridges}
+library(ggridges)
+
+ggplot(housing_val2, aes(x = estimate, y = county)) + 
+  geom_density_ridges() + 
+  theme_ridges() + 
+  labs(x = "Median home value: 2015-2019 ACS estimate", 
+       y = "") + 
+  scale_x_continuous(labels = scales::dollar)
+```
+
 ### ggbeeswarm
 
 The [ggbeeswarm package](https://github.com/eclarke/ggbeeswarm) extends ggplot2 by allowing users to generate **beeswarm plots**, in which clouds of points are jittered to show the overall density of a distribution of data values. Beeswarm plots can be compelling ways to visualize multiple data variables on a chart, such as the distributions of median household income by the racial and ethnic composition of neighborhoods. This is the motivating example for the chart below, which looks at household income by race/ethnicity in New York City. The data wrangling in the first part of the code chunk takes advantage of some of the skills covered in Chapters 2 and 3, allowing for visualization of household income distributions by the largest group in each Census tract.
 
-```{r}
+```{r beeswarm}
 library(tidycensus)
 library(tidyverse)
 library(ggbeeswarm)
@@ -367,7 +395,7 @@ The next four chapters of the book, Chapters 5 through 8, are all about spatial 
 
 In the example below, we replicate the population pyramid code above to generate population pyramids for each state in the US. However, we also modify the output data so that the population information reflects the proportion of the overall population for each state so that all states are on consistent scales. The population pyramid code is similar, though the axis information is unnecessary as it will be stripped from the final plot.
 
-```{r}
+```{r geofacet}
 library(geofacet)
 
 us_pyramid_data <- get_estimates(
@@ -409,7 +437,7 @@ The [htmlwidgets package](https://www.htmlwidgets.org/), first released in 2015,
 
 plotly is a well-developed library that allows for many different types of custom visualizations. However, one of the most useful functions in the plotly package is arguably the simplest. The `ggplotly()` function can convert an existing ggplot2 graphic into an interactive web visualization in a single line of code! Let's try it out here with the `utah_pyramid` population pyramid:
 
-```{r}
+```{r plotly-pyramid}
 library(plotly)
 
 ggplotly(utah_pyramid)
