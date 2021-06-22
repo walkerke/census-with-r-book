@@ -4,7 +4,7 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
-The core visualization package within the **tidyverse** suite of packages is **ggplot2** (Wickham 2016). Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 25,000 downloads per day in March of 2019 from the RStudio CRAN mirror. ggplot2 allows R users to visualize data using a *layered grammar of graphics* approach, in which plot objects are initialized upon which the R user layers plot elements.
+The core visualization package within the **tidyverse** suite of packages is **ggplot2** [@wickham2016]. Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 70,000 downloads per day in June 2021 from the RStudio CRAN mirror. ggplot2 allows R users to visualize data using a *layered grammar of graphics* approach, in which plot objects are initialized upon which the R user layers plot elements.
 
 ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the **tidycensus** package. It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).
 
@@ -75,7 +75,7 @@ p <- p +
        y = "", 
        x = "ACS estimate (percent)", 
        caption = "Source: ACS Data Profile variable DP03_0021P via the tidycensus R package") + 
-  theme_minimal(base_family = "Waree")
+  theme_minimal()
   
 
 p
@@ -90,13 +90,14 @@ As discussed in Chapter 3, handling margins of error appropriately is of signifi
 
 In the above example visualization of public transportation mode share by metropolitan area for the largest metros in the United States, estimates are associated with margins of error; however, these margins of error are relatively small given the large population size of the geographic units represented in the plot. However, if studying demographic trends for geographies of smaller population size - like counties, Census tracts, or block groups - comparisons can be subject to a considerable degree of uncertainty.
 
-In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2013-2017 ACS. Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population. We can retrieve this information with tidycensus.
+In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2015-2019 ACS. Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population. We can retrieve this information with tidycensus.
 
 ```{r}
 maine <- get_acs(
   state = "Maine",
   geography = "county",
-  variables = c(totalpop = "B01003_001")
+  variables = c(totalpop = "B01003_001"),
+  year = 2019
 ) %>%
   arrange(desc(estimate))
 
@@ -148,12 +149,62 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
   geom_point(size = 3, color = "darkgreen") + 
   labs(title = "Median household income", 
        subtitle = "Counties in Maine", 
-       x = "2013-2017 ACS estimate", 
+       x = "2015-2019 ACS estimate", 
        y = "") + 
   scale_x_continuous(labels = scales::dollar)
 ```
 
 Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income. For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties *could* conceivably have lower median household incomes. Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.
+
+## Visualizing ACS estimates over time
+
+Chapter 3 covered how to obtain a time series of ACS estimates to explore temporal demographic shifts. While the output table usefully represented the time series of educational attainment in Colorado counties, data visualization is also commonly used to illustrate change over time. Arguably the most common chart type chosen for time-series visualization is the line chart, which ggplot2 handles capably with the `geom_line()` function.
+
+For an illustrative example, we'll obtain 1-year ACS data back to 2005 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005.
+
+```{r get-deschutes-value}
+years <- 2005:2019
+names(years) <- years
+
+deschutes_value <- map_dfr(years, ~{
+  get_acs(
+    geography = "county",
+    variables = "B25077_001",
+    state = "OR",
+    county = "Deschutes",
+    year = .x,
+    survey = "acs1"
+  )
+}, .id = "year")
+
+deschutes_value
+
+```
+
+This information can be visualized with familiar ggplot2 syntax. `deschutes_value` is specified as the input dataset, with `year` mapped to the X-axis and `estimate` mapped to the y-axis. The argument `group = 1` is used to help ggplot2 understand how to connect the yearly data points with lines given that only one county is being visualized. `geom_line()` then draws the lines, and we layer points on top of the lines as well to highlight the actual ACS estimates.
+
+```{r plot-deschutes-value}
+ggplot(deschutes_value, aes(x = year, y = estimate, group = 1)) + 
+  geom_line() + 
+  geom_point()
+```
+
+The chart shows rising home values prior to the 2008 recession; a notable drop after the housing market crash; and rising values since 2011, reflecting increased demand from wealthy in-migrants from locations like the Bay Area. Given what we have learned in previous sections, there are also several opportunities for chart cleanup. This can include more intuitive tick and axis labels; a re-designed visual scheme; and a title and caption. We can also build the margin of error information into the line chart like we did in the previous section. We'll use the ggplot2 function `geom_ribbon()` to draw the margin of error interval around the line, helping represent uncertainty in the ACS estimates.
+
+```{r final-deschutes-value-plot}
+ggplot(deschutes_value, aes(x = year, y = estimate, group = 1)) + 
+  geom_ribbon(aes(ymax = estimate + moe, ymin = estimate - moe), 
+              fill = "navy",
+              alpha = 0.4) + 
+  geom_line(color = "navy") + 
+  geom_point(color = "navy", size = 2) + 
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::dollar) + 
+  labs(title = "Median home value in Deschutes County, OR",
+       x = "Year",
+       y = "ACS estimate",
+       caption = "Shaded area represents margin of error around the ACS estimate")
+```
 
 ## Exploring age and sex structure with population pyramids
 
@@ -269,7 +320,11 @@ The side-by-side comparative graphics show how the value distributions vary betw
 
 ## Advanced visualization with ggplot2 extensions
 
-Beeswarm plot:
+While the core functionality of ggplot2 is very powerful, a notable advantage of using ggplot2 for visualization is the contributions made by its user community in the form of *extensions*. ggplot2 extensions are packages developed by practitioners outside the core ggplot2 development team that add functionality to the package. I encourage you to [review the gallery of ggplot2 extensions from the extensions website](https://exts.ggplot2.tidyverse.org/); I highlight some notable examples below.
+
+### ggbeeswarm
+
+The [ggbeeswarm package](https://github.com/eclarke/ggbeeswarm) extends ggplot2 by allowing users to generate **beeswarm plots**, in which clouds of points are jittered to show the overall density of a distribution of data values. Beeswarm plots can be compelling ways to visualize multiple data variables on a chart, such as the distributions of median household income by the racial and ethnic composition of neighborhoods. This is the motivating example for the chart below, which looks at household income by race/ethnicity in New York City. The data wrangling in the first part of the code chunk takes advantage of some of the skills covered in Chapters 2 and 3, allowing for visualization of household income distributions by the largest group in each Census tract.
 
 ```{r}
 library(tidycensus)
@@ -304,7 +359,13 @@ ggplot(ny_race_income, aes(x = variable, y = summary_est, color = summary_est)) 
        caption = "Data source: 2015-2019 ACS")
 ```
 
-## Geo-facets:
+The plot shows that the wealthiest neighborhoods in New York City - those with median household incomes exceeding \$150,000 - are all plurality or majority non-Hispanic white. However, the chart also illustrates that there are a range of values among neighborhoods with pluralities of the different racial and ethnic groups, suggesting a nuanced portrait of the intersections between race and income inequality in the city.
+
+### Geofaceted plots
+
+The next four chapters of the book, Chapters 5 through 8, are all about spatial data, mapping, and spatial analysis. Geographic location can be incorporated into Census data visualizations without using geographic information explicitly by way of the [geofacet package](https://hafen.github.io/geofacet/). Geofaceted plots are enhanced versions of faceted visualizations that arrange subplots in relationship to their relative geographic location. The geofacet package has [over 100 available grids to choose from](https://hafen.github.io/geofacet/articles/geofacet.html#list-available-grids) allowing for faceted plots for US states, counties, and regions around the world. The key is to use a column that can map correctly to information in the geofaceted grid that you are using.
+
+In the example below, we replicate the population pyramid code above to generate population pyramids for each state in the US. However, we also modify the output data so that the population information reflects the proportion of the overall population for each state so that all states are on consistent scales. The population pyramid code is similar, though the axis information is unnecessary as it will be stripped from the final plot.
 
 ```{r}
 library(geofacet)
@@ -323,13 +384,10 @@ us_pyramid_data <- get_estimates(
   ungroup() %>%
   mutate(prop = ifelse(SEX == "Male", -prop, prop))
 
-ggplot(us_pyramid_data, aes(x = AGEGROUP, y = prop, fill = SEX)) + 
-  geom_bar(stat = "identity", width = 1) + 
+ggplot(us_pyramid_data, aes(x = prop, y = AGEGROUP, fill = SEX)) + 
+  geom_col(width = 1) + 
   theme_minimal() + 
-  scale_y_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
-  scale_x_discrete(labels = function(x) gsub("Age | years", "", x)) + 
   scale_fill_manual(values = c("darkred", "navy")) + 
-  coord_flip() + 
   facet_geo(~NAME, grid = "us_state_with_DC_PR_grid2",
             label = "code") + 
   theme(axis.text = element_blank(),
@@ -341,7 +399,15 @@ ggplot(us_pyramid_data, aes(x = AGEGROUP, y = prop, fill = SEX)) +
        caption = "Data source: US Census Bureau population estimates & tidycensus R package")
 ```
 
+The result is a compelling visualization that expresses general geographic relationships and patterns in the data while showing comparative population pyramids for all states. The unique nature of Washington, DC stands out with its large population in their 20s and 30s; we can also compare Utah, the youngest state in the country, with older states in the Northeast.
+
+If this specific grid arrangement is not to your liking (e.g. Minnesotans may take issue with Wisconsin to the north!), try out some of the other built-in grid options in the package. Also, you can use the `grid_design()` function in the geofacet package to pull up an interactive app in which you can design your own grid for use in geofaceted plots!
+
 ## Interactive visualization with plotly
+
+The [htmlwidgets package](https://www.htmlwidgets.org/), first released in 2015, provides a bridge between JavaScript libraries for interactive web-based data visualization and the R language. Since 2015, the R community has released hundreds of packages that depend on htmlwidgets and bring interactive data visualization to R. One of the most popular packages for interactive visualization is the [plotly R package](https://plotly-r.com/) [@sievert2020], an interface to the Plotly visualization library.
+
+plotly is a well-developed library that allows for many different types of custom visualizations. However, one of the most useful functions in the plotly package is arguably the simplest. The `ggplotly()` function can convert an existing ggplot2 graphic into an interactive web visualization in a single line of code! Let's try it out here with the `utah_pyramid` population pyramid:
 
 ```{r}
 library(plotly)
@@ -349,3 +415,11 @@ library(plotly)
 ggplotly(utah_pyramid)
 
 ```
+
+Try hovering your cursor over the different bars; this reveals a tooltip that shares information about the data. The legend is interactive, as data series can be clicked on and off; viewers can also pan and zoom on the plot using the toolbar that appears in the upper right corner of the visualization. Interactive graphics like this are an excellent way to facilitate additional data exploration, and can be polished further for presentation on the web.
+
+## Exercises
+
+-   Choose a different variable in the ACS and/or a different location and create a margin of error visualization of your own.
+
+-   Modify the population pyramid code to create a different, customized population pyramid. You can choose a different location (state or county), different colors/plot design, or some combination!
