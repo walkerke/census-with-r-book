@@ -227,7 +227,7 @@ tm_shape(hennepin_dots) +
           size = 0.005)
 ```
 
-<img src="img/hennepin_dots.png" style="width: 100%">
+<img src="img/hennepin_dots.png" style="width: 100%"/>
 
 ## Cartographic workflows with non-Census data
 
@@ -363,7 +363,9 @@ library(mapview)
 mapview(dallas_bachelors, zcol = "estimate")
 ```
 
-<iframe src="img/leaflet/dallas_mapview.html" width="100%" height="400"></iframe>
+<iframe src="img/leaflet/dallas_mapview.html" width="100%" height="500">
+
+</iframe>
 
 Interactive viewing with tmap:
 
@@ -376,7 +378,9 @@ tm_shape(dallas_bachelors) +
           alpha = 0.5)
 ```
 
-<iframe src="img/leaflet/dallas_tmap.html" width="100%" height="400"></iframe>
+<iframe src="img/leaflet/dallas_tmap.html" width="100%" height="500">
+
+</iframe>
 
 Leaflet version:
 
@@ -411,7 +415,9 @@ leaflet() %>%
   )
 ```
 
-<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="400"></iframe>
+<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="500">
+
+</iframe>
 
 ### Alternative approaches to interactive mapping
 
@@ -452,7 +458,9 @@ leaflet() %>%
   )
 ```
 
-<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="400"></iframe>
+<iframe src="img/leaflet/us_leaflet.html" width="100%" height="500">
+
+</iframe>
 
 ```{r}
 library(ggiraph)
@@ -465,7 +473,7 @@ us_value_shifted <- us_value %>%
 gg <- ggplot(us_value_shifted, aes(fill = estimate)) + 
   geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME), 
                       size = 0.4) + 
-  scale_fill_viridis_c(option = "plasma") + 
+  scale_fill_viridis_c(option = "plasma", labels = scales::dollar) + 
   labs(title = "Median housing value by State, 2019",
        caption = "Data source: 2019 1-year ACS, US Census Bureau",
        fill = "ACS estimate") + 
@@ -517,13 +525,15 @@ vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate),
        fill = "ACS estimate") + 
   theme_minimal()
 
-girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 8) %>%
+girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 6) %>%
   girafe_options(opts_hover(css = "fill:cyan;"))
 ```
 
 ### Reactive mapping with Shiny
 
-<iframe src="https://walkerke.shinyapps.io/msp-shiny-example/" width="100%" height="800" frameBorder="0"></iframe>
+<iframe src="https://walkerke.shinyapps.io/msp-shiny-example/" width="100%" height="800" frameBorder="0">
+
+</iframe>
 
 ```{r, eval = FALSE}
 # app.R

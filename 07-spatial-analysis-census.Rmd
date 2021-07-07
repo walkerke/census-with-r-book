@@ -629,7 +629,7 @@ dfw_lisa_clusters <- dfw_lisa_df %>%
   ))
 ```
 
-The "LISA scatterplot":
+The "LISA scatterplot" :
 
 ```{r}
 color_values <- c(`High-high` = "red", 
@@ -661,28 +661,6 @@ ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
   labs(fill = "Cluster type")
 ```
 
-Linked brushing:
+Linked brushing (modify to use in an embedded Shiny app):
 
-```{r}
-library(ggiraph)
-library(patchwork)
-
-lisa_plot <- ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
-                              fill = lisa_cluster)) + 
-  geom_point_interactive(aes(data_id = GEOID), color = "black", shape = 21, size = 2) + 
-  theme_minimal() + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  scale_fill_manual(values = color_values) + 
-  labs(x = "Median age (z-score)",
-       y = "Spatial lag of median age (z-score)",
-       fill = "Cluster type")
-
-lisa_map <- ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
-  geom_sf_interactive(aes(data_id = GEOID), size = 0.1) + 
-  theme_void() + 
-  scale_fill_manual(values = color_values) + 
-  labs(fill = "Cluster type")
-
-girafe(ggobj = lisa_plot + lisa_map, width_svg = 10, height_svg = 8) 
-```
+<iframe src="https://walkerke.shinyapps.io/linked-brushing/" width="100%" height="500" frameborder="0"></iframe>

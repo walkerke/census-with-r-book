@@ -3,7 +3,7 @@ library(shiny)
 library(leaflet)
 library(tidyverse)
 
-census_api_key("84dba8250c52c9a11ec14575dce9083eea98d7e9")
+census_api_key("YOUR KEY HERE")
 
 twin_cities_race <- get_acs(
   geography = "tract",
