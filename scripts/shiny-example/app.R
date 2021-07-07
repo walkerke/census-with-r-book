@@ -3,7 +3,9 @@ library(shiny)
 library(leaflet)
 library(tidyverse)
 
-hennepin_race <- get_acs(
+census_api_key("84dba8250c52c9a11ec14575dce9083eea98d7e9")
+
+twin_cities_race <- get_acs(
   geography = "tract",
   variables = c(
     hispanic = "DP05_0071P",
@@ -13,7 +15,8 @@ hennepin_race <- get_acs(
     asian = "DP05_0080P"
   ),
   state = "MN",
-  county = "Hennepin",
+  county = c("Hennepin", "Ramsey", "Anoka", "Washington",
+             "Dakota", "Carver", "Scott"),
   geometry = TRUE
 ) 
 
@@ -33,23 +36,36 @@ ui <- fluidPage(
       )
     ),
     mainPanel(
-      leafletOutput("map")
+      leafletOutput("map", height = "600")
     )
   )
 )
 
 server <- function(input, output) {
   
+  # Reactive function that filters for the selected group in the drop-down menu
   group_to_map <- reactive({
-    filter(hennepin_race, variable == input$group)
+    filter(twin_cities_race, variable == input$group)
   })
   
+  # Initialize the map object, centered on the Minneapolis-St. Paul area
   output$map <- renderLeaflet({
+
+    leaflet() %>%
+      addProviderTiles(providers$Stamen.TonerLite) %>%
+      setView(lng = -93.21,
+              lat = 44.98,
+              zoom = 8.5)
+
+  })
+  
+  observeEvent(input$group, {
     
     pal <- colorNumeric("viridis", group_to_map()$estimate)
     
-    leaflet() %>%
-      addProviderTiles(providers$Stamen.TonerLite) %>%
+    leafletProxy("map") %>%
+      clearShapes() %>%
+      clearControls() %>%
       addPolygons(data = group_to_map(),
                   color = ~pal(estimate),
                   weight = 0.5,
@@ -62,7 +78,6 @@ server <- function(input, output) {
         values = group_to_map()$estimate,
         title = "% of population"
       )
-      
   })
   
 }

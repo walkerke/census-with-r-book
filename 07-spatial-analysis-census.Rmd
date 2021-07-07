@@ -15,7 +15,7 @@ Traditionally, spatial analytic tasks in R have been handled by the **sp** packa
 
 This chapter covers how to perform common spatial analysis tasks with Census data using the sf package. As with previous chapters, the examples will focus on data acquired with the tidycensus and tigris packages, and will cover common workflows of use to practitioners who work with US Census Bureau data.
 
-## Spatial overlay and spatial joins 
+## Spatial overlay and spatial joins
 
 Spatial data analysis allows practitioners to consider how geographic datasets interrelate in geographic space. This analytic functionality facilitates answering a wide range of research and analytic questions that would otherwise prove difficult without reference to a dataset's geographic properties.
 
@@ -80,7 +80,7 @@ ggplot() +
   theme_void()
 ```
 
-## Group-wise spatial data analysis 
+## Group-wise spatial data analysis
 
 Spatial data operations can also be embedded in workflows where analysts are interested in understanding how characteristics vary by group. For example, while demographic data for metropolitan areas can be readily acquired using tidycensus functions, we might also be interested in learning about how demographic characteristics of *neighborhoods within metropolitan areas* vary across the United States. We can accomplish this using a *spatial join*, which transfers attributes between spatial layers based on a relationship defined by a spatial predicate, as discussed above. Spatial joins in R are implemented in sf's `st_join()` function.
 
@@ -163,7 +163,7 @@ plot(median_by_metro[1,]$geometry)
 
 The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock). The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group. The typical name for this geometric process in geographic information systems is a *dissolve* operation, where geometries are identified by group and combined to return a single larger geometry. In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries. This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.
 
-## Distance and proximity analysis 
+## Distance and proximity analysis
 
 A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from tigris, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
 
@@ -423,7 +423,7 @@ ggplot(ny_erase) +
 
 The map appears as before, but now with a more familiar representation of the extent of Manhattan.
 
-## Spatial neighborhoods and spatial weights matrices 
+## Spatial neighborhoods and spatial weights matrices
 
 The spatial capabilities of tidycensus also allow for exploratory spatial data analysis (ESDA) within R. ESDA refers to the use of datasets' spatial properties in addition to their attributes to explore patterns and relationships. This may involve exploration of spatial patterns in datasets or identification of spatial clustering of a given demographic attribute.
 
@@ -508,9 +508,9 @@ weights$weights[[1]]
 
 Given that the Census tract at row index 1 has seven neighbors, each neighbor is assigned the weight 0.143.
 
-## Global and local spatial autocorrelation 
+## Global and local spatial autocorrelation
 
-The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads:
+The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads [@tobler1970]:
 
 > Everything is related to everything else, but near things are more related than distant things.
 
@@ -520,7 +520,7 @@ This formulation informs much of the theory behind spatial data science and geog
 -   *Spatial uniformity*: data values tend to differ from neighboring data values;
 -   *Spatial randomness*: there is no apparent relationship between data values and those of their neighbors.
 
-Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering. This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the {spdep} package.
+Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering. This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the {spdep} package [@bivand2018].
 
 Spatial weights matrices can be used to calculate the *spatial lag* of a given attribute for each observation in a dataset. The spatial lag refers to the neighboring values of an observation given a spatial weights matrix. As discussed above, row-standardized weights matrices will produce lagged means, and binary weights matrices will produce lagged sums. Spatial lag calculations are implemented in the function `lag.listw()`, which requires a spatial weights list object and a numeric vector from which to compute the lag.
 
@@ -550,18 +550,15 @@ $$ where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of sp
 
 Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
-
 ```{r}
 moran.test(dfw_tracts$estimate, weights)
 ```
-
 
 The Moran's I statistic of 0.359 is positive, and the small p-value suggests that we reject the null hypothesis of spatial randomness in our dataset. In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
 
 ### Local spatial autocorrelation
 
-We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic, which is computed as follows:
-
+We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic [@getis2010], which is computed as follows:
 
 $$
 G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
@@ -595,7 +592,7 @@ ggplot(dfw_tracts) +
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
-Formula:
+An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's *I* [@anselin2010].
 
 $$
 I_i = \frac{(x_i-\bar{x})}{{∑_{k=1}^{n}(x_k-\bar{x})^2}/(n-1)}{∑_{j=1}^{n}w_{ij}(x_j-\bar{x})}
@@ -618,6 +615,7 @@ dfw_lisa_df <- dfw_tracts %>%
 
 dfw_lisa_df
 ```
+
 Review the clusters and a cluster map:
 
 ```{r}
@@ -653,8 +651,6 @@ ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
 
 ```
 
-
-
 And make the map:
 
 ```{r}
@@ -688,6 +684,5 @@ lisa_map <- ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
   scale_fill_manual(values = color_values) + 
   labs(fill = "Cluster type")
 
-girafe(ggobj = lisa_plot + lisa_map, width_svg = 10, height_svg = 4) 
+girafe(ggobj = lisa_plot + lisa_map, width_svg = 10, height_svg = 8) 
 ```
-

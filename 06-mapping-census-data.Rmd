@@ -13,7 +13,17 @@ In this chapter, readers will learn how to use the `geometry` parameter in tidyc
 
 As covered in the previous chapter, Census geographies are available from the tigris R package as simple features objects, using the data model from the sf R package. tidycensus wraps several common geographic data functions in the tigris package to allow R users to return simple feature geometry pre-linked to downloaded demographic data with a single function call. The key argument to accomplish this is `geometry = TRUE`, which is available in the core data download functions in tidycensus, `get_acs()`, `get_decennial()`, and `get_estimates()`.
 
-The following example illustrates the use of the `geometry = TRUE` argument, fetching information on median household income for Census tracts in the District of Columbia. As discussed in the previous chapter, the option `tigris_use_cache = TRUE` is used to cache the downloaded geographic data on the user's computer.
+Traditionally, getting "spatial" Census data requires a tedious multi-step process that can involve several software platforms. These steps include:
+
+-   Fetching shapefiles from the Census website;
+
+-   Downloading a CSV of data, then cleaning and formatting it;
+
+-   Loading geometries and data into your desktop GIS of choice;
+
+-   Aligning key fields in your desktop GIS and joining your data.
+
+A major motivation for developing tidycensus was my frustration with having to go through this process over and over again before making a simple map of Census data. `geometry = TRUE` combines the automated data download functionality of tidycensus and tigris to allow R users to bypass this process entirely. The following example illustrates the use of the `geometry = TRUE` argument, fetching information on median household income for Census tracts in the District of Columbia. As discussed in the previous chapter, the option `tigris_use_cache = TRUE` is used to cache the downloaded geographic data on the user's computer.
 
 ```{r get-geometry}
 library(tidycensus)
@@ -30,6 +40,8 @@ dc_income
 
 As shown in the example call, the structure of the object returned by tidycensus resembles the object we've become familiar with to this point in the book. For example, median household income data are found in the `estimate` column with associated margins of error in the `moe` column, along with a variable ID, GEOID, and Census tract name. However, there are some notable differences. The `geometry` column contains polygon feature geometry for each Census tract, allowing for a linking of the estimates and margins of error with their corresponding locations in Washington, DC. Beyond that, the object is associated with coordinate system information - using the NAD 1983 geographic coordinate system in which Census geographic datasets are stored by default.
 
+### Basic mapping of sf objects with `plot()`
+
 Such geographic information is very difficult to parse, however, without visualization. As the returned object is a simple features spatial object as represented by the **sf** package, it can be plotted using sf's `plot()` function. Key here is specifying the name of the column to be plotted - `"estimate"` in this case - inside of brackets.
 
 ```{r}
@@ -42,7 +54,9 @@ The remainder of this chapter, however, will focus on map-making with additional
 
 ## Map-making with ggplot2 and geom_sf
 
-**ggplot2** version 3.0 (released in 2018) included support for mapping simple features objects directly for the first time with the `geom_sf()` function. `geom_sf()` reads in the simple feature geometry - whether point, line, or polygon - and interprets it accordingly to make a map. As illustrated in Chapter 5, `geom_sf()` can be used for quick plotting of sf objects using familiar ggplot2 syntax. Beyond this, ggplot2 users can supply an aesthetic mapping, as with other chart types, to generate maps.
+As illustrated in Chapter 5, `geom_sf()` in ggplot2 can be used for quick plotting of sf objects using familiar ggplot2 syntax. `geom_sf()` goes far beyond simple cartographic display. The full power of ggplot2 is available to create highly customized maps and geographic data visualizations.
+
+### Choropleth mapping
 
 One of the most common ways to visualize statistical information on a map is with *choropleth mapping*. Choropleth maps use shading to represent how underlying data values vary by feature in a spatial dataset. The income plot of Washington, DC shown earlier in this chapter is an example of a choropleth map.
 
@@ -76,11 +90,12 @@ m1
 
 The `geom_sf()` function in the above example interprets the geometry of the sf object (in this case, polygon) and visualizes the result as a filled *choropleth* map. A choropleth map is a type of map that displays statistical variation as color differences along a gradient. In this case, the ACS estimate of median age is mapped to the default blue dark-to-light color ramp in ggplot2, highlighting the youngest states (such as Utah) with darker blues and the oldest states (such as Maine) with lighter blues.
 
-In many cases, map-makers using ggplot2 will want to customize this graphic further. For example, a designer may want to modify the color palette and reverse it so that darker colors represent older areas. The map would also benefit from some additional information describing its content and data sources. These modifications can be specified in the same way a user would update a regular ggplot2 graphic. The `scale_fill_distiller()` function allows users to specify a [ColorBrewer](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) palette to use for the map, which includes a wide range of sequential, diverging, and qualitative color palettes. The `labs()` function can then be used to add a title, caption, and better legend label to the plot. Finally, ggplot2 cartographers will often want to use the `theme_void()` function to remove the background and gridlines from the map.
+### Customizing ggplot2 maps
+
+In many cases, map-makers using ggplot2 will want to customize this graphic further. For example, a designer may want to modify the color palette and reverse it so that darker colors represent older areas. The map would also benefit from some additional information describing its content and data sources. These modifications can be specified in the same way a user would update a regular ggplot2 graphic. The `scale_fill_distiller()` function allows users to specify a [ColorBrewer](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) palette to use for the map, which includes a wide range of sequential, diverging, and qualitative color palettes [@brewer2003]. The `labs()` function can then be used to add a title, caption, and better legend label to the plot. Finally, ggplot2 cartographers will often want to use the `theme_void()` function to remove the background and gridlines from the map.
 
 ```{r}
-m1 + 
-  scale_fill_distiller(palette = "RdPu", 
+m1 + scale_fill_distiller(palette = "RdPu", 
                        direction = 1) + 
   labs(title = "Median Age by State, 2019",
        caption = "Data source: 2019 1-year ACS, US Census Bureau",
@@ -88,33 +103,27 @@ m1 +
   theme_void()
 ```
 
-```{block2, note-text2, type='rmdtip'}
-Info here about color palettes
-
-```
-
-
 ## Map-making with tmap
 
-For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The {tmap} package is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
+For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The tmap package is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
 
-To get started, let's grab some ACS data on race and ethnicity from the American Community Survey's Data Profile. We'll be looking at data on percentage non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
+To get started, let's grab some ACS data on race and ethnicity from the American Community Survey's Data Profile. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
-```{r sf-race-ethnicity}
+```{r hennepin-race-ethnicity}
 
 hennepin_race <- get_acs(
   geography = "tract",
-  variables = c(
-    hispanic = "DP05_0071P",
-    white = "DP05_0077P",
-    black = "DP05_0078P",
-    native = "DP05_0079P",
-    asian = "DP05_0080P"
-  ),
   state = "MN",
   county = "Hennepin",
+  variables = c(White = "B03002_003",
+                Black = "B03002_004",
+                Native = "B03002_005",
+                Asian = "B03002_006",
+                Hispanic = "B03002_012"),
+  summary_var = "B03002_001",
   geometry = TRUE
-)
+) %>%
+  mutate(percent = 100 * (estimate / summary_est))
 
 hennepin_race
 
@@ -122,16 +131,17 @@ hennepin_race
 
 We've returned ACS data in tidycensus's regular "tidy" or long format, which will be useful in a moment for comparative map-making. To get started, we'll extract a single group from the dataset to illustrate how tmap works.
 
+### Choropleth maps with tmap
+
 tmap's map-making syntax will be somewhat familiar to users of ggplot2, as it uses the concept of *layers* to specify modifications to the map. The map object is initialized with `tm_shape()`, which then allows us to view the Census tracts with `tm_polygons()`.
 
 ```{r henn-plot-tracts}
 
 library(tmap)
-
-hennepin_asian <- filter(hennepin_race, variable == "asian")
-
-tm_shape(hennepin_asian) + 
-  tm_polygons() 
+hennepin_black <- filter(hennepin_race, 
+                         variable == "Black")
+tm_shape(hennepin_black) + 
+  tm_polygons()
 
 
 ```
@@ -139,81 +149,75 @@ tm_shape(hennepin_asian) +
 We get a default view of Census tracts in Hennepin County, Minnesota. Alternatively, the `tm_fill()` function can be used to produce choropleth maps, as illustrated in the ggplot2 examples above.
 
 ```{r}
-tm_shape(hennepin_asian) + 
-  tm_fill(col = "estimate")
+tm_shape(hennepin_black) + 
+  tm_polygons(col = "percent")
 ```
 
 You'll notice that tmap uses a classed color scheme rather than the continuous palette used by ggplot2, by default. This involves the identification of "classes" in the distribution of data values and mapping a color from a color palette to data values that belong to each class. The default classification scheme used by `tm_fill()` is `"pretty"`, which identifies clean-looking intervals in the data based on the data range. In this example, data classes change every 10 percent. However, this doesn't quite work for our data given the distribution of data values. Let's take a look at our data distribution to understand why:
 
 ```{r}
-hist(hennepin_asian$estimate)
+hist(hennepin_black$percent)
 ```
 
 As the histogram illustrates, most Census tracts in Hennepin County have Asian populations below 10 percent. In turn, this makes it difficult to see meaningful variation on our map as most tracts fall into one class. The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`). Let's switch to quantiles below, where each class will contain the same number of Census tracts. We can also change the color palette and add some contextual text as we did with ggplot2.
 
 ```{r}
-tm_shape(hennepin_asian, 
+tm_shape(hennepin_black, 
          projection = sf::st_crs(26915)) + 
-  tm_fill(col = "estimate",
+  tm_polygons(col = "percent",
           style = "quantile",
-          n = 5,
-          palette = "Greens",
+          n = 7,
+          palette = "Purples",
           title = "ACS estimate") + 
-  tm_layout(title = "Percent Asian population\nby Census tract",
+  tm_layout(title = "Percent Black\nby Census tract",
             frame = FALSE,
             legend.outside = TRUE)
 ```
 
-```{block2, note-text3, type='rmdtip'}
-Info here about classification choices
+### Choosing a color palette
 
+-   ColorBrewer, viridis palettes
+
+-   tmaptools::palette_explorer()
+
+### Alternative map types with tmap
+
+#### Graduated symbols
+
+```{r symbol-map}
+tm_shape(hennepin_black) + 
+  tm_polygons() + 
+  tm_bubbles(size = "estimate", alpha = 0.5, 
+             col = "navy")
 ```
+
+#### Faceted maps
 
 ```{r}
 tm_shape(hennepin_race,
          projection = sf::st_crs(26915)) + 
-  tm_facets(by = "variable") + 
-  tm_fill(col = "estimate",
+  tm_facets(by = "variable", scale.factor = 4) + 
+  tm_fill(col = "percent",
           style = "quantile",
           n = 7,
-          palette = "Purples")
+          palette = "Blues")
 ```
 
-Here - show how to make a dot-density map with tm_dots
-
-```{r}
-hennepin_race2 <- get_acs(
-  geography = "tract",
-  variables = c(
-    hispanic = "DP05_0071",
-    white = "DP05_0077",
-    black = "DP05_0078",
-    native = "DP05_0079",
-    asian = "DP05_0080"
-  ),
-  state = "MN",
-  county = "Hennepin",
-  geometry = TRUE
-)
-```
+#### Dot-density maps
 
 ```{r, eval = FALSE}
-groups <- unique(hennepin_race2$variable)
+library(sf)
 
-hennepin_dots <- map(groups, ~{
-  group_sf <- filter(hennepin_race2, variable == .x)
-  
-  dots <- group_sf %>%
+groups <- unique(hennepin_race$variable)
+hennepin_dots <- map_dfr(groups, ~{
+  hennepin_race %>%
+    filter(variable == .x) %>%
     st_transform(26915) %>%
     mutate(est50 = as.integer(estimate / 50)) %>%
     st_sample(size = .$est50, exact = TRUE) %>%
     st_sf() %>%
     mutate(group = .x)
-  
-  dots
-  
 }) %>%
-  bind_rows() %>%
   slice_sample(prop = 1)
 ```
 
@@ -223,13 +227,15 @@ tm_shape(hennepin_dots) +
           size = 0.005)
 ```
 
+<img src="img/hennepin_dots.png" style="width: 100%">
+
 ## Cartographic workflows with non-Census data
 
 In many instances, an analyst may possess data that is available at a Census geography but is not available through the ACS or decennial Census. This means that the `geometry = TRUE` functionality in tidycensus, which automatically enriches data with geographic information, is not possible. In these cases, Census shapes obtained with tigris can be joined to tabular data and then visualized.
 
 ### National election mapping with tigris shapes
 
-``` {r}
+```{r}
 library(tidyverse)
 library(tigris)
 
@@ -352,14 +358,16 @@ dallas_bachelors <- get_acs(
 
 Mapview version:
 
-``` {.r}
+```{r, eval = FALSE}
 library(mapview)
 mapview(dallas_bachelors, zcol = "estimate")
 ```
 
+<iframe src="img/leaflet/dallas_mapview.html" width="100%" height="400"></iframe>
+
 Interactive viewing with tmap:
 
-``` {.r}
+```{r, eval = FALSE}
 library(tmap)
 tmap_mode("view")
 
@@ -367,6 +375,8 @@ tm_shape(dallas_bachelors) +
   tm_fill(col = "estimate", palette = "magma",
           alpha = 0.5)
 ```
+
+<iframe src="img/leaflet/dallas_tmap.html" width="100%" height="400"></iframe>
 
 Leaflet version:
 
@@ -400,6 +410,8 @@ leaflet() %>%
     title = "% with bachelor's<br/>degree"
   )
 ```
+
+<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="400"></iframe>
 
 ### Alternative approaches to interactive mapping
 
@@ -440,6 +452,8 @@ leaflet() %>%
   )
 ```
 
+<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="400"></iframe>
+
 ```{r}
 library(ggiraph)
 library(tidyverse)
@@ -461,84 +475,11 @@ girafe(ggobj = gg) %>%
   girafe_options(opts_hover(css = "fill:cyan;"))
 ```
 
-## Enhanced interactivity with maps
+## Advanced examples
 
-### Reactive mapping with Shiny
+### Mapping migration flows
 
-```{r, eval = FALSE}
-library(tidycensus)
-library(shiny)
-library(leaflet)
-library(tidyverse)
-
-hennepin_race <- get_acs(
-  geography = "tract",
-  variables = c(
-    hispanic = "DP05_0071P",
-    white = "DP05_0077P",
-    black = "DP05_0078P",
-    native = "DP05_0079P",
-    asian = "DP05_0080P"
-  ),
-  state = "MN",
-  county = "Hennepin",
-  geometry = TRUE
-) 
-
-groups <- c("Hispanic" = "hispanic",
-            "White" = "white",
-            "Black" = "black",
-            "Native American" = "native",
-            "Asian" = "asian")
-
-ui <- fluidPage(
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "group",
-        label = "Select a group to map",
-        choices = groups
-      )
-    ),
-    mainPanel(
-      leafletOutput("map")
-    )
-  )
-)
-
-server <- function(input, output) {
-  
-  group_to_map <- reactive({
-    filter(hennepin_race, variable == input$group)
-  })
-  
-  output$map <- renderLeaflet({
-    
-    pal <- colorNumeric("viridis", group_to_map()$estimate)
-    
-    leaflet() %>%
-      addProviderTiles(providers$Stamen.TonerLite) %>%
-      addPolygons(data = group_to_map(),
-                  color = ~pal(estimate),
-                  weight = 0.5,
-                  fillOpacity = 0.5,
-                  smoothFactor = 0.2,
-                  label = ~estimate) %>%
-      addLegend(
-        position = "bottomright",
-        pal = pal,
-        values = group_to_map()$estimate,
-        title = "% of population"
-      )
-      
-  })
-  
-}
-
-shinyApp(ui = ui, server = server)
-```
-
-### Enhanced interactivity without Shiny
+### Linking maps and charts
 
 ```{r}
 library(tidycensus)
@@ -576,6 +517,101 @@ vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate),
        fill = "ACS estimate") + 
   theme_minimal()
 
-girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 4) %>%
+girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 8) %>%
   girafe_options(opts_hover(css = "fill:cyan;"))
+```
+
+### Reactive mapping with Shiny
+
+<iframe src="https://walkerke.shinyapps.io/msp-shiny-example/" width="100%" height="800" frameBorder="0"></iframe>
+
+```{r, eval = FALSE}
+# app.R
+library(tidycensus)
+library(shiny)
+library(leaflet)
+library(tidyverse)
+
+census_api_key("YOUR KEY HERE")
+
+twin_cities_race <- get_acs(
+  geography = "tract",
+  variables = c(
+    hispanic = "DP05_0071P",
+    white = "DP05_0077P",
+    black = "DP05_0078P",
+    native = "DP05_0079P",
+    asian = "DP05_0080P"
+  ),
+  state = "MN",
+  county = c("Hennepin", "Ramsey", "Anoka", "Washington",
+             "Dakota", "Carver", "Scott"),
+  geometry = TRUE
+) 
+
+groups <- c("Hispanic" = "hispanic",
+            "White" = "white",
+            "Black" = "black",
+            "Native American" = "native",
+            "Asian" = "asian")
+
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        inputId = "group",
+        label = "Select a group to map",
+        choices = groups
+      )
+    ),
+    mainPanel(
+      leafletOutput("map", height = "600")
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  # Reactive function that filters for the selected group in the drop-down menu
+  group_to_map <- reactive({
+    filter(twin_cities_race, variable == input$group)
+  })
+  
+  # Initialize the map object, centered on the Minneapolis-St. Paul area
+  output$map <- renderLeaflet({
+
+    leaflet() %>%
+      addProviderTiles(providers$Stamen.TonerLite) %>%
+      setView(lng = -93.21,
+              lat = 44.98,
+              zoom = 8.5)
+
+  })
+  
+  observeEvent(input$group, {
+    
+    pal <- colorNumeric("viridis", group_to_map()$estimate)
+    
+    leafletProxy("map") %>%
+      clearShapes() %>%
+      clearControls() %>%
+      addPolygons(data = group_to_map(),
+                  color = ~pal(estimate),
+                  weight = 0.5,
+                  fillOpacity = 0.5,
+                  smoothFactor = 0.2,
+                  label = ~estimate) %>%
+      addLegend(
+        position = "bottomright",
+        pal = pal,
+        values = group_to_map()$estimate,
+        title = "% of population"
+      )
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
+
+
 ```
