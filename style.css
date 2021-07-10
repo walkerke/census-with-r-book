@@ -12,3 +12,7 @@ pre {
 pre code {
   white-space: inherit;
 }
+
+.csl-entry {
+  padding-bottom: 10px;
+}

@@ -546,7 +546,9 @@ The scatterplot suggests a positive correlation between the ACS estimate and its
 
 $$
 I = \frac{N}{W}\frac{\sum_i\sum_j w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_i(x_i - \bar{x})^2}
-$$ where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spatial units denoted by $i$ and $j$, and $W$ is the sum of the spatial weights.
+$$ 
+
+where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spatial units denoted by $i$ and $j$, and $W$ is the sum of the spatial weights.
 
 Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
@@ -562,7 +564,9 @@ We can explore this further with *local spatial autocorrelation analysis*. Local
 
 $$
 G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
-$$ In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation. Results are returned as z-scores, and implemented in the `localG()` function in {spdep}.
+$$ 
+
+In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation. Results are returned as z-scores, and implemented in the `localG()` function in {spdep}.
 
 ```{r}
 # For Gi*, re-compute the weights with `include.self()`
@@ -663,4 +667,10 @@ ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
 
 Linked brushing (modify to use in an embedded Shiny app):
 
-<iframe src="https://walkerke.shinyapps.io/linked-brushing/" width="100%" height="500" frameborder="0"></iframe>
+```{r linked-brushing-app}
+knitr::include_app("https://walkerke.shinyapps.io/linked-brushing/", height = "600px")
+```
+
+
+
+## Exercises

@@ -133,7 +133,7 @@ We've returned ACS data in tidycensus's regular "tidy" or long format, which wil
 
 ### Choropleth maps with tmap
 
-tmap's map-making syntax will be somewhat familiar to users of ggplot2, as it uses the concept of *layers* to specify modifications to the map. The map object is initialized with `tm_shape()`, which then allows us to view the Census tracts with `tm_polygons()`.
+tmap's map-making syntax will be somewhat familiar to users of ggplot2, as it uses the concept of *layers* to specify modifications to the map. The map object is initialized with `tm_shape()`, which then allows us to view the Census tracts with `tm_polygons()`. We'll first filter our long-form spatial dataset to get a unique set of tract polygons, then visualize them.
 
 ```{r henn-plot-tracts}
 
@@ -153,20 +153,20 @@ tm_shape(hennepin_black) +
   tm_polygons(col = "percent")
 ```
 
-You'll notice that tmap uses a classed color scheme rather than the continuous palette used by ggplot2, by default. This involves the identification of "classes" in the distribution of data values and mapping a color from a color palette to data values that belong to each class. The default classification scheme used by `tm_fill()` is `"pretty"`, which identifies clean-looking intervals in the data based on the data range. In this example, data classes change every 10 percent. However, this doesn't quite work for our data given the distribution of data values. Let's take a look at our data distribution to understand why:
+You'll notice that tmap uses a classed color scheme rather than the continuous palette used by ggplot2, by default. This involves the identification of "classes" in the distribution of data values and mapping a color from a color palette to data values that belong to each class. The default classification scheme used by `tm_fill()` is `"pretty"`, which identifies clean-looking intervals in the data based on the data range. In this example, data classes change every 10 percent. However, this approach will always be sensitive to the distribution of data values. Let's take a look at our data distribution to understand why:
 
 ```{r}
 hist(hennepin_black$percent)
 ```
 
-As the histogram illustrates, most Census tracts in Hennepin County have Asian populations below 10 percent. In turn, this makes it difficult to see meaningful variation on our map as most tracts fall into one class. The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`). Let's switch to quantiles below, where each class will contain the same number of Census tracts. We can also change the color palette and add some contextual text as we did with ggplot2.
+As the histogram illustrates, most Census tracts in Hennepin County have Black populations below 20 percent. In turn, variation within this bucket is not visible on the map given that most tracts fall into one class. The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`). Let's switch to quantiles below, where each class will contain the same number of Census tracts. We can also change the color palette and add some contextual text as we did with ggplot2.
 
 ```{r}
 tm_shape(hennepin_black, 
          projection = sf::st_crs(26915)) + 
   tm_polygons(col = "percent",
           style = "quantile",
-          n = 7,
+          n = 5,
           palette = "Purples",
           title = "ACS estimate") + 
   tm_layout(title = "Percent Black\nby Census tract",
@@ -174,7 +174,43 @@ tm_shape(hennepin_black,
             legend.outside = TRUE)
 ```
 
+Switching from the default classification scheme to quantiles reveals additional neighborhood-level heterogeneity in Hennepin County's Black population in suburban areas. However, it does mask some heterogeneity in Minneapolis as the top class now includes values ranging from 22 percent to 71 percent. A "compromise" solution commonly used in GIS cartography applications is the Jenks natural-breaks method, which uses an algorithm to identify meaningful breaks in the data for bin boundaries. To assist with understanding how the different classification methods work, the `legend.hist` argument in `tm_polygons()` can be set to TRUE, adding a histogram to the map with bars colored by the values used on the map.
+
+```{r jenks}
+tm_shape(hennepin_black, 
+         projection = sf::st_crs(26915)) + 
+  tm_polygons(col = "percent",
+          style = "jenks",
+          n = 5,
+          palette = "Purples",
+          title = "ACS estimate",
+          legend.hist = TRUE) + 
+  tm_layout(title = "Percent Black\nby Census tract",
+            frame = FALSE,
+            legend.outside = TRUE,
+            bg.color = "grey70",
+            legend.hist.width = 5)
+```
+
 ### Choosing a color palette
+
+The examples shown in this chapter thus far have used a variety of *color palettes* to display statistical variation on choropleth maps. Software packages like sf, ggplot2, and tmap will have color palettes built in as "defaults"; I've shown the default palettes for all three, then changed the palettes used in ggplot2 and in tmap. So how do you go about choosing an appropriate color palette? There are a variety of considerations to take into account.
+
+First, it is important to understand the type of data you are working with. If your data are *quantitative* - that is, expressed with numbers, which you'll commonly be working with using Census data - you'll want a color palette that can show the statistical variation in your data correctly. In the demographic examples shown above, ACS data range from a low value to a high value. This type of information is effectively represented with a *sequential* color palette. Sequential color palettes use either a single hue or related hues then modify the color lightness or intensity to generate a sequence of colors. An example single-hue palette is the "Purples" ColorBrewer palette used in the map above.
+
+![](images/paste-5A599E3A.png)
+
+With this palette, lighter colors should generally be used to represent lower data values, and darker values should represent higher values, suggesting a greater density/concentration of that attribute. In other color palettes, however, the more intense colors may be the lighter colors and should be used accordingly to represent data values. This is the case with the popular viridis color palettes, implemented in R with the viridis package [@garnier2021].
+
+![](images/paste-E6B78870.png)
+
+Diverging:
+
+![](images/paste-2005CFC0.png)
+
+Qualitative:
+
+![](images/paste-4873BC75.png)
 
 -   ColorBrewer, viridis palettes
 
@@ -358,18 +394,18 @@ dallas_bachelors <- get_acs(
 
 Mapview version:
 
-```{r, eval = FALSE}
+```{r dallas-mapview, eval = FALSE}
 library(mapview)
 mapview(dallas_bachelors, zcol = "estimate")
 ```
 
-<iframe src="img/leaflet/dallas_mapview.html" width="100%" height="500">
-
-</iframe>
+```{r dallas-mapview-map}
+knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
+```
 
 Interactive viewing with tmap:
 
-```{r, eval = FALSE}
+```{r dallas-tmap, eval = FALSE}
 library(tmap)
 tmap_mode("view")
 
@@ -378,13 +414,13 @@ tm_shape(dallas_bachelors) +
           alpha = 0.5)
 ```
 
-<iframe src="img/leaflet/dallas_tmap.html" width="100%" height="500">
-
-</iframe>
+```{r dallas-tmap-map}
+knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
+```
 
 Leaflet version:
 
-```{r, eval = FALSE}
+```{r dallas-palette, eval = FALSE}
 library(leaflet)
 
 pal <- colorNumeric(
@@ -398,7 +434,7 @@ pal(c(10, 20, 30, 40, 50))
 
 Make the map:
 
-```{r, eval = FALSE}
+```{r dallas-leaflet, eval = FALSE}
 leaflet() %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addPolygons(data = dallas_bachelors,
@@ -415,9 +451,9 @@ leaflet() %>%
   )
 ```
 
-<iframe src="img/leaflet/dallas_leaflet.html" width="100%" height="500">
-
-</iframe>
+```{r dallas-leaflet-map}
+knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
+```
 
 ### Alternative approaches to interactive mapping
 
@@ -434,7 +470,7 @@ us_value <- get_acs(
 
 Trying the same Leaflet approach:
 
-```{r, eval = FALSE}
+```{r us-leaflet, eval = FALSE}
 library(leaflet)
 
 us_pal <- colorNumeric(
@@ -458,9 +494,9 @@ leaflet() %>%
   )
 ```
 
-<iframe src="img/leaflet/us_leaflet.html" width="100%" height="500">
-
-</iframe>
+```{r us-leaflet-map}
+knitr::include_url("img/leaflet/us_leaflet.html", height = "500px")
+```
 
 ```{r}
 library(ggiraph)
@@ -531,9 +567,9 @@ girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 6) %>%
 
 ### Reactive mapping with Shiny
 
-<iframe src="https://walkerke.shinyapps.io/msp-shiny-example/" width="100%" height="800" frameBorder="0">
-
-</iframe>
+```{r include-app}
+knitr::include_app("https://walkerke.shinyapps.io/msp-shiny-example/", height = "800px")
+```
 
 ```{r, eval = FALSE}
 # app.R
