@@ -105,7 +105,7 @@ m1 + scale_fill_distiller(palette = "RdPu",
 
 ## Map-making with tmap
 
-For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The tmap package is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
+For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The tmap package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
 
 To get started, let's grab some ACS data on race and ethnicity from the American Community Survey's Data Profile. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
@@ -196,38 +196,54 @@ tm_shape(hennepin_black,
 
 The examples shown in this chapter thus far have used a variety of *color palettes* to display statistical variation on choropleth maps. Software packages like sf, ggplot2, and tmap will have color palettes built in as "defaults"; I've shown the default palettes for all three, then changed the palettes used in ggplot2 and in tmap. So how do you go about choosing an appropriate color palette? There are a variety of considerations to take into account.
 
-First, it is important to understand the type of data you are working with. If your data are *quantitative* - that is, expressed with numbers, which you'll commonly be working with using Census data - you'll want a color palette that can show the statistical variation in your data correctly. In the demographic examples shown above, ACS data range from a low value to a high value. This type of information is effectively represented with a *sequential* color palette. Sequential color palettes use either a single hue or related hues then modify the color lightness or intensity to generate a sequence of colors. An example single-hue palette is the "Purples" ColorBrewer palette used in the map above.
+First, it is important to understand the type of data you are working with. If your data are *quantitative* - that is, expressed with numbers, which you'll commonly be working with using Census data - you'll want a color palette that can show the statistical variation in your data correctly. In the demographic examples shown above, ACS data range from a low value to a high value. This type of information is effectively represented with a *sequential* color palette. **Sequential** color palettes use either a single hue or related hues then modify the color lightness or intensity to generate a sequence of colors. An example single-hue palette is the "Purples" ColorBrewer palette used in the map above.
 
 ![](images/paste-5A599E3A.png)
 
-With this palette, lighter colors should generally be used to represent lower data values, and darker values should represent higher values, suggesting a greater density/concentration of that attribute. In other color palettes, however, the more intense colors may be the lighter colors and should be used accordingly to represent data values. This is the case with the popular viridis color palettes, implemented in R with the viridis package [@garnier2021].
+With this palette, lighter colors should generally be used to represent lower data values, and darker values should represent higher values, suggesting a greater density/concentration of that attribute. In other color palettes, however, the more intense colors may be the lighter colors and should be used accordingly to represent data values. This is the case with the popular viridis color palettes, implemented in R with the viridis package [@garnier2021] and shown below.
 
 ![](images/paste-E6B78870.png)
 
-Diverging:
+**Diverging** color palettes are best used when the cartographer wants to highlight extreme values on either end of the data distribution and represent neutral values in the middle. The example shown below is the ColorBrewer "RdBu" palette.
 
 ![](images/paste-2005CFC0.png)
 
-Qualitative:
+For Census data mapping, diverging palettes are well-suited to maps that visualize change over time. A map of population change using a diverging palette would highlight extreme population loss and extreme population gain with intense colors on either end of the palette, and represent minimal population change with a muted, neutral color in the middle.
+
+**Qualitative** palettes are appropriate for categorical data, as they represent data values with unique, unordered hues. A good example is the "Set1" color palette shown below.
 
 ![](images/paste-4873BC75.png)
 
--   ColorBrewer, viridis palettes
+While maps of Census data as returned by tidycensus will generally use sequential or diverging color palettes (given the quantitative nature of Census data), derived data products may require qualitative palettes. Illustrative examples in this book include categorical dot-density maps (addressed later in this chapter) and visualizations of geodemographic clusters, explored in Chapter \@ref(8).
 
--   tmaptools::palette_explorer()
+Choosing an appropriate color palette for your maps can be a challenge. Fortunately, the ColorBrewer and viridis palettes are appropriate for a wide range of cartographic use cases and have built-in support in ggplot2 and tmap. An excellent tool for helping decide on a color palette is tmap's Palette Explorer app, accessible with the command `tmaptools::palette_explorer()`. Run this command in your R console to launch an interactive app that helps you explore different color scenarios using ColorBrewer and viridis palettes. Notably, the app includes a color blindness simulator to help you choose color palettes that are color blindness friendly.
 
 ### Alternative map types with tmap
 
+Choropleth maps are a core part of the Census data analyst's toolkit, but they are not ideal for every application. In particular, choropleth maps are best suited for visualizing rates, percentages, or statistical values that are normalized for the population of areal units. They are not ideal when the analyst wants to compare counts (or estimated counts) themselves, however. Choropleth maps of count data may ultimately reflect the underlying size of a baseline population; additionally, given that the counts are compared visually relative to the irregular shape of the polygons, choropleth maps can make comparisons difficult.
+
 #### Graduated symbols
+
+An alternative commonly used to visualize count data is the **graduated symbol map**. Graduated symbol maps use shapes referenced to geographic units that are sized relative to a data attribute. The example below uses tmap's `tm_bubbles()` function to create a graduated symbol map of the Black population in Hennepin County, mapping the `estimate` column.
 
 ```{r symbol-map}
 tm_shape(hennepin_black) + 
   tm_polygons() + 
   tm_bubbles(size = "estimate", alpha = 0.5, 
-             col = "navy")
+             col = "navy",
+             title.size = "Non-Hispanic Black - ACS estimate") + 
+  tm_layout(legend.outside = TRUE,
+            legend.outside.position = "bottom")
+
 ```
 
+The visual comparisons on the map are made between the circles, not the polygons themselves, reflecting differences between population sizes.
+
 #### Faceted maps
+
+Given that the long-form race & ethnicity dataset returned by tidycensus includes information on five groups, a cartographer may want to visualize those groups comparatively. A single choropleth map cannot effectively visualize five demographic attributes simultaneously, and creating five separate maps can be tedious. A solution to this is using *faceting*, a concept introduced in Chapter \@ref(4).
+
+Faceted maps in tmap are created with the `tm_facets()` function. The `by` argument specifies the column to be used to identify unique groups in the data. The remaining code is familiar tmap code; in this example, `tm_fill()` is preferred to `tm_polygons()` to hide the Census tract borders given the smaller sizes of the maps. The legend is also moved with the `legend.position` argument in `tm_layout()` to fill the empty space in the faceted map.
 
 ```{r}
 tm_shape(hennepin_race,
@@ -235,16 +251,31 @@ tm_shape(hennepin_race,
   tm_facets(by = "variable", scale.factor = 4) + 
   tm_fill(col = "percent",
           style = "quantile",
-          n = 7,
-          palette = "Blues")
+          n = 6,
+          palette = "Blues",
+          title = "Percent (2015-2019 ACS)",) + 
+  tm_layout(bg.color = "grey", 
+            legend.position = c(-0.7, 0.2),
+            panel.label.bg.color = "white")
 ```
 
+The faceted maps do a good job of showing variations in each group in comparative context. However, the common legend and classification scheme used means that within-group variation is suppressed relative to the need to show consistent comparisons between groups. In turn, the "White" subplot shows little variation among Census tracts in Hennepin County given the large size of that group in the area. One additional disadvantage of separate maps by group is that they do not show neighborhood heterogeneity and diversity as well as they could. A popular alternative for visualizing within-unit heterogeneity is the dot-density map, covered below.
+
 #### Dot-density maps
+
+Dot-density maps scatter dots within areal units relative to the size of a data attribute. This cartographic method is intended to show attribute density through the dot distributions; for a Census map, in areas where the dots are dense, more people live there, whereas sparsely positioned dots reflect sparsity of population. Dot-density maps can also incorporate categories in the data to visualize densities of different subgroups simultaneously.
+
+Generating a dot-density map in R requires some more advanced code that uses some of the programmatic skills learned in prior chapters and introduces some new techniques. The code below converts the data in the `hennepin_race` object to a new object, `hennepin_dots`, that is of geometry type `POINT` instead of `MULTIPOLYGON`. Each point in the output spatial dataset will roughly represent an estimated 50 residents of each Census tract who identified as part of a particular racial or ethnic group on the 2015-2019 ACS.
+
+purrr's `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est50`, which is the population estimate for each group divided by 50. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
+
+This code can take a few minutes to run, so be patient when reproducing.
 
 ```{r, eval = FALSE}
 library(sf)
 
 groups <- unique(hennepin_race$variable)
+
 hennepin_dots <- map_dfr(groups, ~{
   hennepin_race %>%
     filter(variable == .x) %>%
@@ -257,6 +288,8 @@ hennepin_dots <- map_dfr(groups, ~{
   slice_sample(prop = 1)
 ```
 
+The map itself is created with the `tm_dots()` function, which in this example is combined with `tm_polygons()` to show the relative racial and ethnic heterogeneity of Census tracts in Hennepin County.
+
 ```{r, eval = FALSE}
 tm_shape(hennepin_dots) +
   tm_dots(col = "group", palette = "Set1",
@@ -265,11 +298,17 @@ tm_shape(hennepin_dots) +
 
 <img src="img/hennepin_dots.png" style="width: 100%"/>
 
+Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, as dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be inhabited then runs the dot-generation algorithm over those modified areas.
+
 ## Cartographic workflows with non-Census data
 
 In many instances, an analyst may possess data that is available at a Census geography but is not available through the ACS or decennial Census. This means that the `geometry = TRUE` functionality in tidycensus, which automatically enriches data with geographic information, is not possible. In these cases, Census shapes obtained with tigris can be joined to tabular data and then visualized.
 
+This section covers two such workflows. The first reproduces the popular red/blue election map common in presidential election cycles. The second focuses on mapping zip code tabulation areas, or ZCTAs, a geography that represents the spatial location of zip codes (postal codes) in the United States.
+
 ### National election mapping with tigris shapes
+
+While enumeration units like Census tracts and block groups will generally be used to map Census data, Census shapes representing legal entities are useful for a variety of cartographic purposes. A popular example is the political map, which shows the winner or poll results from an election in a region. We'll use data from the [Cook Political Report](https://cookpolitical.com/2020-national-popular-vote-tracker) to generate a basic red state/blue state map of the 2020 US Presidential election results. This dataset was downloaded on June 5, 2020 and is available at `"data/us_vote_2020.csv"` in the book GitHub repository.
 
 ```{r}
 library(tidyverse)
@@ -281,25 +320,45 @@ vote2020 <- read_csv("data/us_vote_2020.csv")
 glimpse(vote2020)
 ```
 
-Get the geometries and merge:
+The data include a wide variety of columns that can be visualized on a map. As discussed in the previous chapter, a comparative map of the United States can use the `shift_geometry()` function in the tigris package to shift and rescale Alaska and Hawaii. State geometries are available in tigris with the `states()` function, which should be used with the arguments `cb = TRUE` and `resolution = "20m"` to appropriately generalize the state geometries for national mapping.
+
+To create the map, the geometry data obtained with tigris must be joined to the election data from the Cook Political Report. This is accomplished with the `left_join()` function from dplyr. dplyr's `*_join()` family of functions are supported by simple features objects, and work in this context analogous to the common "Join" operations in desktop GIS software. The join functions work by matching values in one or more "key fields" between two tables and merging data from those two tables into a single output table. The most common join functions you'll use for spatial data are `left_join()`, which retains all rows from the first dataset and fills non-matching rows with `NA` values, and `inner_join()`, which drops non-matching rows in the output dataset.
+
+Let's try this out by obtaining low-resolution state geometry with tigris, shifting and rescaling with `shift_geometry()`, then merging the political data to those shapes, matching the `NAME` column in `us_states` to the `state` column in `vote2020`.
 
 ```{r}
 us_states <- states(cb = TRUE, resolution = "20m") %>%
+  filter(NAME != "Puerto Rico") %>%
   shift_geometry()
 
-us_states_merged <- us_states %>%
-  inner_join(vote2020, by = c("NAME" = "state"))
+us_states_joined <- us_states %>%
+  left_join(vote2020, by = c("NAME" = "state"))
 
-table(is.na(us_states_merged$NAME))
 ```
+
+Before proceeding we'll want to do some quality checks. In `left_join()`, values must match exactly between `NAME` and `state` to merge correctly - and this is not always guaranteed when using data from different sources. Let's check to see if we have any problems:
+
+```{r}
+table(is.na(us_states_joined$state))
+```
+
+We've matched all the 50 states plus the District of Columbia correctly. Let's now examine our output object:
+
+```{r}
+us_states_joined
+```
+
+The joined dataset has retained the shifted and rescaled geometry of the US states and now includes the election information from the tabular dataset which can be used for mapping. To achieve this structure, specifying the directionality of the join was critical. For spatial information to be retained in a join, the spatial object *must* be on the left-hand side of the join. In our pipeline, we specified the `us_states` object first and used `left_join()` to join the election information *to* the states object. If we had done this in reverse, we would have lost the spatial class information necessary to make the map.
+
+For a basic red state/blue state map using ggplot2 and `geom_sf()`, a manual color palette can be supplied to the `scale_fill_manual()` function, filling state polygons based on the `called` column which represents the party for whom the state was called.
 
 ```{r}
 ggplot(us_states_merged, aes(fill = called)) + 
-  geom_sf() + 
+  geom_sf(color = "white", lwd = 0.2) + 
   scale_fill_manual(values = c("blue", "red")) + 
   theme_void() + 
   labs(fill = "Party",
-       title = "2020 US presidential election results by state",
+       title = " 2020 US presidential election results by state",
        caption = "Note: Nebraska and Maine split electoral college votes by congressional district")
 ```
 
@@ -343,9 +402,7 @@ The ZCTA prefixes `021`, `022`, and `024` cover much of the Boston metropolitan 
 glimpse(boston_zctas)
 ```
 
-Either the `ZCTA4CE10` column or the `GEOID10` column can be matched to the appropriate zip code information in the IRS dataset for visualization. This is computed with the `left_join()` function from dplyr. Given that the ZCTA dataset is returned as a simple features object, the sf package includes a variety of methods to allow for processing of spatial datasets using tidyverse functions.
-
-The code below joins the IRS data to the spatial dataset and computes a new column representing the percentage of returns with self-employment income. Note the `by` argument in `left_join()` that specifies the columns to be used on the left and right hand sides of the join.
+Either the `ZCTA4CE10` column or the `GEOID10` column can be matched to the appropriate zip code information in the IRS dataset for visualization. The code below joins the IRS data to the spatial dataset and computes a new column representing the percentage of returns with self-employment income.
 
 ```{r}
 boston_se_data <- boston_zctas %>%
@@ -357,16 +414,12 @@ glimpse(boston_se_data)
 
 There are a variety of ways to visualize this information. One such method is a choropleth map, which you've learned about earlier this chapter:
 
-```{r, echo = FALSE}
-tmap_mode("plot")
-```
-
 ```{r}
 tm_shape(boston_se_data, projection = 26918) + 
   tm_fill(col = "pct_self_emp", palette = "Purples")
 ```
 
-The choropleth map shows that self-employment filings are more common in suburban Boston ZCTAs than nearer to the urban core, generally speaking. However, we might also be interested in understanding where most self-employment income filings are located rather than their share relative to the total number of returns filed. This requires visualizing the `self_emp` column directly. Choropleth maps are generally inappropriate for visualizing this type of information, as the raw counts are heavily influenced by the denominator.
+The choropleth map shows that self-employment filings are more common in suburban Boston ZCTAs than nearer to the urban core, generally speaking. However, we might also be interested in understanding where most self-employment income filings are located rather than their share relative to the total number of returns filed. This requires visualizing the `self_emp` column directly. As discussed earlier in this chapter, a graduated symbol map with `tm_bubbles()` is preferable to a choropleth map for this purpose.
 
 ```{r}
 tm_shape(boston_se_data) + 
@@ -377,11 +430,15 @@ tm_shape(boston_se_data) +
 
 ## Interactive mapping
 
+The examples addressed in this chapter thus far have all focused on *static maps*, where the output is fixed after rendering the map. Modern web technologies - and the integration of those technologies into R with the htmlwidgets package, as discussed in Chapter \@ref(4) - make the creation of interactive, explorable Census data maps straightforward.
+
 ### Interactive mapping with Leaflet
 
-In Chapter 5, you learned how to quickly visualize geographic data obtained with tigris on an interactive map by using the `mapview()` function in the mapview package.
+With over 31,000 GitHub stars as of July 2021, the Leaflet JavaScript library [@leaflet] is one of the most popular frameworks worldwide for interactive mapping. The RStudio team brought the Leaflet to R with the leaflet R package [@cheng2021], which now powers several approaches to interactive mapping in R. The following examples cover how to visualize Census data on an interactive Leaflet map using approaches from mapview, tmap, and the core Leaflet package.
 
-```{r}
+Let's start by getting some illustrative data on the percentage of the population aged 25 and up with a bachelor's degree or higher from the 2015-2019 ACS. We'll look at this information by Census tract in Dallas County, Texas.
+
+```{r get-bachelors-data}
 dallas_bachelors <- get_acs(
   geography = "tract",
   variables = "DP02_0068P",
@@ -392,7 +449,7 @@ dallas_bachelors <- get_acs(
 )
 ```
 
-Mapview version:
+In Chapter 5, you learned how to quickly visualize geographic data obtained with tigris on an interactive map by using the `mapview()` function in the mapview package. The `mapview()` function also includes a parameter `zcol` that takes a column in the dataset as an argument, and visualizes that column with an interactive choropleth map.
 
 ```{r dallas-mapview, eval = FALSE}
 library(mapview)
@@ -403,7 +460,7 @@ mapview(dallas_bachelors, zcol = "estimate")
 knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
 ```
 
-Interactive viewing with tmap:
+Conversion of tmap maps to interactive Leaflet maps is also straightforward with the command `tmap_mode("view")`. After entering this command, all subsequent tmap maps in your R session will be rendered as interactive Leaflet maps using the same tmap syntax you'd use to make static maps.
 
 ```{r dallas-tmap, eval = FALSE}
 library(tmap)
@@ -418,9 +475,11 @@ tm_shape(dallas_bachelors) +
 knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
 ```
 
-Leaflet version:
+To switch back to static plotting mode, run the command `tmap_mode("plot")`.
 
-```{r dallas-palette, eval = FALSE}
+For more fine-grained control over your Leaflet maps, the core Leaflet package can be used. Below, we'll reproduce the mapview/tmap examples using the leaflet package's native syntax. First, a color palette will be defined using the `colorNumeric()` function. This function itself creates a function we're calling `pal()`, which translates data values to color values for a given color palette. Our chosen color palette in this example is the viridis magma palette.
+
+```{r dallas-palette}
 library(leaflet)
 
 pal <- colorNumeric(
@@ -432,7 +491,15 @@ pal(c(10, 20, 30, 40, 50))
 
 ```
 
-Make the map:
+The map itself is built with a magrittr pipeline and the following steps:
+
+-   The `leaflet()` function initializes the map. A `data` object can be specified here or in a function that comes later in the pipeline.
+
+-   `addProviderTiles()` helps you add a basemap to the map that will be shown beneath your data as a reference. Several providers are built-in to the Leaflet package, including the popular [Stamen](https://stamen.com/) reference maps. If you are only interested in a basic basemap, the `addTiles()` function returns the standard [OpenStreetMap](https://www.openstreetmap.org/#map=5/38.007/-95.844) basemap. Use the built-in `providers` object to try out different basemaps; it is good practice for choropleth mapping to use a greyscale or muted basemap.
+
+-   `addPolygons()` adds the tract polygons to the map and styles them. In the code below, we are using a series of options to specify the input data; to color the polygons relative to the defined color palette; and to adjust the smoothing between polygon borders, the opacity, and the line weight. The `label` argument will create a hover tooltip on the map for additional information about the polygons.
+
+-   `addLegend()` then creates a legend for the map, providing critical information about how the colors on the map relate to the data values.
 
 ```{r dallas-leaflet, eval = FALSE}
 leaflet() %>%
@@ -454,6 +521,8 @@ leaflet() %>%
 ```{r dallas-leaflet-map}
 knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
 ```
+
+This example only scratches the surface of what the Leaflet R package can accomplish; I'd encourage you to [review the documentation for more examples](<https://rstudio.github.io/leaflet/>).
 
 ### Alternative approaches to interactive mapping
 
