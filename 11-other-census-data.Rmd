@@ -1,4 +1,4 @@
-# Historical Census data analysis with NHGIS and IPUMS
+# Other Census and Government Data Resources
 
 ```{r setup-ch11, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
@@ -6,7 +6,9 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with tidycensus and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated [ipumsr](http://tech.popdata.org/ipumsr/) R package to help analysts integrate these datasets into R-based workflows.
 
-This chapter provides an overview of how to access and use historical US Census datasets in R with NHGIS, IPUMS, and the ipumsr package. Due to the size of the datasets involved, these datasets are not provided with the sample data available in the book's data repository. To reproduce, readers should follow the steps provided to sign up for an IPUMS account and download the data themselves.
+Additionally, the US Census Bureau publishes many other surveys and datasets besides the decennial US Census and American Community Survey. While tidycensus focuses on these core datasets, other R packages provide support for the wide range of datasets available from the Census Bureau and other government agencies.
+
+The first part of this chapter provides an overview of how to access and use historical US Census datasets in R with NHGIS, IPUMS, and the ipumsr package. Due to the size of the datasets involved, these datasets are not provided with the sample data available in the book's data repository. To reproduce, readers should follow the steps provided to sign up for an IPUMS account and download the data themselves. The second part of this chapter covers R workflows for Census data resources outside the decennial US Census and American Community Survey. It highlights packages such as censusapi, which allows for programmatic access to all US Census Bureau APIs, and lehdr, which grants access to the LEHD LODES dataset for analyzing commuting flows and jobs distributions. Other government data resources are also addressed at the end of the chapter.
 
 ## Getting started with NHGIS
 
@@ -26,7 +28,6 @@ nyc_1910 <- read_nhgis_sf(
 
 nyc_1910
 ```
-
 
 ```{r}
 plot(nyc_1910$geometry)
@@ -53,8 +54,7 @@ nyc_pctfb <- nyc_1910 %>%
   st_transform(nyc_crs)
 ```
 
-
-And visualize: 
+And visualize:
 
 ```{r}
 ggplot(nyc_pctfb, aes(fill = pct_fb)) + 
@@ -94,3 +94,32 @@ ggplot() +
 
 ## Historical microdata with IPUMS
 
+censusapi [@recht2021]
+
+```{r censusapi, eval = FALSE}
+library(censusapi)
+
+key <- "84dba8250c52c9a11ec14575dce9083eea98d7e9"
+
+econ17 <- getCensus(
+    name = "encbasic",
+    vintage = 2017,
+    vars = c("EMP", "OPTAX", "GEOTYPE"),
+    region = "state:48",
+    regionin = "county:113",
+    naics2017 = 72,
+    key = key)
+
+head(ewks_2012)
+```
+
+lehdr [@green2021]
+
+```{r lehdr, eval = FALSE}
+library(lehdr)
+
+```
+
+blscrapeR
+
+tidyUSDA

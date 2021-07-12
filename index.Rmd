@@ -1,5 +1,6 @@
 --- 
-title: "Analyzing the US Census with R"
+title: "Analyzing US Census Data"
+subtitle: "Methods, Maps, and Models in R"
 author: "Kyle E. Walker"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
@@ -31,7 +32,7 @@ Readers new to R and Census data should read the book in order, as each chapter 
 
 __Section 1__: 
 
-* Chapter 1 is a general overview of US Census data terms and definitions, and gives some brief background about the R language and why R is an excellent environment for working with US Census data.  It ends with an overview of the R packages highlighted in this book along with some recommendations for other Census data packages that are not covered in depth in the book.
+* Chapter 1 is a general overview of US Census data terms and definitions, and gives some brief background about the R language and why R is an excellent environment for working with US Census data.  It ends with an overview of the R packages highlighted in this book.
 
 * Chapter 2 introduces tidycensus, an R package for working with US Census Bureau data in a tidy format.  Readers will learn how to make basic data requests with the package and understand various options in the package.  
 
@@ -48,13 +49,14 @@ __Section 2__:
 * Chapter 7 covers spatial data analysis. Topics include geographic data overlay; distance and proximity analysis; and exploratory spatial data analysis with the spdep package.  
 
 * Chapter 8's topic is modeling of geographic data. Readers learn how to compute indices of segregation and diversity with Census data; fit linear, spatial, and geographically weighted regression models; and develop workflows for geodemographic segmentation and regionalization.  
+
 __Section 3__: 
 
 * Chapter 9 focuses on individual-level _microdata_ from the US Census Bureau's Public Use Microdata Sample. Readers will learn how to acquire these datasets with tidycensus and use them to generate unique insights.  
 
 * Chapter 10 covers analysis of microdata with a focus on methods for analyzing and modeling complex survey samples.  Topics include estimation of standard errors with replicate weights, mapping microdata, and modeling microdata appropriately with the survey and srvyr packages. 
 
-* Chapter 11's focus is historical Census data analysis with examples using data from the IPUMS project. Topics covered include historical mapping with the National Historical Geographic Information System (NHGIS) and historical microdata analysis with IPUMS-USA; readers learn how to use the ipumsr r package to assist with these tasks.
+* Chapter 11's focus is Census datasets beyond the decennial US Census and American Community Survey.  The first part of the chapter focuses on historical mapping with the National Historical Geographic Information System (NHGIS) and historical microdata analysis with IPUMS-USA; readers learn how to use the ipumsr r package to assist with these tasks.  The second part of the chapter covers the wide range of datasets available from the US Census Bureau, and R packages like censusapi and lehdr that help analysts access those datasets.  
 
 * Chapter 12 covers Census data resources for regions outside the United States.  It covers global demographic analysis with the US Census Bureau's International Data Base as well as country-specific examples from Canada, Mexico, Brazil, and Kenya.  
 

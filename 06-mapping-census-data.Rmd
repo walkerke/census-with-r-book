@@ -353,7 +353,7 @@ The joined dataset has retained the shifted and rescaled geometry of the US stat
 For a basic red state/blue state map using ggplot2 and `geom_sf()`, a manual color palette can be supplied to the `scale_fill_manual()` function, filling state polygons based on the `called` column which represents the party for whom the state was called.
 
 ```{r}
-ggplot(us_states_merged, aes(fill = called)) + 
+ggplot(us_states_joined, aes(fill = called)) + 
   geom_sf(color = "white", lwd = 0.2) + 
   scale_fill_manual(values = c("blue", "red")) + 
   theme_void() + 
@@ -456,7 +456,7 @@ library(mapview)
 mapview(dallas_bachelors, zcol = "estimate")
 ```
 
-```{r dallas-mapview-map}
+```{r dallas-mapview-map, echo = FALSE}
 knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
 ```
 
@@ -471,7 +471,7 @@ tm_shape(dallas_bachelors) +
           alpha = 0.5)
 ```
 
-```{r dallas-tmap-map}
+```{r dallas-tmap-map, echo = FALSE}
 knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
 ```
 
@@ -518,13 +518,17 @@ leaflet() %>%
   )
 ```
 
-```{r dallas-leaflet-map}
+```{r dallas-leaflet-map, echo = FALSE}
 knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
 ```
 
-This example only scratches the surface of what the Leaflet R package can accomplish; I'd encourage you to [review the documentation for more examples](<https://rstudio.github.io/leaflet/>).
+This example only scratches the surface of what the Leaflet R package can accomplish; I'd encourage you to [review the documentation for more examples](https://rstudio.github.io/leaflet/).
 
 ### Alternative approaches to interactive mapping
+
+Like most interactive mapping platforms, Leaflet uses [*tiled mapping*](https://wiki.openstreetmap.org/wiki/Slippy_Map) in the Web Mercator coordinate reference system. Web Mercator works well for tiled web maps that need to fit within rectangular computer screens, and preserves angles at large scales (zoomed-in areas) which is useful for local navigation. However, it grossly distorts the area of geographic features near the poles, making it inappropriate for small-scale thematic mapping of the world or world regions [@battersby2014].
+
+Let's illustrate this by mapping median home value by state from the 1-year ACS using Leaflet. We'll first acquire the data with geometry using tidycensus, setting the output resolution to "20m" to get low-resolution boundaries to speed up our interactive mapping.
 
 ```{r}
 us_value <- get_acs(
@@ -537,7 +541,7 @@ us_value <- get_acs(
 )
 ```
 
-Trying the same Leaflet approach:
+The acquired ACS data for the US can be mapped using the same techniques as with the educational attainment map for Dallas County.
 
 ```{r us-leaflet, eval = FALSE}
 library(leaflet)
@@ -563,9 +567,13 @@ leaflet() %>%
   )
 ```
 
-```{r us-leaflet-map}
+```{r us-leaflet-map, echo = FALSE}
 knitr::include_url("img/leaflet/us_leaflet.html", height = "500px")
 ```
+
+The disadvantages of Web Mercator - as well as this general approach to mapping the United States - are on full display. Alaska's area is grossly distorted relative to the rest of the United States. It is also difficult on this map to compare Alaska and Hawaii to the continental US - which is particularly important in this example as Hawaii's median home value is the highest in the entire country. The solution proposed elsewhere in this book is to use `tigris::shift_geometry()` which adopts appropriate coordinate reference systems for Alaska, Hawaii, and the continental US and arranges them in a better comparative fashion on the map. However, this approach risks losing the interactivity of a Leaflet map.
+
+A compromise solution can involve other R packages that allow for interactive mapping. An excellent option is the ggiraph package [@gohel2021], which like the plotly package can convert ggplot2 graphics into interactive plots. In the example below, interactivity is added to a ggplot2 plot with ggiraph, allowing for panning and zooming with a hover tooltip on a shifted and rescaled map of the US.
 
 ```{r}
 library(ggiraph)
@@ -577,7 +585,7 @@ us_value_shifted <- us_value %>%
 
 gg <- ggplot(us_value_shifted, aes(fill = estimate)) + 
   geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME), 
-                      size = 0.4) + 
+                      size = 0.1) + 
   scale_fill_viridis_c(option = "plasma", labels = scales::dollar) + 
   labs(title = "Median housing value by State, 2019",
        caption = "Data source: 2019 1-year ACS, US Census Bureau",
@@ -585,14 +593,66 @@ gg <- ggplot(us_value_shifted, aes(fill = estimate)) +
   theme_void() 
   
 girafe(ggobj = gg) %>%
-  girafe_options(opts_hover(css = "fill:cyan;"))
+  girafe_options(opts_hover(css = "fill:cyan;"), 
+                 opts_zoom(max = 10))
 ```
 
 ## Advanced examples
 
+The examples discussed in this chapter thus far likely cover a large proportion of cartographic use cases for Census data analysts. However, R allows cartographers to go beyond these core map types. This final section of the chapter introduces some options for more advanced visualization using data from tidycensus.
+
 ### Mapping migration flows
 
+In 2021, tidycensus co-author Matt Herman added support for the ACS Migration Flows API in the package, covered briefly in Chapter \@ref(2). One notable feature of this new functionality, available in the `get_flows()` function, is built-in support for flow mapping with the argument `geometry = TRUE`. Geometry operates differently for migration flows data given that the geography of interest is not a single location for a given row, but rather the connection between those locations. In turn, for `get_flows()`, `geometry = TRUE` returns two `POINT` geometry columns: one for the location itself, and one for the location to which it is linked.
+
+Let's take a look for one of the most popular recent migration destinations in the United States: Travis County Texas, home to Austin.
+
+```{r travis_inflow}
+travis_inflow <- get_flows(
+  geography = "county",
+  state = "TX",
+  county = "Travis",
+  geometry = TRUE
+) %>%
+  filter(variable == "MOVEDIN") %>%
+  na.omit() %>%
+  arrange(desc(estimate))
+
+travis_inflow
+```
+
+The dataset is filtered to focus on in-migration, represented by the `MOVEDIN` variable, and drops migrations from outside the United States with `na.omit()` (as these areas do not have a `GEOID` value).
+
+The mapdeck R package [@cooley2020] offers excellent support for interactive flow mapping with minimal code. mapdeck is a wrapper of [deck.gl](https://deck.gl/), a tremendous visualization library originally developed at Uber that offers 3D mapping capabilities built on top of [Mapbox's GL JS library](https://www.mapbox.com/mapbox-gljs). Users will need to sign up for a Mapbox account and get a Mapbox access token to use mapdeck; [see the mapdeck documentation for more information](https://symbolixau.github.io/mapdeck/articles/mapdeck.html#the-basics).
+
+Once set, flow maps can be created by initializing a mapdeck map with `mapdeck()` then using the `add_arc()` function, which can link either X/Y coordinate columns or `POINT` geometry columns, as shown below. In this example, we are using the top 30 origins for migrants to Travis County, and generating a new `weight` column that makes the proportional arc widths less bulky.
+
+```{r mapdeck, eval = FALSE}
+library(mapdeck)
+
+token <- "YOUR TOKEN HERE"
+
+travis_inflow %>%
+  slice_max(estimate, n = 30) %>%
+  mutate(weight = estimate / 500) %>%
+  mapdeck(token = token) %>%
+  add_arc(origin = "centroid2",
+          destination = "centroid1",
+          stroke_width = "weight",
+          update_view = FALSE) 
+```
+
+![](images/paste-D28A18FD.png)
+
 ### Linking maps and charts
+
+This chapter and Chapter \@ref(4) are linked in many ways. The visualization principles discussed in each chapter apply to each other; the key difference is that this chapter focuses on *geographic visualization* whereas Chapter \@ref(4) does not. In many cases, you'll want to take advantage of the strengths of both geographic and non-geographic visualization. Maps are excellent at showing patterns and trends over space, and offer a familiar reference to viewers; charts are better at showing rankings and ordering of data values between places.
+
+The example below illustrates how to combine two chart types discussed in this book: a choropleth map and a margin of error plot. Margins of error are notoriously difficult to display on maps; possible options include superimposing patterns on choropleth maps to highlight areas with high levels of uncertainty [@wong2013] or using bivariate choropleth maps to simultaneously visualize estimates and MOEs [@lucchesi2017].
+
+R's visualization tools offer an alternative approach: interactive linking of a choropleth map with a chart that clearly visualizes the uncertainty around estimates. This approach involves generating a map and chart with ggplot2, then combining the plots with patchwork and rendering them as interactive, linked graphics with ggiraph. The key aesthetic to be used here is `data_id`, which if set in the code for both plots will highlight corresponding data points on both plots on user hover.
+
+Example code to generate such a linked visualization is below.
 
 ```{r}
 library(tidycensus)
@@ -613,7 +673,7 @@ vt_map <- ggplot(vt_income, aes(fill = estimate)) +
   geom_sf_interactive(aes(data_id = GEOID)) + 
   scale_fill_distiller(palette = "Greens",
                        direction = 1, 
-                       guide = FALSE) + 
+                       guide = "none") + 
   theme_void()
 
 vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate), 
@@ -623,22 +683,31 @@ vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate),
                          aes(data_id = GEOID)) +
   scale_fill_distiller(palette = "Greens", direction = 1,
                        labels = scales::dollar) + 
+  scale_x_continuous(labels = scales::dollar) + 
   labs(title = "Household income by county in Vermont",
        subtitle = "2015-2019 American Community Survey",
        y = "",
        x = "ACS estimate (bars represent margin of error)",
        fill = "ACS estimate") + 
-  theme_minimal()
+  theme_minimal(base_size = 14)
 
-girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 6) %>%
+girafe(ggobj = vt_map + vt_plot, width_svg = 10, height_svg = 5) %>%
   girafe_options(opts_hover(css = "fill:cyan;"))
 ```
 
+This example largely re-purposes visualization code readers have learned in other examples in this book. Try hovering your cursor over any county in Vermont on the map - or any data point on the chart - and notice what happens on the other plot. The corresponding county or data point will also be highlighted, allowing for a linked representation of geographic location and margin of error visualization.
+
 ### Reactive mapping with Shiny
 
-```{r include-app}
+Advanced Census cartographers may want to take these examples a step further and build them into full-fledged data dashboards and web-based visualization applications. Fortunately, R users don't have to do this from scratch. Shiny [@chang2021] is a tremendously popular and powerful framework for the development of interactive web applications in R that can execute R code in response to user inputs. A full treatment of Shiny is beyond the scope of this book; however, Shiny is a "must-learn" for R data analysts.
+
+An example Shiny visualization app that extends the race/ethnicity example from this chapter is shown below. It includes a drop-down menu that allows users to select a racial or ethnic group in the Twin Cities and visualizes the distribution of that group on an interactive choropleth map that uses Leaflet and the viridis color palette.
+
+```{r include-app, echo = FALSE}
 knitr::include_app("https://walkerke.shinyapps.io/msp-shiny-example/", height = "800px")
 ```
+
+The code used to create the app is found below; copy-paste this code into your own R script, set your Census API key, and run it! To learn more, I encourage you to review [Hadley Wickham's *Mastering Shiny* book](<https://mastering-shiny.org/index.html>) and the [Leaflet package's documentation on Shiny integration](<https://rstudio.github.io/leaflet/shiny.html>).
 
 ```{r, eval = FALSE}
 # app.R
@@ -730,3 +799,11 @@ shinyApp(ui = ui, server = server)
 
 
 ```
+
+## Exercises
+
+Using one of the mapping frameworks introduced in this chapter (either ggplot2, tmap, or leaflet) complete the following tasks:
+
+-   If you are just getting started with tidycensus/the tidyverse, make a race/ethnicity map by adapting the code provided in this section but for a different county.
+
+-   Next, find a different variable to map with `tidycensus::load_variables()`. Review the discussion of cartographic choices in this chapter and visualize your data appropriately.
