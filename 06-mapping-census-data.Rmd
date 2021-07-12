@@ -530,7 +530,7 @@ Like most interactive mapping platforms, Leaflet uses [*tiled mapping*](https://
 
 Let's illustrate this by mapping median home value by state from the 1-year ACS using Leaflet. We'll first acquire the data with geometry using tidycensus, setting the output resolution to "20m" to get low-resolution boundaries to speed up our interactive mapping.
 
-```{r}
+```{r us-value-data}
 us_value <- get_acs(
   geography = "state",
   variables = "B25077_001",
@@ -575,7 +575,7 @@ The disadvantages of Web Mercator - as well as this general approach to mapping 
 
 A compromise solution can involve other R packages that allow for interactive mapping. An excellent option is the ggiraph package [@gohel2021], which like the plotly package can convert ggplot2 graphics into interactive plots. In the example below, interactivity is added to a ggplot2 plot with ggiraph, allowing for panning and zooming with a hover tooltip on a shifted and rescaled map of the US.
 
-```{r}
+```{r ggiraph-alternative}
 library(ggiraph)
 library(tidyverse)
 
@@ -654,7 +654,7 @@ R's visualization tools offer an alternative approach: interactive linking of a 
 
 Example code to generate such a linked visualization is below.
 
-```{r}
+```{r linked-map-chart}
 library(tidycensus)
 library(ggiraph)
 library(tidyverse)
