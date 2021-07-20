@@ -1,4 +1,4 @@
-# Other Census and Government Data Resources
+# Other Census and government data resources
 
 ```{r setup-ch11, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
@@ -94,6 +94,45 @@ ggplot() +
 
 ## Historical microdata with IPUMS
 
+Introduction - mention complete-count microdata
+
+### Getting microdata from IPUMS
+
+General tutorial here
+
+### Loading microdata into a database
+
+How-to with Postgresql and DBeaver
+
+### Accessing your microdata database with R
+
+```{r}
+library(tidyverse)
+library(RPostgres)
+library(dbplyr)
+
+conn <- dbConnect(
+  drv = Postgres(),
+  user = "postgres",
+  password = "postgres",
+  host = "localhost",
+  port = "5432",
+  dbname = "postgres"
+)
+```
+
+Generate a query:
+
+```{r}
+ipums <- tbl(conn, in_schema("ipums", "census1910"))
+
+ipums
+```
+
+## Other US government datasets
+
+### Accessing Census data resources with censusapi
+
 censusapi [@recht2021]
 
 ```{r censusapi, eval = FALSE}
@@ -113,6 +152,8 @@ econ17 <- getCensus(
 head(ewks_2012)
 ```
 
+### Analyzing labor markets with lehdr
+
 lehdr [@green2021]
 
 ```{r lehdr, eval = FALSE}
@@ -120,6 +161,10 @@ library(lehdr)
 
 ```
 
+### Bureau of Labor Statistics data with blscrapeR
+
 blscrapeR
+
+### Working with agricultural data with tidyUSDA
 
 tidyUSDA

@@ -707,7 +707,7 @@ An example Shiny visualization app that extends the race/ethnicity example from 
 knitr::include_app("https://walkerke.shinyapps.io/msp-shiny-example/", height = "800px")
 ```
 
-The code used to create the app is found below; copy-paste this code into your own R script, set your Census API key, and run it! To learn more, I encourage you to review [Hadley Wickham's *Mastering Shiny* book](<https://mastering-shiny.org/index.html>) and the [Leaflet package's documentation on Shiny integration](<https://rstudio.github.io/leaflet/shiny.html>).
+The code used to create the app is found below; copy-paste this code into your own R script, set your Census API key, and run it! To learn more, I encourage you to review [Hadley Wickham's *Mastering Shiny* book](https://mastering-shiny.org/index.html) and the [Leaflet package's documentation on Shiny integration](https://rstudio.github.io/leaflet/shiny.html).
 
 ```{r, eval = FALSE}
 # app.R
