@@ -51,7 +51,7 @@ server <- function(input, output) {
   # Initialize the map object, centered on the Minneapolis-St. Paul area
   output$map <- renderLeaflet({
 
-    leaflet() %>%
+    leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
       addProviderTiles(providers$Stamen.TonerLite) %>%
       setView(lng = -93.21,
               lat = 44.98,

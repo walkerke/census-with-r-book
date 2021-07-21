@@ -2,6 +2,7 @@
 
 ```{r setup-ch11, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
 ```
 
 Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with tidycensus and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated [ipumsr](http://tech.popdata.org/ipumsr/) R package to help analysts integrate these datasets into R-based workflows.
@@ -10,53 +11,108 @@ Additionally, the US Census Bureau publishes many other surveys and datasets bes
 
 The first part of this chapter provides an overview of how to access and use historical US Census datasets in R with NHGIS, IPUMS, and the ipumsr package. Due to the size of the datasets involved, these datasets are not provided with the sample data available in the book's data repository. To reproduce, readers should follow the steps provided to sign up for an IPUMS account and download the data themselves. The second part of this chapter covers R workflows for Census data resources outside the decennial US Census and American Community Survey. It highlights packages such as censusapi, which allows for programmatic access to all US Census Bureau APIs, and lehdr, which grants access to the LEHD LODES dataset for analyzing commuting flows and jobs distributions. Other government data resources are also addressed at the end of the chapter.
 
-## Getting started with NHGIS
+## Mapping historical geographies of New York City with NHGIS
 
-To get started with NHGIS, visit...
+The National Historical Geographic Information System (NHGIS) project is a tremendous resource for both contemporary and historical US Census data. While some datasets (e.g. the 2000 and 2010 decennial US Censuses, the ACS) can be accessed with both tidycensus and NHGIS, NHGIS is an excellent option for users who prefer browsing data menus to request data and/or who require historical information earlier than 2000. The example in this section will illustrate an applied workflow using NHGIS and its companion R package, ipumsr [@ellis_and_burk2020] to map geographies of immigration in New York City from the 1910 Census.
 
-## Example
+### Getting started with NHGIS
 
-```{r}
+To get started with NHGIS, visit [the NHGIS website](https://www.nhgis.org/) and click the "REGISTER" link at the top of the screen to register for an account. NHGIS asks for some basic information about your work and how you plan to use the data, and you'll agree to the NHGIS usage license agreement. Once registered, return to the NHGIS home page and click the "Get Data" button to visit the NHGIS data browser interface.
+
+![](images/paste-197498A3.png){width="100%"}
+
+A series of options on the left-hand side of your screen. These options include:
+
+-   **Geographic levels**: the level of aggregation for your data. NHGIS includes a series of filters to help you choose the correct level of aggregation; click the plus sign to select it. Keep in mind that not all geographic levels will be available for all variables and all years. To reproduce the example in this section, click "CENSUS TRACT" then "SUBMIT."
+
+-   **Years**: The year(s) for which you would like to request data. Decennial, non-decennial, and 5-year ranges are available for Census tracts. Note that many years are greyed out - this means that no data are available for those years at the Census tract level. The earliest year for which Census tract-level data are available is 1910, which is the year we will choose; check the box next to "1910" then click SUBMIT.
+
+-   **Topics**: This menu helps you filter down to specific areas of interest in which you are searching for data to select. Data are organized into categories (e.g. race, ethnicity, and origins) and sub-topics (e.g. age, sex). Topics not available at your chosen geography/year combination are greyed out. Choose the "Nativity and Place of Birth" topic then click SUBMIT.
+
+-   **Datasets**: The specific datasets from which you would like to request data, which is particularly useful when there are multiple datasets available in a given year. In this applied example, there is only one dataset that aligns with our choices: Population Data for Census tracts in New York City in 1910. As such, there is no need to select anything here.
+
+The **Select Data** menu shows which Census tables are available given your filter selections. Usefully, the menu includes embedded links that give additional information about the available data choices, along with a "popularity" bar graph showing the most-downloaded tables for that particular dataset.
+
+![](images/paste-7E1A2E13.png){width="100%"}
+
+For this example, choose the tables "NT26: Ancestry" and "NT45: Race/Ethnicity" by clicking the green plus signs next to the two to select them. Then, click the **GIS FILES** tab. This tab allows you to select companion shapefiles that can be merged to the demographic extracts for mapping in a desktop GIS or in software like R. Choose either of the Census Tract options then click "CONTINUE" to review your selection. On the "REVIEW AND SUBMIT" screen, keep the "Comma delimited" file structure selected and give your extract a description if you would like.
+
+When finished, click SUBMIT. You'll be taken to the "EXTRACTS HISTORY" screen where you can download your data when it is ready; you'll receive a notification by email when your data can be downloaded. Once you receive this notification, return to NHGIS and download both the table data and the GIS data to the same directory on your computer.
+
+### Working with NHGIS data in R
+
+Once acquired, NHGIS spatial and attribute data can be integrated seamlessly into R-based data analysis workflows thanks to the ipumsr package. ipumsr includes a series of NHGIS-specific functions: `read_nhgis()`, which reads in the tabular aggregate data; `read_nhgis_sf()`, which reads in the spatial data as a simple features object; and `read_nhgis_sp()`, which reads in the spatial data in legacy sp format.
+
+`read_nhgis_sf()` has built-in features to make working with spatial and demographic data simpler for R users. If the `data_file` argument is pointed to the CSV file with the demographic data, and the `shape_file` argument is pointed to the shapefile, `read_nhgis_sf()` will read in both files simultaneously and join them correctly based on a common `GISJOIN` column found in both files. An additional perk is that `read_nhgis_sf()` can handle the zipped folders, removing an additional step from the analyst's data preparation workflow.
+
+The example below uses `read_nhgis_sf()` to read in spatial and demographic data on immigrants in New York City in 1910. As the 1910 shapefile folder includes both NYC Census tracts and a separate dataset with US counties, the top-level folder should be unzipped, `shape_file` pointed to the second-level zipped folder, and the `shape_layer` argument used to exclusively read in the tracts. The `filter()` call will drop Census tracts that do not have corresponding data (so, outside NYC).
+
+```{r read_nhgis, message = TRUE}
 library(ipumsr)
 library(tidyverse)
 
 nyc_1910 <- read_nhgis_sf(
   data_file = "data/NHGIS/nhgis0099_csv.zip",
-  shape_file = "data/NHGIS/nhgis0099_shape.zip"
+  shape_file = "data/NHGIS/nhgis0099_shape/nhgis0099_shapefile_tl2000_us_tract_1910.zip",
+  shape_layer = starts_with("US_tract_1910")
 ) %>%
   filter(!is.na(TRACTA))
 
-nyc_1910
 ```
 
-```{r}
+`read_nhgis_sf()` has read in the tracts shapefile as a simple features object then joined the corresponding CSV file to it *and* imported data labels from the data codebook. Note that if you are reproducing this example with data downloaded yourself, you will have a unique zipped folder & file name based on your unique download ID. The "99" in the example above reflects the 99th extract from NHGIS for a given user, not a unique dataset name.
+
+The best way to review the variables and their labels is the `View()` command in RStudio, which is most efficient on sf objects when the geometry is first dropped with `sf::st_drop_geometry()`.
+
+```{r view_nhgis, eval = FALSE}
+View(sf::st_drop_geometry(nyc_1910))
+```
+
+![](images/paste-6FF3702F.png){width="100%"}
+
+As shown in the graphic above, the variable labels are particularly useful when using `View()` to understand what the different variables mean without having to reference the codebook.
+
+### Mapping NHGIS data in R
+
+The message displayed when reading in the NHGIS shapefile above indicates that the Census tract data are in a projected coordinate reference system, `USA_Contiguous_Albers_Equal_Area_Conic`. The spatial data can be displayed with `plot()`:
+
+```{r plot-nyc-tracts}
 plot(nyc_1910$geometry)
 ```
 
-```{r}
+The data reflect Census tracts for New York City, but appear rotated counter-clockwise. This is because the coordinate reference system used, `ESRI:100023`, is appropriate for the entire United States (in fact, it is the base CRS used for `tigris::shift_geometry()`), but will not be appropriate for any specific small area. As covered in Chapter 5, the crsuggest package helps identify more appropriate projected coordinate reference system options.
+
+```{r suggest-nyc-crs}
 library(crsuggest)
 library(sf)
 
-nyc_crs <- suggest_top_crs(nyc_1910, inherit_gcs = FALSE)
-
-nyc_crs
+suggest_crs(nyc_1910)
 ```
 
-```{r}
-nyc_pctfb <- nyc_1910 %>%
+Based on these suggestions, we'll select the CRS "NAD83(2011) / New York Long Island" which has an EPSG code of 6538.
+
+```{r transform-nyc-crs}
+nyc_1910_proj <- st_transform(nyc_1910, 6538)
+
+plot(nyc_1910_proj$geometry)
+```
+
+Given the information in the two tables downloaded from NHGIS, there are multiple ways to visualize the demographics of New York City in 1910. The first example is a choropleth map of the percentage of the total population born outside the United States. As there is no "total population" column in the dataset, the code below uses some newer tidyverse syntax to perform row-wise calculations and sum across the columns `A60001` through `A60007` to calculate this. The `transmute()` function then works like a combination of `mutate()` and `select()`: it calculates two new columns, then selects only those columns in the output dataset `nyc_pctfb`.
+
+```{r calculate-nyc-fb}
+nyc_pctfb <- nyc_1910_proj %>%
   rowwise() %>%
   mutate(total = sum(c_across(A60001:A60007))) %>%
   ungroup() %>%
   transmute(
     tract_id = GISJOIN,
     pct_fb = A60005 / total
-  ) %>%
-  st_transform(nyc_crs)
+  ) 
 ```
 
-And visualize:
+The result can be visualized with any of the mapping packages covered in Chapter \@ref(mapping-census-data-with-r), such as ggplot2 and `geom_sf()`.
 
-```{r}
+```{r map-nyc-fb}
 ggplot(nyc_pctfb, aes(fill = pct_fb)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c(option = "magma", labels = scales::percent) + 
@@ -67,22 +123,22 @@ ggplot(nyc_pctfb, aes(fill = pct_fb)) +
        fill = "Percentage")
 ```
 
-Alternatively, a dot-density map of a group of immigrants:
+Manhattan's Lower East Side stands out as the part of the city with the largest proportion of foreign-born residents in 1910, with percentages exceeding 60%.
 
-```{r}
-italy_dots <- nyc_1910 %>%
-  st_transform(nyc_crs) %>%
+An alternative view could focus on one of the specific groups represented in the columns in the dataset. For example, the number of Italy-born residents by Census tract is represented in the column `A6G014`; this type of information could be represented by either a graduated symbol map or a dot-density map. Using techniques learned in Section \@ref(dot-density-maps), `st_sample()` in the code below generates one dot for approximately every 100 Italian immigrants. Next, the Census tracts are dissolved with the `st_union()` function to generate a base layer on top of which the dots will be plotted.
+
+```{r generate-italy-dots}
+italy_dots <- nyc_1910_proj %>%
   st_sample(size = as.integer(.$A6G014 / 100)) %>%
   st_sf()
 
-nyc_base <- nyc_1910 %>%
-  st_transform(nyc_crs) %>%
+nyc_base <- nyc_1910_proj %>%
   st_union()
 ```
 
-And visualize the result:
+In Section \@ref(dot-density-maps), we used `tmap::tm_dots()` to create a dot-density map. ggplot2 and `geom_sf()` also work well for dot-density mapping; cartographers can either use `geom_sf()` with a very small `size` argument, or set `shape = "."` where each data point will be represented by a single pixel on the screen.
 
-```{r}
+```{r visualize-italy-dots}
 ggplot() + 
   geom_sf(data = nyc_base, size = 0.1) + 
   geom_sf(data = italy_dots, shape = ".", color = "darkgreen") + 
@@ -92,9 +148,19 @@ ggplot() +
        caption = "Data source: NHGIS")
 ```
 
-## Historical microdata with IPUMS
+The resulting map highlights areas with large concentrations of Italian immigrants in New York City in 1910.
 
-Introduction - mention complete-count microdata
+## Analyzing complete-count historical microdata with IPUMS and R
+
+Chapters 9 and 10 covered the process of acquiring and analyzing microdata from the American Community Survey with tidycensus. As noted, these workflows are only available for recent demographics, reflecting the recent availability of the ACS. Historical researchers will need data that goes further back, and will likely turn to [IPUMS-USA](<https://usa.ipums.org/usa/>) for these datasets. IPUMS-USA makes available microdata samples all the way back to 1790, enabling historical demographic research not possible elsewhere.
+
+A core focus of Chapter 10 was the use of sampling weights to appropriately analyze and model microdata. Historical Census datasets, however, are subject to the ["72-year rule"](<https://www.census.gov/history/www/genealogy/decennial_census_records/the_72_year_rule_1.html>), which states:
+
+> The U.S. government will not release personally identifiable information about an individual to any other individual or agency until 72 years after it was collected for the decennial census. This "72-Year Rule" (92 Stat. 915; [Public Law 95-416](https://www.census.gov/history/pdf/NARA_Legislation.pdf); October 5, 1978) restricts access to decennial census records to all but the individual named on the record or their legal heir.
+
+This means that decennial Census records that reflect periods 72 years ago or older can be made available to researchers by the IPUMS team. In fact, complete-count Census microdata can be downloaded from IPUMS at the person-level for the Census years 1850-1940, and at the household level for years earlier than 1850.
+
+The availability of complete-count Census records offers a tremendous analytic opportunity for researchers, but also comes with some challenges. The largest ACS microdata sample - the 2015-2019 5-year ACS - has around 16 million records, which can be read into memory on a standard desktop computer with 16GB RAM. Complete-count Census data can have records exceeding 100 million, which will not be possible to read into memory in R on a standard computer. This chapter covers R-based workflows for handling massive Census microdata without needing to upgrade one's computer or set up a cloud computing instance. The solution presented involves setting up a local database with PostgreSQL and the DBeaver platform, then interacting with microdata in that database using R's tidyverse and database interface tooling.
 
 ### Getting microdata from IPUMS
 

@@ -18,7 +18,7 @@ The Census Bureau also operates a network of [Federal Statistical Research Data 
 
 One of the most popular and comprehensive repositories for research microdata is the [University of Minnesota's IPUMS project](https://www.ipums.org/) [@ruggles2020]. IPUMS includes Decennial US Census and ACS microdata (IPUMS USA), microdata from the Current Population Survey (IPUMS CPS), and over 100 countries around the world (IPUMS International).
 
-![](images/paste-E6172E23.png)
+![](images/paste-E6172E23.png){style="width: 100%;"}
 
 IPUMS releases microdata that are *harmonized,* which means that changing variable definitions over time are aligned by the IPUMS team to allow for coherent longitudinal analysis. Using IPUMS requires signing up for an account and making a request through their web interface, then downloading a data extract; [an API is under development](https://developer.ipums.org/docs/apiprogram/). IPUMS data products will be covered in more detail in Chapter \@ref(11), which will also introduce the ipumsr R package [@ellis_and_burk2020] for working with IPUMS data in R.
 
@@ -26,7 +26,7 @@ IPUMS releases microdata that are *harmonized,* which means that changing variab
 
 The migration of US Census data from American FactFinder to the data.census.gov tool integrated the Census Bureau's data download interface with its API. The Census Bureau's MDAT tool allows for flat file downloads of microdata along with API queries for microdata, marking the first time that microdata are available via the API.
 
-![](images/paste-4D7F60A0.png)
+![](images/paste-4D7F60A0.png){width="100%"}
 
 This means that microdata can be accessed with `httr::GET()` requests in R, but also made ACS microdata accessible to tidycensus. In 2020, tidycensus released a range of features to support ACS microdata for R users; this functionality is covered in the remainder of this chapter.
 
