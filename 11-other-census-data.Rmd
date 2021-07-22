@@ -152,9 +152,9 @@ The resulting map highlights areas with large concentrations of Italian immigran
 
 ## Analyzing complete-count historical microdata with IPUMS and R
 
-Chapters 9 and 10 covered the process of acquiring and analyzing microdata from the American Community Survey with tidycensus. As noted, these workflows are only available for recent demographics, reflecting the recent availability of the ACS. Historical researchers will need data that goes further back, and will likely turn to [IPUMS-USA](<https://usa.ipums.org/usa/>) for these datasets. IPUMS-USA makes available microdata samples all the way back to 1790, enabling historical demographic research not possible elsewhere.
+Chapters 9 and 10 covered the process of acquiring and analyzing microdata from the American Community Survey with tidycensus. As noted, these workflows are only available for recent demographics, reflecting the recent availability of the ACS. Historical researchers will need data that goes further back, and will likely turn to [IPUMS-USA](https://usa.ipums.org/usa/) for these datasets. IPUMS-USA makes available microdata samples all the way back to 1790, enabling historical demographic research not possible elsewhere.
 
-A core focus of Chapter 10 was the use of sampling weights to appropriately analyze and model microdata. Historical Census datasets, however, are subject to the ["72-year rule"](<https://www.census.gov/history/www/genealogy/decennial_census_records/the_72_year_rule_1.html>), which states:
+A core focus of Chapter 10 was the use of sampling weights to appropriately analyze and model microdata. Historical Census datasets, however, are subject to the ["72-year rule"](https://www.census.gov/history/www/genealogy/decennial_census_records/the_72_year_rule_1.html), which states:
 
 > The U.S. government will not release personally identifiable information about an individual to any other individual or agency until 72 years after it was collected for the decennial census. This "72-Year Rule" (92 Stat. 915; [Public Law 95-416](https://www.census.gov/history/pdf/NARA_Legislation.pdf); October 5, 1978) restricts access to decennial census records to all but the individual named on the record or their legal heir.
 
@@ -164,15 +164,59 @@ The availability of complete-count Census records offers a tremendous analytic o
 
 ### Getting microdata from IPUMS
 
-General tutorial here
+To get started, visit the IPUMS-USA website at <https://usa.ipums.org/usa/>. If you already signed up for an IPUMS account in Section \@ref(getting-started-with-nhgis), log in with your user name and password; otherwise follow those instructions to register for an account, which you can use for all of the IPUMS resources including NHGIS. Once you are logged in, click the "Get Data" button to visit the data selection menu.
+
+![](images/paste-2E6F0E66.png){width="100%"}
+
+You'll use the various options displayed in the image above to define your extract. These options include:
+
+-   **Select samples**: choose one or more data samples to include in your microdata extract. You can choose a wide range of American Community Survey and Decennial US Census samples, or you can download full count Census data from the "USA FULL COUNT" tab. To reproduce this example, choose the 1910 100% dataset by first un-checking the "Default sample from each year" box, clicking the "USA FULL COUNT" tab, then choosing the 1910 dataset and clicking **SUBMIT SAMPLE SELECTIONS**.
+
+-   **Select harmonized variables**: One of the major benefits of using IPUMS for microdata analysis is that the IPUMS team has produced *harmonized variables* that aim to reconcile variable IDs and variable definitions over time allowing for easier longitudinal analysis. By default, users will browse and select from these harmonized variables. Choose from household-level variables and person-level variables by browsing the drop-down menus and selecting appropriate variable IDs; these will be added to your output extract. For users who want to work with variables as they originally were in the source dataset, click the **SOURCE VARIABLES** radio button to switch to source variables. To replicate this example, choose the STATEFIP (household \> geographic), SEX, AGE, and MARST (person \> demographic), and LIT (person \> education) variables.
+
+-   **Display options:** This menu gives a number of options to modify the display of variables when browsing; try out the different options if you'd like.
+
+When finished, click the "VIEW CART" link to go to your data cart. You'll see the variables that will be returned with your extract.
+
+![](images/paste-535E2182.png){width="83%"}
+
+Notice that there will be more variables in your output extract than you selected; this is because a number of technical variables are *pre-selected,* which is similar to the approach taken by `get_pums()` in tidycensus. When you are ready to create the extract, click the **CREATE DATA EXTRACT** button to get a summary of your extract before submitting.
+
+![](images/paste-E170D6EE.png)
+
+Note that the example shown reflects changing the output data format to CSV, which will be used to load the IPUMS data into a database. If using R directly for a smaller extract and the ipumsr R package, the default fixed-width text file with the extension `.dat` can be selected and the data can be read into R with `ipumsr::read_ipums_micro()`. To replicate the workflow below, however, the output data format should be changed to CSV.
+
+Click **SUBMIT EXTRACT** to submit your extract request to the IPUMS system. You'll need to agree to some special usage terms for the 100% data, then wait patiently for your extract to process. You'll get an email notification when your extract is ready; when you do, return to IPUMS and download your data extract to your computer. The output format will be a gzipped CSV with a prefix unique to your download ID, e.g. `usa_00032.csv.gz`. Use an appropriate utility to unzip the CSV file.
 
 ### Loading microdata into a database
 
-How-to with Postgresql and DBeaver
+Census data analysts may feel comfortable working with `.csv` files, and reading them into R with `readr::read_csv()` or one of the many other options for loading data from comma-separated text files. The data extract created in the previous section presents additional challenges for the Census analyst, however. It contains approximately 92.4 million rows - one for each person in the 1910 US Census! This will fill up the memory of a standard laptop computer when read into R very quickly using standard tools.
+
+An alternative solution that can be performed on a standard laptop computer is setting up a database. The solution proposed here uses [PostgreSQL](https://www.postgresql.org/), a popular open-source database, and [DBeaver](https://dbeaver.io/), a free cross-platform tool for working with databases.
+
+If PostgreSQL is not already installed on your computer, visit <https://www.postgresql.org/download/> and follow the instructions for your operating system to install it. A full tutorial on PostgreSQL for each operating system is beyond the scope of this book, so this example will use standard defaults. When you are finished installing PostgreSQL, you will be prompted to set up a default database, which will be called `postgres` and will be associated with a user, also named `postgres`. You'll be asked to set a password for the database; the examples in this chapter also use `postgres` for the password, but you can choose whatever password you would like.
+
+Once the default database has been set up, visit <https://dbeaver.io/download/> and download/install the appropriate DBeaver Community Edition for your operating system. Launch DBeaver, and look for the "New Database Connection" icon. Click there to launch a connection to your PostgreSQL database. Choose "PostgreSQL" from the menu of database options and fill out your connection settings appropriately.
+
+![](images/paste-E200E7FD.png){width="100%"}
+
+For most defaults, the host should be `localhost` running on port `5432` with the database name `postgres` and the username `postgres` as well. Enter the password you selected when setting up PostgreSQL and click **Finish**. You'll notice your database connection appear in the "Database Navigator" pane of DBeaver.
+
+Within the database, you can create **schemas** to organize sets of related tables. To create a new schema, right-click the postgres database in the Database Navigator pane and choose "Create \> Schema". This example uses a schema named "ipums". Within the new schema you'll be able to import your CSV file as a table. Expand the "ipums" schema and right-click on "Tables" then choose **Import Data.** Select the unzipped IPUMS CSV file and progress through the menus. This example changes the default "Target" name to `census1910`.
+
+On the final menu, click the **Start** button to import your data. Given the size of the dataset, this will likely take some time; it took around 2 hours to prepare the example on my machine. Once the data has imported successfully to the new database table in DBeaver, you'll be able to inspect your dataset using the DBeaver interface.
+
+![](images/paste-F69A6B0B.png){width="100%"}
 
 ### Accessing your microdata database with R
 
-```{r}
+In a typical R workflow with flat files, an analyst will read in a dataset (such as a CSV file) entirely in-memory into R then use their preferred toolset to interact with the data. The alternative discussed in this section involves connecting to the 1910 Census database from R then using R's database interface toolkit through the tidyverse to analyze the data. A major benefit to this workflow is that it allows an analyst to perform tidyverse operations on datasets *in the database*. This means that tidyverse functions are translated to Structured Query Language (SQL) queries and passed to the database, with outputs displayed in R, allowing the analyst to interact with data without having to read it into memory.
+
+The first step requires making a database connection from R. [The DBI infrastructure for R](https://www.r-dbi.org/) allows users to make connections to a wide range of databases using a consistent interface [@dbi2021]. The PostgreSQL interface is handled with the [RPostgres package](https://rpostgres.r-dbi.org/) [@wickham2021_rpostgres].
+
+The `dbConnect()` function is used to make a database connection, which will be assigned to the object `conn`. Arguments include the database driver `Postgres()` and the username, password, database name, host, and port, which are all familiar from the database setup process.
+
+```{r connect-to-db}
 library(tidyverse)
 library(RPostgres)
 library(dbplyr)
@@ -187,24 +231,111 @@ conn <- dbConnect(
 )
 ```
 
-Generate a query:
+Once connected to the database, the database extension to dplyr, dbplyr, facilitates interaction with database tables [@wickham2021_dbplyr]. `tbl()` links to the connection object `conn` to retrieve data from the database; the `in_schema()` function points `tbl()` to the `census1910` table in the `ipums` schema.
+
+Printing the new object `census1910` shows the general structure of the 1910 Census microdata:
 
 ```{r}
-ipums <- tbl(conn, in_schema("ipums", "census1910"))
+census1910 <- tbl(conn, in_schema("ipums", "census1910"))
 
-ipums
+census1910
 ```
 
+Our data have 13 columns and an unknown number of rows; the database table is so large that dbplyr won't calculate this automatically. However, the connection to the database allows for interaction with the 1910 Census microdata using familiar tidyverse workflows, which are addressed in the next section.
+
+### Analyzing big Census microdata in R
+
+While the default printing of the microdata shown above does not reveal the number of rows in the dataset, tidyverse tools can be used to request this information from the database. For example, the `summarize()` function will generate summary tabulations as shown earlier in this book; without a companion `group_by()`, it will do so over the whole dataset.
+
+```{r calculate_rows}
+census1910 %>% summarize(n())
+```
+
+There are 92.4 million rows in the dataset, reflecting the US population size in 1910. Given that we are working with complete-count data, the workflow for using microdata differs from the sample data covered in Chapters 9 and 10. While IPUMS by default returns a person-weight column, the value for all rows in the dataset for this column is 1, reflecting a 1:1 relationship between the records and actual people in the United States at that time.
+
+dplyr's database interface can accommodate more complex examples as well. Let's say we want to tabulate literacy statistics in 1910 for the population age 18 and up in Texas by sex. A straightforward tidyverse pipeline can accommodate this request to the database. For reference, male is coded as 1 and female as 2, and the literacy codes are as follows:
+
+-   1: No, illiterate (cannot read or write)
+
+-   2: Cannot read, can write
+
+-   3: Cannot write, can read
+
+-   4: Yes, literate (reads and writes)
+
+```{r texas-query}
+census1910 %>%
+  filter(age > 17, statefip == "48") %>%
+  group_by(sex, lit) %>%
+  summarize(num = n())
+```
+
+dbplyr also includes some helper functions to better understand how it is working and to work with the derived results. For example, the `show_query()` function can be attached to the end of a tidyverse pipeline to show the SQL query that the R code is translated to in order to perform operations in-database:
+
+```{r show-texas-query}
+census1910 %>%
+  filter(age > 17, statefip == "48") %>%
+  group_by(sex, lit) %>%
+  summarize(num = n()) %>%
+  show_query()
+```
+
+If an analyst wants the result of a database operation to be brought into R as an R object rather than as a database view, the `collect()` function can be used at the end of a pipeline to load data directly. A companion function from ipumsr, `ipums_collect()`, will add variable and value labels to the collected data based on an IPUMS codebook.
+
+The aforementioned toolsets can now be used for robust analyses of historical microdata based on complete-count Census data. The example below illustrates how to extend the literacy by sex example above to visualize literacy gaps by sex by state in 1910.
+
+```{r literacy-gaps-1910, eval = FALSE}
+literacy_props <- census1910 %>%
+  filter(age > 18) %>%
+  group_by(statefip, sex, lit) %>%
+  summarize(num = n()) %>%
+  group_by(statefip, sex) %>%
+  mutate(total = sum(num, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(prop = num / total) %>%
+  filter(lit == 4) %>%
+  collect()
+
+state_names <- tigris::fips_codes %>%
+  select(state_code, state_name) %>%
+  distinct()
+
+literacy_props_with_name <- literacy_props %>%
+  mutate(statefip = str_pad(statefip, 2, "left", "0")) %>%
+  left_join(state_names, by = c("statefip" = "state_code")) %>%
+  mutate(sex = ifelse(sex == 1, "Male", "Female")) %>%
+
+ggplot(literacy_props_with_name, aes(x = prop, y = reorder(state_name, prop), 
+                           color = sex)) + 
+  geom_line(aes(group = state_name), color = "grey10") + 
+  geom_point(size = 2.5) +
+  theme_minimal() + 
+  scale_color_manual(values = c(Male = "navy", Female = "darkred")) + 
+  scale_x_continuous(labels = scales::percent) + 
+  labs(x = "Percent fully literate, 1910",
+       color = "",
+       y = "")
+```
+
+![](images/paste-9BA1B795.png){width="100%"}
+
 ## Other US government datasets
+
+To this point, this book has focused on a smaller number of US Census Bureau datasets, with a primary focus on
 
 ### Accessing Census data resources with censusapi
 
 censusapi [@recht2021]
 
-```{r censusapi, eval = FALSE}
-library(censusapi)
+```{r set-census-key, eval = FALSE}
+library(usethis)
 
-key <- "84dba8250c52c9a11ec14575dce9083eea98d7e9"
+edit_r_environ()
+```
+
+```{r censusapi}
+library(censusapi)
+library(usethis)
 
 econ17 <- getCensus(
     name = "encbasic",
@@ -215,7 +346,7 @@ econ17 <- getCensus(
     naics2017 = 72,
     key = key)
 
-head(ewks_2012)
+head(econ17)
 ```
 
 ### Analyzing labor markets with lehdr
