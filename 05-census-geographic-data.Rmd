@@ -133,43 +133,79 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 
 The above examples have provided a sampling of some of the datasets available in tigris; a full enumeration of available datasets and the functions to access them are found in the table below.
 
++-----------------------------------------+------------------------------------------------+-----------------------+
 | Function                                | Datasets available                             | Years available       |
-|-----------------------------------------|------------------------------------------------|-----------------------|
++=========================================+================================================+=======================+
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2019             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2019             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2019             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `states()`                              | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 1990, 2000, 2010-2020 |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `counties()`                            | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 1990, 2000, 2010-2020 |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `tracts()`                              | TIGER/Line; cartographic (1:500k)              | 1990, 2000, 2010-2020 |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `block_groups()`                        | TIGER/Line; cartographic (1:500k)              | 1990, 2000, 2010-2020 |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `blocks()`                              | TIGER/Line                                     | 2000, 2010-2020       |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `places()`                              | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `pumas()`                               | TIGER/Line; cartographic (1:500k)              | 2012-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `school_districts()`                    | TIGER/Line; cartographic                       | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `zctas()`                               | TIGER/Line; cartographic (1:500k)              | 2000, 2010, 2012-2020 |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `congressional_districts()`             | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `state_legislative_districts()`         | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `voting_districts()`                    | TIGER/Line                                     | 2012                  |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `area_water()`                          | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `linear_water()`                        | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `coastline`                             | TIGER/Line()                                   | 2013-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `core_based_statistical_areas()`        | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `combined_statistical_areas()`          | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `metro_divisions()`                     | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `new_england()`                         | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `county_subdivisions()`                 | TIGER/Line; cartographic (1:500k)              | 2010-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `urban_areas()`                         | TIGER/Line; cartographic (1:500k)              | 2012-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `primary_roads()`                       | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `primary_secondary_roads()`             | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `roads()`                               | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `rails()`                               | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `native_areas()`                        | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `alaska_native_regional_corporations()` | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_block_groups()`                 | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_census_tracts()`                | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_subdivisions_national()`        | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `landmarks()`                           | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 | `military()`                            | TIGER/Line                                     | 2011-2020             |
++-----------------------------------------+------------------------------------------------+-----------------------+
 
 Note from the table that many datasets are available as both **TIGER/Line** and **cartographic boundary** objects, and available for multiple years; these distinctions are covered in the "tigris workflows" subsection below.
 
@@ -232,6 +268,10 @@ The mapview R package @appelhans2020 fills this crucial gap. With a single call 
 library(mapview)
 
 mapview(la_tracts)
+```
+
+```{r la_tracts_mapview, echo = FALSE}
+knitr::include_url("img/leaflet/la_tracts.html", height = "500px")
 ```
 
 Clicking on a Census tract shape reveals a pop-up with attribute information found in the dataset. Additionally, users can change the underlying basemap to understand the geographic context surrounding their data. mapview also includes significant functionality for interactive mapping and data display beyond this basic example; some of these features are covered in the next chapter.
@@ -510,6 +550,10 @@ lee <- fl_projected %>%
 mapview(lee)
 ```
 
+```{r lee_mapview_show, echo = FALSE}
+knitr::include_url("img/leaflet/lee_county.html", height = "500px")
+```
+
 The Lee County polygon has four distinct parts as displayed on the map: the mainland area that contains the cities of Cape Coral and Fort Myers, and three disjoint island areas. (Other islands can be further extracted using techniques covered in Chapter \@ref(7)). Understandably, these four areas are interpreted by R as a single feature:
 
 ```{r lee2}
@@ -530,6 +574,10 @@ The resulting spatial object now has four rows. Using row indexing, we can extra
 sanibel <- lee_singlepart[2,]
 
 mapview(sanibel)
+```
+
+```{r show_sanibel, echo = FALSE}
+knitr::include_url("img/leaflet/sanibel.html", height = "500px")
 ```
 
 ## Exercises

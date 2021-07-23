@@ -1,3 +1,35 @@
+#### Chapter 5 interactives
+library(tigris)
+library(mapview)
+library(sf)
+library(tidyverse)
+
+la_tracts <- tracts("NM", "Los Alamos")
+
+l1 <- mapview(la_tracts)
+
+htmlwidgets::saveWidget(l1@map, "img/leaflet/la_tracts.html")
+
+fl_counties <- counties("FL", cb = TRUE)
+
+fl_projected <- sf::st_transform(fl_counties, crs = 3087)
+
+lee <- fl_projected %>%
+  filter(NAME == "Lee")
+
+lee1 <- mapview(lee)
+
+htmlwidgets::saveWidget(lee1@map, "img/leaflet/lee_county.html")
+
+lee_singlepart <- st_cast(lee, "POLYGON")
+
+sanibel <- lee_singlepart[2,]
+
+san1 <- mapview(sanibel)
+
+htmlwidgets::saveWidget(san1@map, "img/leaflet/sanibel.html")
+
+
 #### Chapter 6 interactives + dot-density
 library(tidycensus)
 library(tidyverse)
