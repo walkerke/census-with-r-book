@@ -235,7 +235,7 @@ Once connected to the database, the database extension to dplyr, dbplyr, facilit
 
 Printing the new object `census1910` shows the general structure of the 1910 Census microdata:
 
-```{r}
+```{r show-census-1910}
 census1910 <- tbl(conn, in_schema("ipums", "census1910"))
 
 census1910
@@ -321,11 +321,15 @@ ggplot(literacy_props_with_name, aes(x = prop, y = reorder(state_name, prop),
 
 ## Other US government datasets
 
-To this point, this book has focused on a smaller number of US Census Bureau datasets, with a primary focus on
+To this point, this book has focused on a smaller number of US Census Bureau datasets, with a primary focus on the decennial US Census and the American Community Survey. However, many more US government datasets are available to researchers, some from the US Census Bureau and others from different US government agencies. This section covers a series of R packages to help analysts access these resources, and illustrates some applied workflows using those datasets.
 
 ### Accessing Census data resources with censusapi
 
-censusapi [@recht2021]
+censusapi [@recht2021] is an R package designed to give R users access to *all* of the US Census Bureau's API endpoints. Unlike tidycensus, which only focuses on a select number of datasets, censusapi's `getCensus()` function can be widely applied to the hundreds of possible datasets the Census Bureau makes available. censusapi requires some knowledge of how to structure Census Bureau API requests to work; however this makes the package more flexible than tidycensus and may be preferable for users who want to submit highly customized queries to the decennial Census or ACS APIs.
+
+censusapi uses the same Census API key as tidycensus, though references it with the R environment variable `CENSUS_KEY`. If this environment variable is set in a user's `.Renviron` file, functions in censusapi will pick up the key without having to supply it directly.
+
+The usethis package [@wickham_and_bryan2021] is the most user-friendly way to work with the `.Renviron` file in R with its function `edit_r_environ()`. Calling this function will bring up the `.Renviron` file in a text editor, allowing users to set environment variables that will be made available to R when R starts up.
 
 ```{r set-census-key, eval = FALSE}
 library(usethis)
@@ -333,29 +337,116 @@ library(usethis)
 edit_r_environ()
 ```
 
+Add the line `CENSUS_KEY='YOUR KEY HERE'` to your `.Renviron` file, replacing the `YOUR KEY HERE` text with your API key.
+
+censusapi's core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](<https://www.hrecht.com/censusapi/articles/example-masterlist.html>) or the function `listCensusApis()` helps you understand how to format this.
+
+The example below makes a request to the [Economic Census API](<https://www.census.gov/programs-surveys/economic-census/data/api.html>), getting data on employment and payroll for NAICS code 72 (accommodation and food services businesses) in counties in Texas in 2017.
+
 ```{r censusapi}
 library(censusapi)
-library(usethis)
 
-econ17 <- getCensus(
-    name = "encbasic",
-    vintage = 2017,
-    vars = c("EMP", "OPTAX", "GEOTYPE"),
-    region = "state:48",
-    regionin = "county:113",
-    naics2017 = 72,
-    key = key)
+tx_econ17 <- getCensus(
+  name = "ecnbasic",
+  vintage = 2017,
+  vars = c("EMP", "PAYANN", "GEO_ID"),
+  region = "county:*",
+  regionin = "state:48",
+  NAICS2017 = 72
+)
 
-head(econ17)
+head(tx_econ17)
 ```
+
+censusapi can also be used in combination with other packages covered in this book such as tigris for mapping. The example below uses the [Small Area Health Insurance Estimates API](<https://www.census.gov/programs-surveys/sahie/data/api.html>), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using censusapi and tigris, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from tigris with shifted geometry, then mapped with ggplot2.
+
+```{r map-sahie}
+library(tigris)
+library(tidyverse)
+
+us_youth_sahie <- getCensus(
+  name = "timeseries/healthins/sahie",
+  vars = c("GEOID", "PCTUI_PT"),
+  region = "county:*",
+  regionin = "state:*",
+  time = 2019,
+  AGECAT = 4
+)
+
+us_counties <- counties(cb = TRUE, resolution = "20m") %>%
+  shift_geometry(position = "outside") %>%
+  inner_join(us_youth_sahie, by = "GEOID") 
+
+ggplot(us_counties, aes(fill = PCTUI_PT)) + 
+  geom_sf(color = NA) + 
+  theme_void() + 
+  scale_fill_viridis_c() + 
+  labs(fill = "% uninsured ",
+       caption = "Data source: US Census Bureau Small Area\nHealth Insurance Estimates via the censusapi R package",
+       title = "  Percent uninsured under age 19 by county, 2019")
+```
+
+As these are *modeled* estimates, state-level influences on the county-level estimates are apparent on the map.
 
 ### Analyzing labor markets with lehdr
 
-lehdr [@green2021]
+Another very useful package for working with Census Bureau data is the lehdr R package [@green2021], which access the Longitudinal and Employer-Household Dynamics (LEHD) Origin-Destination Employment Statistics (LODES) data. LODES is not available from the Census API, meriting an alternative package and approach. LODES includes synthetic estimates of residential, workplace, and residential-workplace links at the Census block level, allowing for highly detailed geographic analysis of jobs and commuter patterns over time.
 
-```{r lehdr, eval = FALSE}
+The core function implemented in lehdr is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state.
+
+```{r lehdr}
 library(lehdr)
+library(tidycensus)
+library(sf)
+library(tidyverse)
 
+wa_lodes_od <- grab_lodes(
+  state = "wa",
+  year = 2018,
+  lodes_type = "od",
+  agg_geo = "tract",
+  state_part = "main"
+)
+```
+
+The result is a dataset that shows tract-to-tract commute flows (`S000`) and broken down by a variety of characteristics, [referenced in the LODES documentation](<https://lehd.ces.census.gov/data/lodes/LODES7/LODESTechDoc7.5.pdf>).
+
+```{r show-wa-lodes, echo = FALSE}
+wa_lodes_od[1:10,] %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling()
+```
+
+lehdr can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with tidycensus for Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in tidycensus) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
+
+```{r microsoft-commuters}
+seattle_adults <- get_acs(
+  geography = "tract",
+  variables = "S0101_C01_026",
+  state = "WA",
+  county = c("King", "Kitsap", "Pierce",
+             "Snohomish"),
+  geometry = TRUE
+)
+
+microsoft <- filter(wa_lodes_od, w_tract == "53033022803")
+
+ms_commuters <- seattle_adults %>%
+  left_join(microsoft, by = c("GEOID" = "h_tract")) %>%
+  mutate(ms_per_1000 = 1000 * (S000 / estimate)) %>%
+  st_transform(6596)
+```
+
+The result can be visualized on a map with ggplot2, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r).
+
+```{r}
+ggplot(ms_commuters, aes(fill = ms_per_1000)) + 
+  geom_sf(color = NA) + 
+  theme_void() + 
+  scale_fill_viridis_c(option = "cividis") + 
+  labs(title = "Microsoft commuters per 1000 adults",
+       subtitle = "2018 LODES data, Seattle-area counties",
+       fill = "Rate per 1000")
 ```
 
 ### Bureau of Labor Statistics data with blscrapeR
@@ -365,3 +456,100 @@ blscrapeR
 ### Working with agricultural data with tidyUSDA
 
 tidyUSDA
+
+## Getting government data without R packages
+
+### Making requests to APIs with httr
+
+General example: using httr to get data
+
+```{r get-data-hud}
+library(glue)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+
+my_token <- Sys.getenv("HUD_TOKEN")
+
+hud_chas_request <- GET("https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59",
+                add_headers(Authorization = glue("Bearer {my_token}")))
+
+hud_chas_request$status_code
+
+```
+
+Now, take a look at what we got back:
+
+```{r hud-content}
+content(hud_chas_request, as = "text")
+```
+
+```{r hud-from-json, eval = FALSE}
+hud_chas_request %>%
+  content(as = "text") %>%
+  fromJSON()
+  
+```
+
+```{r hud-from-json-styling, echo = FALSE}
+hud_chas_request %>%
+  content(as = "text") %>%
+  fromJSON() %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling()
+```
+
+### Writing your own data access functions
+
+```{r define-function}
+get_hud_chas <- function(
+  type, 
+  year = "2013-2017", 
+  state_id = NULL, 
+  entity_id = NULL, 
+  token = NULL
+) {
+  
+  if (is.null(token)) {
+    if (Sys.getenv("HUD_TOKEN") != "") {
+      token <- Sys.getenv("HUD_TOKEN")
+    }
+  }
+  
+  base_url <- "https://www.huduser.gov/hudapi/public/chas"
+  
+  hud_query <- httr::GET(
+    base_url,
+    httr::add_headers(Authorization = glue::glue("Bearer {token}")),
+    query = list(
+      type = type,
+      year = year,
+      stateId = state_id,
+      entityId = entity_id)
+  )
+  
+  # Return the HTTP error message if query failed
+  if (hud_query$status_code != "200") {
+    msg <- httr::content(hud_query, as = "text")
+    return(msg)
+  }
+  
+  hud_content <- httr::content(hud_query, as = "text")
+  
+  hud_tibble <- hud_content |>
+    jsonlite::fromJSON() |>
+    dplyr::as_tibble() |>
+    tidyr::pivot_longer(cols = !dplyr::all_of(c("geoname", "sumlevel", "year")),
+                        names_to = "indicator",
+                        values_to = "value")
+  
+  return(hud_tibble)
+  
+}
+```
+
+Now, let's try out the function:
+
+```{r}
+get_hud_chas(type = 3, state_id = 51, entity_id = 510)
+```
