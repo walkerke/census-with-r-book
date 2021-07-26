@@ -3,7 +3,14 @@
 ```{r setup-ch11, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
+library(blscrapeR)
 options(tigris_use_cache = TRUE)
+
+style_data <- function(dat, n_rows = 10, caption = NULL) {
+  dat[1:n_rows,] |>
+    knitr::kable(caption = caption) |>
+    kableExtra::kable_styling()
+}
 ```
 
 Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with tidycensus and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated [ipumsr](http://tech.popdata.org/ipumsr/) R package to help analysts integrate these datasets into R-based workflows.
@@ -340,9 +347,9 @@ edit_r_environ()
 
 Add the line `CENSUS_KEY='YOUR KEY HERE'` to your `.Renviron` file, replacing the `YOUR KEY HERE` text with your API key.
 
-censusapi's core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](<https://www.hrecht.com/censusapi/articles/example-masterlist.html>) or the function `listCensusApis()` helps you understand how to format this.
+censusapi's core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](https://www.hrecht.com/censusapi/articles/example-masterlist.html) or the function `listCensusApis()` helps you understand how to format this.
 
-The example below makes a request to the [Economic Census API](<https://www.census.gov/programs-surveys/economic-census/data/api.html>), getting data on employment and payroll for NAICS code 72 (accommodation and food services businesses) in counties in Texas in 2017.
+The example below makes a request to the [Economic Census API](https://www.census.gov/programs-surveys/economic-census/data/api.html), getting data on employment and payroll for NAICS code 72 (accommodation and food services businesses) in counties in Texas in 2017.
 
 ```{r censusapi}
 library(censusapi)
@@ -359,7 +366,7 @@ tx_econ17 <- getCensus(
 head(tx_econ17)
 ```
 
-censusapi can also be used in combination with other packages covered in this book such as tigris for mapping. The example below uses the [Small Area Health Insurance Estimates API](<https://www.census.gov/programs-surveys/sahie/data/api.html>), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using censusapi and tigris, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from tigris with shifted geometry, then mapped with ggplot2.
+censusapi can also be used in combination with other packages covered in this book such as tigris for mapping. The example below uses the [Small Area Health Insurance Estimates API](https://www.census.gov/programs-surveys/sahie/data/api.html), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using censusapi and tigris, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from tigris with shifted geometry, then mapped with ggplot2.
 
 ```{r map-sahie}
 library(tigris)
@@ -410,7 +417,7 @@ wa_lodes_od <- grab_lodes(
 )
 ```
 
-The result is a dataset that shows tract-to-tract commute flows (`S000`) and broken down by a variety of characteristics, [referenced in the LODES documentation](<https://lehd.ces.census.gov/data/lodes/LODES7/LODESTechDoc7.5.pdf>).
+The result is a dataset that shows tract-to-tract commute flows (`S000`) and broken down by a variety of characteristics, [referenced in the LODES documentation](https://lehd.ces.census.gov/data/lodes/LODES7/LODESTechDoc7.5.pdf).
 
 ```{r show-wa-lodes, echo = FALSE}
 wa_lodes_od[1:10,] %>%
@@ -452,17 +459,129 @@ ggplot(ms_commuters, aes(fill = ms_per_1000)) +
 
 ### Bureau of Labor Statistics data with blscrapeR
 
-blscrapeR
+Another essential resource for data on US labor market characteristics is the [Bureau of Labor Statistics](https://www.bls.gov/), which makes their data available to users via an API. BLS data can be accessed from R with the blscrapeR package [@eberwein2021]. Like other government APIs, the BLS API requires an API key, obtained from <https://data.bls.gov/registrationEngine/>. Sign up with an email address then validate the key using the link sent to your email, then return to R to get started with blscrapeR.
+
+```{r blscraper, eval = FALSE}
+library(blscrapeR)
+
+set_bls_key("YOUR KEY HERE")
+```
+
+blscrapeR includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for the latest month available without any arguments.
+
+```{r get-bls-county}
+latest_employment <- get_bls_county("May 2021")
+```
+
+```{r show-bls-county, echo = FALSE}
+style_data(latest_employment, caption = "latest_employment")
+```
+
+More complex queries are also possible with the `bls_api()` function; however, this requires knowing the BLS *series ID*. Series IDs are composite strings made up of several alphanumeric codes that can represent different datasets, geographies, and industries, among others. blscrapeR includes an internal dataset, `series_ids`, to help users view some of the most commonly requested IDs.
+
+```{r series_ids, eval = FALSE}
+head(series_ids)
+```
+
+```{r show-series_ids, echo = FALSE}
+style_data(series_ids, n_rows = 6, caption = "series_ids")
+```
+
+`series_ids` only contains indicators from the Current Population Survey and Local Area Unemployment Statistics databases. Other data series can be constructed by following the instructions on [\<https://www.bls.gov/help/hlpforma.htm\>](https://www.bls.gov/help/hlpforma.htm){.uri}. The example below illustrates this for data on the [Current Employment Statistics](https://www.bls.gov/ces/), for which the series ID [is formatted as follows](https://www.bls.gov/help/hlpforma.htm#SA):
+
+-   Positions 1-2: The prefix (in this example, `SA`)
+
+-   Position 3: The seasonal adjustment code (either `S`, for seasonally adjusted, or `U`, for unadjusted)
+
+-   Positions 4-5: The two-digit state FIPS code
+
+-   Positions 6-10: The [five-digit area code](https://download.bls.gov/pub/time.series/sm/sm.area), which should be set to `00000` if an entire state is requested.
+
+-   Positions 11-18: The [super sector/industry code](https://download.bls.gov/pub/time.series/sm/sm.industry)
+
+-   Positions 19-20: The [data type code](https://download.bls.gov/pub/time.series/sm/sm.data_type)
+
+We'll use this information to get unadjusted data on accommodation workers in Maui, Hawaii since the beginning of 2018, and make a chart with the data. Note that the specific codes detailed above will vary from indicator to indicator, and that not all industries will be available for all geographies.
+
+```{r get-maui-bls}
+maui_accom <- bls_api(seriesid = "SMU15279807072100001", 
+                      startyear = 2018)
+
+```
+
+```{r show-maui, echo = FALSE}
+style_data(maui_accom, 6, "maui_hotel")
+```
+
+```{r plot-maui}
+maui_accom %>%
+  mutate(period_order = rev(1:nrow(.))) %>%
+  ggplot(aes(x = period_order, y = value, group = 1)) + 
+  geom_line(color = "darkgreen") + 
+  theme_minimal() + 
+  scale_y_continuous(limits = c(0, max(maui_accom$value) + 1)) + 
+  scale_x_continuous(breaks = seq(1, 42, 12),
+                     labels = paste("Jan", 2018:2021)) + 
+  labs(x = "",
+       y = "Number of jobs (in 1000s)",
+       title = "Accommodation employment in Maui, Hawaii",
+       subtitle = "Data source: BLS Current Employment Statistics")
+```
+
+The data suggest a stable accommodations sector prior to the onset of the COVID-19 pandemic, with recovery in the industry starting toward the end of 2020.
 
 ### Working with agricultural data with tidyUSDA
 
-tidyUSDA
+Agriculture can be a difficult sector on which to collect market statistics, as it is not available in many data sources such as LODES or the BLS Current Employment Statistics. Dedicated statistics on US agriculture can be acquired with the tidyUSDA R package [@lindblad2021], which interacts with USDA data resources using tidyverse-centric workflows. Get an API key at <https://quickstats.nass.usda.gov/api> and use that to request data from the USDA QuickStats API. In this example, the API key is stored as a `"USDA_KEY"` environment variable.
+
+```{r tidyusda}
+library(tidyUSDA)
+
+usda_key <- Sys.getenv("USDA_KEY")
+
+```
+
+Now, let's see which US counties produce have the most acres devoted to cucumbers. To use the `getQuickstat()` function effectively, it is helpful to construct a query first at <https://quickstats.nass.usda.gov/> and see what options are available, then bring those options as arguments into R.
+
+```{r cucumbers}
+cucumbers <- getQuickstat(
+  key = usda_key,
+  program = "CENSUS",
+  data_item = "CUCUMBERS, FRESH MARKET - ACRES HARVESTED",
+  sector = "CROPS",
+  group = "VEGETABLES",
+  commodity = "CUCUMBERS",
+  category = "AREA HARVESTED",
+  domain = "TOTAL",
+  geographic_level = "COUNTY",
+  year = "2017"
+)
+```
+
+This information allows us to look at the top cucumber-growing counties in the US:
+
+```{r top-cucumbers, eval = FALSE}
+cucumbers %>%
+  select(state_name, county_name, Value) %>%
+  arrange(desc(Value))
+```
+
+```{r show-top-cucumbers, echo = FALSE}
+cucumbers %>%
+  select(state_name, county_name, Value) %>%
+  arrange(desc(Value)) %>%
+  style_data(8, "cucumbers")
+```
 
 ## Getting government data without R packages
 
+The breath of R's developer ecosystem means that in many cases if you have a need for US government data, an enterprising developer has written some code that you can use. However, this won't be true for every data resource, especially as US government agencies continue to release new API endpoints to open up access to data. In this case, you may be interested in writing your own data access functions for this purpose. This section gives some pointers on how to make HTTP requests to data APIs using the httr package and process the data appropriately for use in R.
+
 ### Making requests to APIs with httr
 
-General example: using httr to get data
+Most data API packages in R will rely on the httr R package [@wickham_httr], which provides R functions for common HTTP requests such as `GET`, `POST`, and `PUT`, among others. In this example, we'll use the `httr::GET()` function to make a request to the new [Department of Housing and Urban Development Comprehensive Affordable Housing Strategy (CHAS) API](<https://www.huduser.gov/portal/dataset/chas-api.html>). This will require getting a HUD API token and storing it as an environment variable as described earlier in this chapter.
+
+Every API will be structured differently with respect to how it accepts queries and authenticates with API tokens. In this example, the documentation instructs users to pass the API token in the HTTP request with the `Authentication: Bearer` header. The example URL in the documentation, [`https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59`](https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59), is passed to `GET()`, and the `add_headers()` function in httr is used to assemble an appropriate string to send to the API.
 
 ```{r get-data-hud}
 library(glue)
@@ -479,11 +598,13 @@ hud_chas_request$status_code
 
 ```
 
-Now, take a look at what we got back:
+As we got back the HTTP status code 200, we know that our request to the API succeeded. To view the returned data, we use the `content()` function and translate the result to text with the `as = "text"` argument.
 
 ```{r hud-content}
 content(hud_chas_request, as = "text")
 ```
+
+The data were returned as [JavaScript Object Notation, or JSON](<https://www.json.org/json-en.html>), a very common data format for returning data from APIs. While the data shown above is moderately interpretable, it will require some additional translation for use in R. The jsonlite package [@ooms2014] includes a poewrful set of tools for working with JSON objects in R; here, we'll use the `fromJSON()` function to convert JSON to a data frame.
 
 ```{r hud-from-json, eval = FALSE}
 hud_chas_request %>%
@@ -496,11 +617,28 @@ hud_chas_request %>%
 hud_chas_request %>%
   content(as = "text") %>%
   fromJSON() %>%
-  knitr::kable() %>%
-  kableExtra::kable_styling()
+  style_data(n_rows = 1, caption = "hud_chas_request")
 ```
 
+The data are now formatted as an R data frame which can be embedded in your R-based workflows.
+
 ### Writing your own data access functions
+
+If you plan to use a particular API endpoint frequently, or for different areas and times, it is a good idea to write a data access function. API functions should ideally identify the components of the API request that can vary, and allow users to make modifications in ways that correspond to those components.
+
+The URL used in the example above can be separated into two componets: the *API endpoint* [`https://www.huduser.gov/hudapi/public/chas`](https://www.huduser.gov/hudapi/public/chas), which will be common to all API requests, and the *query* `?type=3&year=2012-2016&stateId=51&entityId=59`, which shows components of the request that can vary. The query will generally follow a question mark sign and be composed of key-value pairs, e.g. `type=3`, which in this example means county according to the HUD API documentation. These queries can be passed as a list to the `query` parameter of `GET()` and formatted appropriately in the HTTP request by httr.
+
+The function below is an example you can use to get started writing your own API data request functions. The general components of the function are as follows:
+
+-   The function is defined by a name, `get_hud_chas()`, with a number of parameters to which the user will supply arguments. Default arguments can be specified (e.g. `year = "2013-2017"` to request that data without the user needing to specify it directly. If a default argument is `NULL`, it will be ignored by the `GET()` request.
+
+-   The function first checks to see if an existing HUD token exists in the user's environment referenced by the name `HUD_TOKEN` if the user hasn't supplied it directly.
+
+-   Next, the function constructs the `GET()` query, translating the function arguments to an HTTP query.
+
+-   If the request has failed, the function returns the error message from the API to help inform the user about what went wrong.
+
+-   If the request succeeds, the function converts the result to text, then the JSON to a data frame which will be pivoted to long form using tidyr's `pivot_longer()` function. Finally, the result is returned. I use the `return()` function here, which isn't strictly necessary but I use it because it is helpful for me to see where the function exits in my code.
 
 ```{r define-function}
 get_hud_chas <- function(
@@ -511,14 +649,17 @@ get_hud_chas <- function(
   token = NULL
 ) {
   
+  # Check to see if a token exists
   if (is.null(token)) {
     if (Sys.getenv("HUD_TOKEN") != "") {
       token <- Sys.getenv("HUD_TOKEN")
     }
   }
   
+  # Specify the base URL
   base_url <- "https://www.huduser.gov/hudapi/public/chas"
   
+  # Make the query
   hud_query <- httr::GET(
     base_url,
     httr::add_headers(Authorization = glue::glue("Bearer {token}")),
@@ -535,8 +676,10 @@ get_hud_chas <- function(
     return(msg)
   }
   
+  # Return the content as text
   hud_content <- httr::content(hud_query, as = "text")
   
+  # Convert the data to a long-form tibble
   hud_tibble <- hud_content |>
     jsonlite::fromJSON() |>
     dplyr::as_tibble() |>
@@ -549,8 +692,21 @@ get_hud_chas <- function(
 }
 ```
 
-Now, let's try out the function:
+Now, let's try out the function for a different locality in Virginia:
 
-```{r}
+```{r use-function, eval = FALSE}
 get_hud_chas(type = 3, state_id = 51, entity_id = 510)
 ```
+
+```{r show-use-function}
+get_hud_chas(type = 3, state_id = 51, entity_id = 510) %>%
+  style_data()
+```
+
+The function returns affordable data for Alexandria, Virginia in a format that is more suitable for use with tidyverse tools.
+
+## Exercises
+
+-   Visit <https://ipums.org> and spend some time exploring NHGIS and/or IPUMS. Attempt to replicate the NHGIS workflow for a different variable and time period.
+
+-   Explore the censusapi package and create a request to a Census API endpoint using the package that you weren't previously familiar with. Join the data to shapes you've obtained with tigris and make a map of your data.
