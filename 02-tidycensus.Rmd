@@ -1,17 +1,9 @@
----
-rences.bib
----
-
 # An introduction to tidycensus
 
 ```{r setup-ch2, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
-style_data <- function(dat, n_rows = 10, caption = NULL) {
-  dat[1:n_rows,] |>
-    knitr::kable(caption = caption) |>
-    kableExtra::kable_styling()
-}
+source("R/book-functions.R")
 ```
 
 The **tidycensus** package [@walker_and_herman2021], first released in 2017, is an R package designed to facilitate the process of acquiring and working with US Census Bureau population data in the R environment. The package has two distinct goals. First, tidycensus aims to make Census data available to R users in a tidyverse-friendly format, helping kick-start the process of generating insights from US Census data. Second, the package is designed to streamline the data wrangling process for spatial Census data analysts. With tidycensus, R users can request *geometry* along with attributes for their Census data, helping facilitate mapping and spatial analysis. This functionality of tidycensus is covered in more depth in Chapters 6 through 8.
@@ -363,7 +355,7 @@ honolulu_migration <- get_flows(
 ```
 
 ```{r, echo = FALSE}
-style_data(honolulu_migration, "honolulu_migration")
+style_data(honolulu_migration, caption = "honolulu_migration")
 ```
 
 `get_flows()` also includes functionality for migration flow mapping; this advanced feature will be covered in Chapter \@ref(6) of this book.

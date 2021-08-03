@@ -155,3 +155,35 @@ l2 <- leaflet() %>%
   )
 
 saveWidget(l2, "img/leaflet/us_leaflet.html")
+
+# Chapter 12
+library(cancensus)
+library(tidyverse)
+options(cancensus.api_key = Sys.getenv("CANCENSUS_API_KEY"))
+
+montreal_english <- get_census(
+  dataset = "CA16",
+  regions = list(CMA = "24462"),
+  vectors = "v_CA16_1364",
+  level = "CT",
+  geo_format = "sf",
+  labels = "short"
+) 
+
+library(tmap)
+tmap_mode("view")
+
+montreal_pct <- montreal_english %>%
+  mutate(pct_english = 100 * (v_CA16_1364 / Population))
+
+c1 <- tm_shape(montreal_pct) + 
+  tm_polygons(
+    col = "pct_english", 
+    alpha = 0.5, 
+    palette = "viridis",
+    style = "jenks", 
+    n = 7, 
+    title = "Percent speaking<br/>English at home"
+  )
+
+tmap_save(c1, "img/leaflet/montreal_english.html")

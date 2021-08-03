@@ -3,6 +3,10 @@
 ```{r setup-ch12, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(idbr)
+library(tidyverse)
+library(cancensus)
+
+source("R/book-functions.R")
 ```
 
 Although the methods presented in this book are generalizable, the examples given in the book to this point have focused on the United States. Readers of this book are most certainly not limited to the United States in their projects, and will be interested in how to apply the methods presented to examples around the world. International Census & demographic data is the focus of this chapter. The first section focuses on *global demographic indicators* for between-country comparisons and gives an overview of the [idbr R package](https://github.com/walkerke/idbr) for accessing these indicators through the [US Census Bureau's International Data Base](https://www.census.gov/programs-surveys/international-programs/about/idb.html). The sections that follow cover country-specific packages from around the world that deliver Census data to R users in similar ways to the US-focused packages covered earlier in this book. Examples from Canada, Mexico, Brazil, and Kenya illustrate how to apply the methods readers have learned in this book to Census data analyses in other parts of the world.
@@ -17,7 +21,7 @@ To get started with idbr, users can install the package from CRAN and set their 
 
 ```{r idb-api-key, eval = FALSE}
 library(idbr)
-# Unnecessary if API key is installed iwth tidycensus
+# Unnecessary if API key is installed with tidycensus
 idb_api_key("YOUR KEY GOES HERE")
 
 ```
@@ -141,11 +145,11 @@ ggplot(fertility_data, aes(fill = tfr)) +
 
 ### Interactive and animated visualization of global demographic data
 
-In Chapter 6, readers learned how to create interactive maps of US Census data with the tmap and leaflet packages.  While the same methods _can_ be applied to the global data returned by `get_idb()`, the Mercator projection used by the Leaflet library is not ideal for world maps as it inflates the area of countries near the poles relative to countries near the Equator.  In turn, it is preferable to turn to other interactive charting libraries such as plotly, discussed in Chapter 4.  
+In Chapter 6, readers learned how to create interactive maps of US Census data with the tmap and leaflet packages. While the same methods *can* be applied to the global data returned by `get_idb()`, the Mercator projection used by the Leaflet library is not ideal for world maps as it inflates the area of countries near the poles relative to countries near the Equator. In turn, it is preferable to turn to other interactive charting libraries such as plotly, discussed in Chapter 4.
 
-Like plotly, the [ggiraph](https://davidgohel.github.io/ggiraph/index.html) package helps users create interactive visualizations from their ggplot2 plots.  ggiraph includes `*_interactive()` versions of ggplot2 geoms with package-specific aesthetics to allow for interactive visualization.  
+Like plotly, the [ggiraph](https://davidgohel.github.io/ggiraph/index.html) package helps users create interactive visualizations from their ggplot2 plots. ggiraph includes `*_interactive()` versions of ggplot2 geoms with package-specific aesthetics to allow for interactive visualization.
 
-To get started, let's return to our global fertility data and create a new column that will store information we want to include in our tooltip that appears when a viewer hovers over a country.  
+To get started, let's return to our global fertility data and create a new column that will store information we want to include in our tooltip that appears when a viewer hovers over a country.
 
 ```{r}
 fertility_data$tooltip <- paste0(fertility_data$name,
@@ -153,7 +157,7 @@ fertility_data$tooltip <- paste0(fertility_data$name,
                                  round(fertility_data$tfr, 2))
 ```
 
-We now set up the visualization.  Note that instead of using `geom_sf()`, we use ggiraph's `geom_sf_interactive()`, which includes some new aesthetics.  We map our new `tooltip` column to the `tooltip` aesthetic, which will generate a hover tooltip, and we map the `code` column to the `data_id` aesthetic, which will change the country's color when hovered over.  The `girafe()` function then renders the interactive graphic; we can specify that we want map zooming with `girafe_options()`.  
+We now set up the visualization. Note that instead of using `geom_sf()`, we use ggiraph's `geom_sf_interactive()`, which includes some new aesthetics. We map our new `tooltip` column to the `tooltip` aesthetic, which will generate a hover tooltip, and we map the `code` column to the `data_id` aesthetic, which will change the country's color when hovered over. The `girafe()` function then renders the interactive graphic; we can specify that we want map zooming with `girafe_options()`.
 
 ```{r interactive-world-map}
 library(ggiraph)
@@ -168,7 +172,8 @@ fertility_map <- ggplot(fertility_data, aes(fill = tfr)) +
 girafe(ggobj = fertility_map) %>%
   girafe_options(opts_zoom(max = 10))
 ```
-The time-series data availability in the IDB also works well for creating animated time-series graphics with help from the [gganimate package](https://gganimate.com/).  gganimate extends ggplot2 to animate sequences of plots using intuitive syntax to ggplot2 users.  Earlier in this chapter, we learned how to create a population pyramid from IDB data for a single year (2021). If data are requested instead for multiple years, gganimate can be used to transition from year to year in an animated population pyramid, showing how the population structure of a country has evolved (and is projected to evolve) over time.  
+
+The time-series data availability in the IDB also works well for creating animated time-series graphics with help from the [gganimate package](https://gganimate.com/). gganimate extends ggplot2 to animate sequences of plots using intuitive syntax to ggplot2 users. Earlier in this chapter, we learned how to create a population pyramid from IDB data for a single year (2021). If data are requested instead for multiple years, gganimate can be used to transition from year to year in an animated population pyramid, showing how the population structure of a country has evolved (and is projected to evolve) over time.
 
 ```{r animated_pyramid, eval = FALSE}
 library(idbr)
@@ -199,30 +204,41 @@ animate(mx_animation, height = 500, width = 800)
 
 ```
 
+```{r, echo = FALSE, out.width="100%"}
+knitr::include_graphics("img/mexico_animation.gif")
+```
+
+The animation illustrates the aging of Mexico's population, both observed and projected, during the specified time period.
+
 ## Country-specific Census data packages
 
-Analysts around the world need access to high-quality tabular and spatial demographic data to make decisions much like the data that are available from the US Census Bureau.  While Censuses are conducted by countries around the world, few countries expose their data by API in the way the US Census Bureau does.  Nonetheless, there are a number of R packages that help analysts acquire and work with country-specific Census data.  This section of the book covers a sampling of those packages, with examples given from Canada, Mexico, Kenya, and Brazil.  These examples will illustrate how to apply many of the techniques introduced in this book to a variety of non-US examples.  
+Analysts around the world need access to high-quality tabular and spatial demographic data to make decisions much like the data that are available from the US Census Bureau. While Censuses are conducted by countries around the world, few countries expose their data by API in the way the US Census Bureau does. Nonetheless, there are a number of R packages that help analysts acquire and work with country-specific Census data. This section of the book covers a sampling of those packages, with examples given from Canada, Mexico, Kenya, and Brazil. These examples will illustrate how to apply many of the techniques introduced in this book to a variety of non-US examples.
 
 ### Canada: cancensus
 
-<img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" style="width: 400px"/>
+<img src="https://raw.githubusercontent.com/mountainMath/cancensus/master/images/cancensus-sticker.png" width="20%"/>
 
-[The cancensus R package](https://mountainmath.github.io/cancensus/index.html) grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/)
+[The cancensus R package](https://mountainmath.github.io/cancensus/index.html) [@vonbergmann2021] grants comprehensive access to Canadian Census data through the [CensusMapper APIs](https://censusmapper.ca/). While Statistics Canada, the Canadian agency that distributes Canadian demographic data, does not maintain these APIs, package author Jens von Bergmann's CensusMapper product makes Canadian data accessible via a web interface and data API. Working with cancensus will feel familiar to tidycensus users, as cancensus integrates well within the tidyverse and includes an option to return feature geometry along with demographic data for a wide range of Canadian geographies.
+
+To get started with cancensus, obtain an API key from the CensusMapper website and store it in your `.Renviron` file as discussed in Section \@ref(other-census-and-government-data-resources). Supplying this key to the `cancensus.api_key` option will allow the key to be picked up automatically by cancensus functions.
+
+The `list_census_vectors()` function operates in a similar way to `load_variables()` in tidycensus. Specify a dataset to generate a browsable data frame of variable IDs which can be used to query data from the CensusMapper API.
 
 ```{r cancensus-1}
 library(cancensus)
 library(tidyverse)
-library(sf)
 options(cancensus.api_key = Sys.getenv("CANCENSUS_API_KEY"))
 
-# View(list_census_vectors("CA16"))
-
+var_list <- list_census_vectors("CA16")
 ```
 
+```{r show-canada-vars, echo = FALSE}
+style_data(var_list, n_rows = 5, caption = "var_list")
+```
 
--   cancensus allows for different datasets, regions, and geographic levels to be queried
+The data can be browsed with the `View()` function in RStudio much like it is recommended to do with tidycensus in Section \@ref(searching-for-variables-in-tidycensus). Two companion functions, `list_census_regions()` and `list_census_datasets()`, should also be used to identify region codes and dataset codes for which you'd like to request data.
 
--   Simple feature geometry is available if requested
+Once determined, the appropriate codes can be passed as arguments to various parameters in the `get_census()` function, the main data access function used in cancensus. The example below fetches data on English speakers by Census tract in the Montreal area in this way.
 
 ```{r montreal-english, eval = FALSE}
 montreal_english <- get_census(
@@ -235,32 +251,61 @@ montreal_english <- get_census(
 ) 
 ```
 
+The example above constructs the query to the CensusMapper API using the following arguments:
+
+-   `dataset = "CA16"` requests data from the 2016 Canadian Census;
+
+-   `regions = list(CMA = "24462")` gets data for the Montreal metropolitan area by using a named list, matching the region type `CMA` with the specific ID for the Montreal area;
+
+-   `vectors = "v_CA16_1364"` fetches data for the specific Census vector that represents English language speaking, as identified using `list_census_vectors()`;
+
+-   `level = "CT"` gets data at the Census tract level;
+
+-   `geo_format = "sf"` instructs `get_census()` to return simple feature geometry for Census tracts along with the Census data;
+
+-   `labels = "short"` returns simpler labels in the output dataset.
+
+Once queried, our data appear as follows:
+
+```{r style_data_cancensus_english}
+style_data(montreal_english, 6, "montreal_english")
+```
+
+By default, cancensus returns a number of contextual variables along with the requested Census vector; total population, total households, total dwellings, and area can be used for normalization automatically. This information can be used to normalize data on English speakers by calculating a new column with `mutate()` named `pct_english`; familiar mapping tools from Chapter \@ref(mapping-census-data-with-r) are then used to visualize the data.
 
 ```{r map-montreal-english, eval = FALSE}
+library(tmap)
 tmap_mode("view")
 
 montreal_pct <- montreal_english %>%
   mutate(pct_english = 100 * (v_CA16_1364 / Population))
 
 tm_shape(montreal_pct) + 
-  tm_polygons(col = "pct_english", alpha = 0.5, palette = "viridis",
-              style = "jenks", n = 7, title = "Percent speaking<br/>English at home")
+  tm_polygons(
+    col = "pct_english", 
+    alpha = 0.5, 
+    palette = "viridis",
+    style = "jenks", 
+    n = 7, 
+    title = "Percent speaking<br/>English at home"
+  )
 ```
 
-------------------------------------------------------------------------
+```{r show-montreal-english, echo = FALSE}
+knitr::include_url("img/leaflet/montreal_english.html", height = "500px")
+```
 
-<img src="img/montreal.png" style="width: 800px"/>
-
-------------------------------------------------------------------------
+Exploring the data interactively reveals distinctive patterns of English language speaking in Montreal. While English is the most common language spoken at home in some central Census tracts and the southwestern portion of the Island of Montreal, percentages are much lower in suburban areas and the outer portions of the metropolitan region.
 
 ### Mexico: mxmaps/inegiR
 
--   Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) and [inegiR](https://github.com/Eflores89/inegiR) R packages allow for geographic analysis and visualization of Mexican Census data
+Mexico's national statistics office, the [Instituto Nacional de Estadística y Geografía (INEGI)](https://www.inegi.org.mx/), offers an API for access to many of its datasets. Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) [@vallejones2021] and [inegiR](https://github.com/Eflores89/inegiR) [@flores2021] R packages allow for geographic analysis and visualization of Mexican Census data obtained from INEGI.
 
--   Get an API token at <http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx
+Like other APIs introduced in this book, the INEGI API requires an API token. [This token can be requested from the INEGI website](http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx). Once acquired, it can be used by both mxmaps and inegiR to request data; I'm saving my key as the environment variable `INEGI_API_KEY`.
 
+The mxmaps package is based on the choroplethr R package [@lamstein2020], which offers a convenient interface for visualizing data from the US ACS. mxmaps wraps inegiR's data access functions in the `choropleth_inegi()` function, which can request data for [indicators from INEGI's data bank](https://en.www.inegi.org.mx/app/indicadores/) and visualize them. The map below shows the percentage of residents
 
-```{r mxmaps, eval = FALSE}
+```{r mxmaps}
 # remotes::install_github("diegovalle/mxmaps")
 library(mxmaps)
 token_inegi <- Sys.getenv("INEGI_API_KEY")
@@ -272,12 +317,6 @@ choropleth_inegi(token_inegi, state_regions,
                  title = "Percentage born outside\nstate of residence") + 
   theme_void(base_size = 18)
 ```
-
-------------------------------------------------------------------------
-
-<img src="img/mx_map.png" style="width: 850px"/>
-
-------------------------------------------------------------------------
 
 ```{r inegir}
 library(inegiR)
@@ -302,49 +341,52 @@ head(pct_migrants)
 
 ## Brazil: geobr
 
-<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" style="width: 400px"/>
+<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" width="20%"/>
 
--   Package from [IPEA](https://www.ipea.gov.br/portal/) that helps you load shapes for many Brazilian geographies, including Census boundaries
+The geobr [@pereira2021] package from [IPEA](https://www.ipea.gov.br/portal/) helps you load spatial datasets for many Brazilian geographies, including Census boundaries. These datasets are generously hosted by IPEA and downloaded into a user's R session when the corresponding function is called. The `code_tract` parameter can accept a 7-digit municipality code; below, the code for Rio de Janeiro is used. Municipality codes can be looked up with the corresponding `read_municipality()` function.
 
-```{r geobr, results = "hide", eval = FALSE}
+```{r geobr, results = "hide"}
 library(geobr)
 
 rj_tracts <- read_census_tract(code_tract = 3304557)
 ```
 
-------------------------------------------------------------------------
+By default, geobr retrieves a Census tract dataset with simplified geometries that is appropriate for small-scale demographic visualization but inappropriate for spatial analysis or large-scale visualization. A quick visualization shows the Census tract geometries for Rio de Janeiro:
 
-``` {.r}
-mapview::mapview(rj_tracts)
+```{r}
+ggplot(rj_tracts) + 
+  geom_sf() + 
+  theme_void()
 ```
 
-<img src="img/rj_tracts.png" style="width: 800px"/>
+For many demographic applications, users will want to identify Brazilian data that can be joined to the Census tract shapes. Although geobr does not ship with Brazilian Census data, [data tables can be downloaded from the [Instituto Brasileiro de Geografia e Estatística (IBGE) website](<https://www.ibge.gov.br/en/statistics/social/population/22836-2020-census-censo4.html?=&t=microdados>), processed using familiar tidyverse tools, and merged to the tract shapes.
 
-------------------------------------------------------------------------
+### Kenya: rKenyaCensus
 
-## Kenya: RKenyaCensus
-
--   The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) by [Shel Kariuki](https://shelkariuki.netlify.app/) makes indicators from the 2019 Kenya Population and Housing Census
-
--   Tables install directly with the package and can be accessed by name
+The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) [@kariuki2020] makes indicators from the 2019 Kenya Population and Housing Census available to R users. This package is the result of a painstaking effort by the package author [Shel Kariuki](https://shelkariuki.netlify.app/) to scrape data from PDFs containing the Census results - which is the way the original data were distributed - and convert them to R data frames. Kenyan Census tables install directly with the package and can be accessed by name. Let's take a look at table `V4_T2.30`, which contains information on religion by county in Kenya. We will assign this table to the variable `religion` for ease of reference.
 
 ```{r kenya-1}
 # remotes::install_github("Shelmith-Kariuki/rKenyaCensus")
 library(rKenyaCensus)
 library(tidyverse)
 
-religion <- V4_T2.30 %>%
+religion <- V4_T2.30
+```
+
+```{r show-kenya-religion, echo = FALSE}
+style_data(religion, n_rows = 5, caption = "religion")
+```
+
+The data are organized by county in Kenya with religious affiliations arranged by column. The first row represents data for the entirety of Kenya. Some additional data wrangling steps allow for the data to be readily plotted using familiar tooling. For example, the inclusion of the `Total` column makes calculation of proportions straightforward. In the example below, a new column `prop_islam` is computed and passed to a ggplot2 bar chart.
+
+```{r plot-kenya, fig.height=10}
+religion_prop <- religion %>%
   filter(County != "KENYA") %>%
   mutate(county_title = str_to_title(County), 
          prop_islam = Islam / Total)
-```
 
-------------------------------------------------------------------------
-
-## Visualizing Kenyan Census data
-
-```{r plot-kenya, eval = FALSE}
-ggplot(religion, aes(x = prop_islam, y = reorder(county_title, prop_islam))) + 
+ggplot(religion_prop, aes(x = prop_islam, 
+                          y = reorder(county_title, prop_islam))) + 
   geom_col(fill = "navy", alpha = 0.6) + 
   theme_minimal(base_size = 12.5) + 
   scale_x_continuous(labels = scales::percent) + 
@@ -355,22 +397,37 @@ ggplot(religion, aes(x = prop_islam, y = reorder(county_title, prop_islam))) +
        caption = "Data source: rKenyaCensus R package")
 ```
 
-------------------------------------------------------------------------
+The visualization illustrates that most Kenyan counties have very small Muslim populations; however, a smaller number of counties have much larger Muslim populations, with percentages in some cases close to 100%. This raises related questions about the geography of these patterns, which can be mapped using additional functionality in rKenyaCensus.
 
-<img src="img/kenya_plot.png" style="width: 900px"/>
+The rKenyaCensus package includes a built-in county boundaries dataset to facilitate mapping of the various indicators in the Census, `KenyaCounties_SHP`. This object is of class `SpatialPolygonsDataFrame`, which will need to be converted to a simple features object with `sf::st_as_sf()`
 
-------------------------------------------------------------------------
+```{r show-kenya-counties}
+library(sf)
 
-## Mapping Kenyan Census data
+kenya_counties_sf <- st_as_sf(KenyaCounties_SHP)
 
--   The rKenyaCensus package includes county boundaries to facilitate mapping of the various indicators in the Census
+ggplot(kenya_counties_sf) + 
+  geom_sf() + 
+  theme_void()
 
-```{r map-kenya, eval = FALSE}
-kenya_islam_map <- KenyaCounties_SHP %>%
-  sf::st_as_sf() %>%
+```
+
+With a little additional cleaning, the religion data can be joined to the county boundaries dataset, facilitating choropleth mapping with ggplot2 and `geom_sf()`.
+
+```{r map-kenya}
+kenya_islam_map <- kenya_counties_sf %>%
   mutate(County = str_remove(County, " CITY")) %>%
-  left_join(religion, by = "County") %>%
-  mutate(pct_islam = 100 * prop_islam)
+  left_join(religion_prop, by = "County") 
+
+ggplot(kenya_islam_map, aes(fill = prop_islam)) + 
+  geom_sf() + 
+  scale_fill_viridis_c(labels = scales::percent) + 
+  theme_void() + 
+  labs(fill = "% Muslim",
+       title = "Percent Muslim by County in Kenya",
+       subtitle = "2019 Kenyan Census",
+       caption = "Data acquired with the rKenyaCensus R package")
+  
 
 tm_shape(kenya_islam_map) + 
   tm_polygons(col = "pct_islam",
@@ -381,11 +438,7 @@ tm_shape(kenya_islam_map) +
               alpha = 0.6)
 ```
 
-------------------------------------------------------------------------
-
-<img src="img/kenya_map.png" style="width: 700px"/>
-
-------------------------------------------------------------------------
+The map shows how the distinct religious divides in Kenya play out geographically in the country, with proportionally few Muslim residents in the western part of Kenya and much higher percentages in the eastern part of the country.
 
 ## Other data resources
 
