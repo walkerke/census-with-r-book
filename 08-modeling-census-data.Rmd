@@ -4,17 +4,16 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 options(tigris_use_cache = TRUE)
 minutes_to_downtown <- readr::read_rds("data/ch8_minutes_to_downtown.rds")
+source("R/book-functions.R")
 ```
 
 The previous chapter included a range of examples illustrating methods for analyzing and exploring spatial datasets. Census data can also be used to derive models for explaining patterns that occur across regions or within cities. These models draw from concepts introduced in prior chapters, but can also be used as part of explanatory frameworks or within broader analytic pipelines for statistical inference or machine learning. This chapter introduces a series of such frameworks. The first section looks at *demographic indices* such as segregation, diversity, and centralization, which are widely used across the social sciences to explain demographic patterns. The second section explores topics in statistical modeling, including methods for *spatial regression* that take into account the spatial autocorrelation inherent in most Census variables. The third and final section explores concepts such as *classification*, *clustering*, and *regionalization* which are common in both unsupervised and supervised machine learning. Examples will illustrate how to use Census data to generate neighborhood typologies, which are widely used for business and marketing applications, and how to generate spatially coherent sales territories from Census data with regionalization.
 
 ## Indices of segregation and diversity
 
--   Dissimilarity index
--   Entropy (diversity) index
--   Other applications
+A large body of research in the social sciences is concerned with neighborhood *segregation* and *diversity*. Segregation as addressed here generally refers to the measurement of the extent to which two or more groups live apart from each other; diversity as a companion metric measures neighborhood heterogeneity among groups. A wide range of indices have been developed by social scientists to measure segregation and diversity, and in many cases are inherently linked with spatial Census data which are often the best way to measure these concepts. Segregation and diversity indices are implemented in a variety of different R packages; the package recommended by this book is the segregation package [@elbers2021], which includes R functions for a variety of regional and local indices.
 
-The calculation of segregration and diversity indices are widely used in the social sciences. {Cite literature here and give examples}
+Much of the segregation and diversity literature focuses on race and ethnicity, which will be explored in the example below. The data setup code uses spatial methods covered in the previous three chapters to acquire Census tract-level data on population estimates for non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic populations in California, then filters those Census tracts for those that intersect the boundary of the Los Angeles urbanized area.
 
 ```{r get-race-data-ch8}
 library(tidycensus)
@@ -42,14 +41,23 @@ la_data <- get_acs(
   st_drop_geometry()
 ```
 
-Let's take a quick look at our data: 
+The data structure appears as follows:
 
 ```{r}
-
+style_data(la_data, n_rows = 8)
 ```
 
+The data are in long (tidy) form, the default used by tidycensus; this data structure is ideal for computing indices in the segregation package.
 
-Dissimilarity index:
+### The dissimilarity index
+
+The dissimilarity index is widely used to assess neighborhood segregation between two groups within a region. It is computed as follows:
+
+$$
+D = formula()
+$$
+
+The index ranges from a low of 0 to a high of 1, where 0 represents perfect integration between the two groups and 1 represents complete segregation. This index is implemented in the segregation package with the `dissimilarity()` function.
 
 ```{r dissimilarity}
 la_data %>%
@@ -60,6 +68,8 @@ la_data %>%
     weight = "estimate"
   )
 ```
+
+### Entropy indices
 
 Multi-group entropy:
 
@@ -102,7 +112,17 @@ ca_tracts %>%
   labs(fill = "Local\nsegregation index")
 ```
 
-### Diversity gradient:
+### Visualizing the diversity gradient
+
+The *diversity gradient* is a concept that uses scatterplot smoothing to visualize how neighborhood diversity varies by distance or travel-time from the core of an urban region. Historically, literature on suburbanization in the social sciences assume a more heterogeneous urban core relative to segregated and homogeneous suburban neighborhoods. The diversity gradient is a visual heuristic used to evaluate the validity of this demographic model.
+
+The entropy index for a given geographic unit is calculated as follows:
+
+$$
+E = formula()
+$$
+
+This statistic is implemented in the `entropy()` function in the segregation package. As the `entropy()` function calculates this statistic for a specific unit at a time, we can iterate over Census tracts with `map_dbl()` from the purrr package and compute the entropy index for each tract. The argument `base = 4` is set by convention to the number of groups in the calculation; this sets the maximum value of the statistic to 1, which represents perfect evenness between the four groups in the area. Once computed, the indices are joined to a dataset of Census tracts from California; `inner_join()` is used to retain only those tracts in the Los Angeles urbanized area.
 
 ```{r}
 la_entropy <- la_data %>%
@@ -123,7 +143,7 @@ la_entropy_geo <- tracts("CA", cb = TRUE, year = 2019) %>%
 
 ```
 
-Drive-time to downtown LA:
+Visualization of the diversity gradient then requires a relative measurement of how far each Census tract is from the urban core. The travel-time methods available in the mapboxapi package introduced in Chapter \@ref(spatial-analysis-with-us-census-data) are again used here to calculate driving distance to Los Angeles City Hall for all Census tracts in the Los Angeles urbanized area.
 
 ```{r, eval = FALSE}
 library(mapboxapi)
@@ -132,6 +152,8 @@ la_city_hall <- mb_geocode("City Hall, Los Angeles CA")
 
 minutes_to_downtown <- mb_matrix(la_entropy_geo, la_city_hall)
 ```
+
+Once computed, the travel times are stored in a vector `minutes_to_downtown`, then assigned to a new column `minutes` in the entropy data frame. The tract diversity index is visualized using ggplot2 relative to its travel time to downtown Los Angeles, with a LOESS smoother superimposed over the scatterplot to represent the diversity gradient.
 
 ```{r}
 la_entropy_geo$minutes <- as.numeric(minutes_to_downtown)
@@ -147,7 +169,23 @@ ggplot(la_entropy_geo, aes(x = minutes_to_downtown, y = entropy)) +
 
 ```
 
+The diversity gradient shows...
+
 ## Regression modeling with US Census data
+
+*Regression modeling* is widely used in industry and the social sciences to understand social processes. In the social sciences, the goal of regression modeling is commonly to understand the relationships between a variable under study, termed an *outcome variable*, and one or more *predictors* that are believed to have some influence on the outcome variable. In very simple terms, a regression model can be written mathematically as follows:
+
+$$
+Y = X\beta + \epsilon
+$$
+
+where $Y$ represents the outcome variable; $X$ is a matrix of predictors hypothesized to have some influence on the outcome variable; $\beta$ is a vector of *coefficients* that represent the modeled relationships between $X$ and $Y$, controlling for the other predictors in the model; and $\epsilon$ represents the *error terms* or residuals, the differences between the modeled values of $Y$ and the actual values. The relationships between $X$ and $Y$ will be modeled using a method appropriate for the structure of the data and selected by the analyst.
+
+A complete treatment of regression modeling is beyond the scope of this book; recommended resources include X, Y, and Z. The purpose of this section is to illustrate an example workflow using regression modeling to analyze data from the American Community Survey. The section will start with a simple linear model and extend its discussion from there. In doing so, some problems with the application of the linear model to aggregated Census data will be discussed. First, demographic statistics are often highly correlated with one another, meaning that Census data-based models risk *multicollinearity* where predictors are not independent. Second, spatial demographic data commonly exhibit spatial autocorrelation, which may lead to a violation of the assumption of independent and identically distributed error terms ($i.i.d$) in the linear model. Suggested approaches for addressing these problems discussed in this section include dimension reduction and spatial regression.
+
+### Data setup and exploratory data analysis
+
+The topic of study in this illustrative applied workflow will be median home value by Census tract in the Dallas-Fort Worth metropolitan area. To get started, we'll define several counties in north Texas that we'll use to represent the DFW region, and acquire
 
 ```{r}
 library(tidycensus)
