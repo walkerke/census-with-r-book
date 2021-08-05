@@ -5,6 +5,7 @@ knitr::opts_chunk$set(cache = FALSE, warning = FALSE, message = FALSE)
 library(mapboxapi)
 times <- readr::read_rds("data/ia_trauma_times.rds")
 options(tigris_use_cache = TRUE)
+source("R/book-functions.R")
 ```
 
 A very common use-case of spatial data from the US Census Bureau is *spatial analysis*. Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset. Principles in spatial analysis are closely related to the field of *geographic information science*, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.
@@ -520,7 +521,7 @@ This formulation informs much of the theory behind spatial data science and geog
 -   *Spatial uniformity*: data values tend to differ from neighboring data values;
 -   *Spatial randomness*: there is no apparent relationship between data values and those of their neighbors.
 
-Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering. This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the {spdep} package [@bivand2018].
+Given Tobler's first law of geography, we tend to expect that most geographic phenomena exhibit some degree of spatial clustering. This section introduces a variety of methods available in R to evaluate spatial clustering using ESDA and the spdep package [@bivand2018].
 
 Spatial weights matrices can be used to calculate the *spatial lag* of a given attribute for each observation in a dataset. The spatial lag refers to the neighboring values of an observation given a spatial weights matrix. As discussed above, row-standardized weights matrices will produce lagged means, and binary weights matrices will produce lagged sums. Spatial lag calculations are implemented in the function `lag.listw()`, which requires a spatial weights list object and a numeric vector from which to compute the lag.
 
@@ -546,11 +547,11 @@ The scatterplot suggests a positive correlation between the ACS estimate and its
 
 $$
 I = \frac{N}{W}\frac{\sum_i\sum_j w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_i(x_i - \bar{x})^2}
-$$ 
+$$
 
 where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spatial units denoted by $i$ and $j$, and $W$ is the sum of the spatial weights.
 
-Moran's I is implemented in {spdep} with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
+Moran's I is implemented in spdep with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
 ```{r}
 moran.test(dfw_tracts$estimate, weights)
@@ -564,7 +565,7 @@ We can explore this further with *local spatial autocorrelation analysis*. Local
 
 $$
 G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
-$$ 
+$$
 
 In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation. Results are returned as z-scores, and implemented in the `localG()` function in {spdep}.
 
@@ -596,19 +597,29 @@ ggplot(dfw_tracts) +
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
-An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's *I* [@anselin2010].
+An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's *I* [@anselin2010]. Mathematically, LISA is computed as follows:
 
 $$
 I_i = \frac{(x_i-\bar{x})}{{∑_{k=1}^{n}(x_k-\bar{x})^2}/(n-1)}{∑_{j=1}^{n}w_{ij}(x_j-\bar{x})}
 $$
+
+LISA is a popular method for exploratory spatial data analysis in the spatial social sciences implemented in a variety of software packages. ArcGIS implements LISA in its Hot Spot/Clustering geoprocessing tool; Anselin's open-source GeoDa software has a graphical interface for calculating LISA statistics; and Python users can compute LISA using the PySAL library.
+
+In R, LISA can be computed using the `localmoran()` family of functions in the spdep package. For users familiar with using LISA in other software packages, the `localmoran_perm()` function implements LISA where statistical significance is calculated based on a conditional permutation-based approach.
+
+The example below calculates local Moran's I statistics in a way that resembles the output from GeoDa, which returns a cluster map and a Moran scatterplot. One of the major benefits of using LISA for exploratory analysis is its ability to identify both *spatial clusters*, where observations are surrounded by similar values, and *spatial outliers*, where observations are surrounded by dissimilar values. We'll use this method to explore clustering and the possible presence of spatial outliers with respect to Census tract median age in Dallas-Fort Worth.
 
 ```{r}
 set.seed(1983)
 
 dfw_tracts$scaled_estimate <- as.numeric(scale(dfw_tracts$estimate))
 
-dfw_lisa <- localmoran_perm(dfw_tracts$scaled_estimate, weights, nsim = 999L, 
-                            alternative = "two.sided") %>%
+dfw_lisa <- localmoran_perm(
+  dfw_tracts$scaled_estimate, 
+  weights, 
+  nsim = 999L, 
+  alternative = "two.sided"
+) %>%
   as_tibble() %>%
   set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
 
@@ -617,10 +628,22 @@ dfw_lisa_df <- dfw_tracts %>%
   mutate(lagged_estimate = lag.listw(weights, scaled_estimate)) %>%
   bind_cols(dfw_lisa)
 
-dfw_lisa_df
 ```
 
-Review the clusters and a cluster map:
+The above code uses the following steps:
+
+1.  First, a random number seed is set given that we are using the conditional permutation approach to calculating statistical significance. This will ensure reproducibility of results when the process is re-run.
+2.  The ACS estimate for median age is converted to a z-score using `scale()`, which subtracts the mean from the estimate then divides by its standard deviation. This follows convention from GeoDa.
+3.  LISA is computed with `localmoran_perm()` for the scaled value for median age, using the contiguity-based spatial weights matrix. 999 conditional permutation simulations are used to calculate statistical significance, and the argument `alternative = "two.sided"` will identify both statistically significant clusters and statistically significant spatial outliers.
+4.  The LISA data frame is attached to the Census tract shapes after computing the lagged value for median age.
+
+Our result appears as follows:
+
+```{r show-dfw-lisa-df}
+style_data(dfw_lisa_df, n_rows = 5)
+```
+
+The information returned by `localmoran_perm()` can be used to compute both a GeoDa-style LISA quadrant plot as well as a cluster map. The LISA quadrant plot is similar to a Moran scatterplot, but also identifies "quadrants" of observations with respect to the spatial relationships identified by LISA. The code below uses `case_when()` to recode the data into appropriate categories for the LISA quadrant plot, using a significance level of p = 0.05.
 
 ```{r}
 dfw_lisa_clusters <- dfw_lisa_df %>%
@@ -633,7 +656,7 @@ dfw_lisa_clusters <- dfw_lisa_df %>%
   ))
 ```
 
-The "LISA scatterplot" :
+The LISA quadrant plot then appears as follow:
 
 ```{r}
 color_values <- c(`High-high` = "red", 
@@ -655,7 +678,9 @@ ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
 
 ```
 
-And make the map:
+Observations falling in the top-right quadrant represent "high-high" clusters, where older Census tracts are also surrounded by older tracts in their spatial neighborhoods. Statistically significant clusters - those with a p-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes younger tracts that are also surrounded by younger tracts. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
+
+GeoDa also implements a "cluster map" where observations are visualized in relationship to their cluster membership and statistical significance. The code below reproduces the GeoDa cluster map using ggplot2 and `geom_sf()`.
 
 ```{r}
 ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
@@ -665,12 +690,18 @@ ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
   labs(fill = "Cluster type")
 ```
 
-Linked brushing (modify to use in an embedded Shiny app):
+The map illustrates distinctive patterns of spatial clustering by age in the Dallas-Fort Worth region. Older clusters are colored red; this includes areas like the wealthy Highland Park community north of downtown Dallas. Younger clusters are colored dark blue. Several spatial outliers appear on the map as well; {more here}.
+
+One very useful feature of GeoDa for exploratory spatial data analysis is the ability to perform linked brushing between the LISA quadrant plot and cluster map. This allows users to click and drag on either plot and highlight the corresponding observations on the other plot. Building on the chart linking example using ggiraph introduced in Section \@ref(linking-maps-and-charts), a linked brushing approach similar to GeoDa can be implemented in Shiny, and is shown below. Click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel.
 
 ```{r linked-brushing-app}
 knitr::include_app("https://walkerke.shinyapps.io/linked-brushing/", height = "600px")
 ```
 
-
+Code to reproduce this Shiny app is available from this link.
 
 ## Exercises
+
+1.  Exercise 1
+2.  Exercise 2
+3.  Exercise 3

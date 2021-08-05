@@ -542,6 +542,8 @@ ggplot(brasilia_income_geo, aes(fill = monthly_income)) +
   scale_fill_viridis_c()
 ```
 
+The map highlights income disparities between central Brasilia and the more rural portions of the Federal District, and identifies the Lago Sul area as home to the highest-earning households, on average.
+
 As the spatial data have been prepared appropriately, methods from Section \@ref(global-and-local-spatial-autocorrelation) can be used to explore patterns of spatial autocorrelation by monthly income in the Brasilia area. The example below uses the local form of the Moran's I statistic, described in more detail in Section \@ref(identifying-clusters-and-spatial-outliers-with-local-indicators-of-spatial-association-lisa). The steps used are described in brief below:
 
 -   A queens-case contiguity-based spatial weights matrix is created with functions from the spdep package, using the argument `zero_policy = TRUE` as a small number of tracts in the dataset have no neighbors after omitting NA values;
@@ -606,14 +608,13 @@ ggplot(brasilia_lisa_clusters, aes(fill = lisa_cluster)) +
 
 The map illustrates strong clustering of high monthly incomes in central Brasilia with low-high spatial outliers scattered among the higher-earning areas. Low-low cluster census tracts tend to be found on the edges of the urbanized portions of the Federal District, representing more sparsely populated rural areas.
 
-## Other data resources
+## Other international data resources
 
--   Many other international data resources in R exist, e.g. [nomisr](https://github.com/ropensci/nomisr) for UK data and [afrimapr](https://afrimapr.github.io/afrimapr.website/) for Africa-wide datasets
+Many other international data resources in R exist, and a robust R ecosystem is emerging to standardize these data source. In Europe, the [nomisr](https://github.com/ropensci/nomisr) R package provides an interface to official statistics for the United Kingdom, and the insee package does the same for France. Europe-wide data can be acquired using the X package, which interacts with European Union data sources. In Africa, the [afrimapr](https://afrimapr.github.io/afrimapr.website/) project is an effort to disseminate Africa-wide datasets to R users. It includes a wide variety of spatial datasets for countries across Africa.
 
--   The [IPUMS International project](https://international.ipums.org/international/) has microdata for over 100 countries; use IPUMS data with the [ipumsr R package](https://github.com/mnpopcenter/ipumsr)
+Microdata users will be interested in the [IPUMS International project](https://international.ipums.org/international/), which makes historical microdata for over 100 countries available to researchers. Like US IPUMS data, the [ipumsr R package](https://github.com/mnpopcenter/ipumsr) can help users work with international microdata in R. A companion project from IPUMS is the International Historical Geographic Information System (IHGIS) project, which aims to disseminate international spatial and demographic data in much the same way that the NHGIS project (covered in Section \@ref(getting-started-with-nhgis) does for historical Census data for the US.
 
-------------------------------------------------------------------------
+## Exercises
 
-## Part 3 exercises
-
--   Choose a country from the examples above and explore further. Try making a map or a chart for a new variable for a country of your choice!
+-   Use idbr to create a map of a global demographic indicator as shown above. Use ggiraph and ggplot2 to make both static and interactive versions of the map.
+-   Choose one of the four countries highlighted in this chapter (Canada, Kenya, Mexico, or Brazil) and explore their corresponding R packages further. Explore the available demographic indicators for those countries, and try making a map or a chart for that indicator.
