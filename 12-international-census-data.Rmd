@@ -297,70 +297,6 @@ knitr::include_url("img/leaflet/montreal_english.html", height = "500px")
 
 Exploring the data interactively reveals distinctive patterns of English language speaking in Montreal. While English is the most common language spoken at home in some central Census tracts and the southwestern portion of the Island of Montreal, percentages are much lower in suburban areas and the outer portions of the metropolitan region.
 
-### Mexico: mxmaps/inegiR
-
-Mexico's national statistics office, the [Instituto Nacional de Estadística y Geografía (INEGI)](https://www.inegi.org.mx/), offers an API for access to many of its datasets. Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) [@vallejones2021] and [inegiR](https://github.com/Eflores89/inegiR) [@flores2021] R packages allow for geographic analysis and visualization of Mexican Census data obtained from INEGI.
-
-Like other APIs introduced in this book, the INEGI API requires an API token. [This token can be requested from the INEGI website](http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx). Once acquired, it can be used by both mxmaps and inegiR to request data; I'm saving my key as the environment variable `INEGI_API_KEY`.
-
-The mxmaps package is based on the choroplethr R package [@lamstein2020], which offers a convenient interface for visualizing data from the US ACS. mxmaps wraps inegiR's data access functions in the `choropleth_inegi()` function, which can request data for [indicators from INEGI's data bank](https://en.www.inegi.org.mx/app/indicadores/) and visualize them. The map below shows the percentage of residents
-
-```{r mxmaps}
-# remotes::install_github("diegovalle/mxmaps")
-library(mxmaps)
-token_inegi <- Sys.getenv("INEGI_API_KEY")
-
-state_regions <- df_mxstate_2020$region
-choropleth_inegi(token_inegi, state_regions, 
-                 indicator = "3104003001",
-                 legend = "%",
-                 title = "Percentage born outside\nstate of residence") + 
-  theme_void(base_size = 18)
-```
-
-```{r inegir}
-library(inegiR)
-token_inegi <- Sys.getenv("INEGI_API_KEY")
-state_regions <- mxmaps::df_mxstate_2020$region
-
-pct_migrants <- map_df(state_regions, ~{
-  inegi_series(series_id = "3104003001", 
-               token = token_inegi, 
-               geography = .x,
-               database = "BISE") %>%
-    mutate(state_code = .x)
-})
-  
-```
-
-```{r show-inegir}
-head(pct_migrants)
-```
-
-------------------------------------------------------------------------
-
-## Brazil: geobr
-
-<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" width="20%"/>
-
-The geobr [@pereira2021] package from [IPEA](https://www.ipea.gov.br/portal/) helps you load spatial datasets for many Brazilian geographies, including Census boundaries. These datasets are generously hosted by IPEA and downloaded into a user's R session when the corresponding function is called. The `code_tract` parameter can accept a 7-digit municipality code; below, the code for Rio de Janeiro is used. Municipality codes can be looked up with the corresponding `read_municipality()` function.
-
-```{r geobr, results = "hide"}
-library(geobr)
-
-rj_tracts <- read_census_tract(code_tract = 3304557)
-```
-
-By default, geobr retrieves a Census tract dataset with simplified geometries that is appropriate for small-scale demographic visualization but inappropriate for spatial analysis or large-scale visualization. A quick visualization shows the Census tract geometries for Rio de Janeiro:
-
-```{r}
-ggplot(rj_tracts) + 
-  geom_sf() + 
-  theme_void()
-```
-
-For many demographic applications, users will want to identify Brazilian data that can be joined to the Census tract shapes. Although geobr does not ship with Brazilian Census data, [data tables can be downloaded from the [Instituto Brasileiro de Geografia e Estatística (IBGE) website](<https://www.ibge.gov.br/en/statistics/social/population/22836-2020-census-censo4.html?=&t=microdados>), processed using familiar tidyverse tools, and merged to the tract shapes.
-
 ### Kenya: rKenyaCensus
 
 The [rKenyaCensus package](https://github.com/Shelmith-Kariuki/rKenyaCensus) [@kariuki2020] makes indicators from the 2019 Kenya Population and Housing Census available to R users. This package is the result of a painstaking effort by the package author [Shel Kariuki](https://shelkariuki.netlify.app/) to scrape data from PDFs containing the Census results - which is the way the original data were distributed - and convert them to R data frames. Kenyan Census tables install directly with the package and can be accessed by name. Let's take a look at table `V4_T2.30`, which contains information on religion by county in Kenya. We will assign this table to the variable `religion` for ease of reference.
@@ -439,6 +375,236 @@ tm_shape(kenya_islam_map) +
 ```
 
 The map shows how the distinct religious divides in Kenya play out geographically in the country, with proportionally few Muslim residents in the western part of Kenya and much higher percentages in the eastern part of the country.
+
+### Mexico: combining mxmaps and inegiR
+
+Mexico's national statistics office, the [Instituto Nacional de Estadística y Geografía (INEGI)](https://www.inegi.org.mx/), offers an API for access to many of its datasets. Used together, the [mxmaps](https://www.diegovalle.net/mxmaps/) [@vallejones2021] and [inegiR](https://github.com/Eflores89/inegiR) [@flores2021] R packages allow for geographic analysis and visualization of Mexican Census data obtained from INEGI.
+
+Like other APIs introduced in this book, the INEGI API requires an API token. [This token can be requested from the INEGI website](http://www3.inegi.org.mx//sistemas/api/indicadores/v1/tokenVerify.aspx). Once acquired, it can be used by both mxmaps and inegiR to request data; I'm saving my key as the environment variable `INEGI_API_KEY`.
+
+The mxmaps package is based on the choroplethr R package [@lamstein2020], which offers a convenient interface for visualizing data from the US ACS. mxmaps wraps inegiR's data access functions in the `choropleth_inegi()` function, which can request data for [indicators from INEGI's data bank](https://en.www.inegi.org.mx/app/indicadores/) and visualize them. The map below shows the percentage of residents by state born in Mexico but outside their current state of residence using indicator code `304003001`. For full functionality, the inegiR and mxmaps packages must both be installed from GitHub with `remotes::install_github()`.
+
+```{r mxmaps}
+# remotes::install_github("Eflores89/inegiR")
+# remotes::install_github("diegovalle/mxmaps")
+library(mxmaps)
+token_inegi <- Sys.getenv("INEGI_API_KEY")
+
+state_regions <- df_mxstate_2020$region
+choropleth_inegi(token_inegi, state_regions, 
+                 indicator = "3104003001",
+                 legend = "%",
+                 title = "Percentage born outside\nstate of residence") + 
+  theme_void(base_size = 18)
+```
+
+The map illustrates that the states with the most internal migrants in Mexico include Baja California Sur, Quintana Roo, and Nuevo Leon. This information can also be accessed directly using the inegiR package. The `inegi_series()` function returns one state at a time, which can be combined into a country-wide dataset with `map_dfr()`.
+
+```{r inegir}
+library(inegiR)
+token_inegi <- Sys.getenv("INEGI_API_KEY")
+state_regions <- mxmaps::df_mxstate_2020$region
+
+pct_migrants <- map_dfr(state_regions, ~{
+  inegi_series(series_id = "3104003001", 
+               token = token_inegi, 
+               geography = .x,
+               database = "BISE") %>%
+    mutate(state_code = .x)
+})
+  
+```
+
+```{r show-inegir, echo = FALSE}
+style_data(pct_migrants)
+```
+
+### Brazil: aligning the geobr R package with raw Census data files for spatial analysis
+
+The three country-specific examples shown above - Canada, Kenya, and Mexico - illustrate workflows for obtaining data directly from an R package and mapping the results. In many cases, however, data do not come directly with an R package, requiring analysts to research the raw data and work with raw files. The example below illustrates how to accomplish this for Brazil, where spatial data are found in a well-documented and widely used R package geobr, but demographic data will be downloaded and processed directly from the Instituto Brasileiro de Geografia e Estatística website using R tooling.
+
+#### Spatial data for Brazil with geobr
+
+<img src="https://raw.githubusercontent.com/ipeaGIT/geobr/master/r-package/man/figures/geobr_logo_b.png" width="20%"/>
+
+The geobr [@pereira2021] package from [IPEA](https://www.ipea.gov.br/portal/) helps you load spatial datasets for many Brazilian geographies, including Census boundaries. These datasets are generously hosted by IPEA and downloaded into a user's R session when the corresponding function is called. The `code_tract` parameter can accept a 7-digit municipality code; below, the code for Rio de Janeiro is used. Municipality codes can be looked up with the corresponding `read_municipality()` function.
+
+```{r geobr, results = "hide"}
+library(geobr)
+
+rj_tracts <- read_census_tract(code_tract = 3304557)
+```
+
+By default, geobr retrieves a Census tract dataset with simplified geometries that is appropriate for small-scale demographic visualization but inappropriate for spatial analysis or large-scale visualization. A quick visualization shows the Census tract geometries for Rio de Janeiro:
+
+```{r}
+ggplot(rj_tracts) + 
+  geom_sf(lwd = 0.1) + 
+  theme_void()
+```
+
+#### Identifying demographic data resources for Brazil
+
+For many demographic applications, users will want to identify Brazilian data that can be joined to the Census tract shapes. This makes for a useful exercise to illustrate an applied workflow for working with the raw tables. The example below will get data from the 2020 Brazilian Census and merge it to the geometries obtained with geobr for analysis.
+
+Census data tables can be downloaded from the [Instituto Brasileiro de Geografia e Estatística (IBGE) website's FTP page](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_do_Universo/Agregados_por_Setores_Censitarios/), which provides aggregated data at the Census tract level. These datasets are organized by state, so we'll need to identify the appropriate zipped folder to download and bring in the data we need into R. R's web access tools, discussed in Section \@ref(other-census-and-government-data-resources), can be used to download this data. Our analysis will focus on Brasilia, the capital city of Brazil; in turn, we'll need data for the Distrito Federal (Federal District) in which Brasilia is located.
+
+```{r get-df-data, eval = FALSE}
+library(httr)
+
+dir.create("brazil")
+
+data_url <- "https://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_do_Universo/Agregados_por_Setores_Censitarios/DF_20171016.zip"
+
+zip_name <- basename(data_url)
+
+out_file <- file.path("brazil", zip_name)
+
+GET(data_url, write_disk(out_file, overwrite = TRUE))
+
+unzip(out_file, exdir = "brazil/brasilia_data")
+```
+
+The workflow above operates as follows:
+
+-   After loading in HTTR, we create a new subdirectory named `brazil` in our working directory. This will store the data we download from IBGE.
+
+-   We then identify the URL from which we'll be requesting data, and extract the basename from the URL with `basename()`; this will be the name of the file on disk.
+
+-   `file.path()` constructs the output location for the downloaded file, then `GET()` from httr makes the HTTP request, using `write_disk()` to write the downloaded file to the output location.
+
+-   Finally, `unzip()` unzips the folder. We can take a look at what we got back:
+
+```{r list-br-files}
+data_path <- "brazil/brasilia_data/DF/Base informa\x87oes setores2010 universo DF/CSV"
+
+list.files(data_path)
+```
+
+The actual path, given that a subdirectory includes an accented character, may differ based on your operating system and/or your locale. Finally, we'll copy all the files from the nested subdirectory to the `brasilia_data` directory.
+
+```{r copy-files, eval = FALSE}
+file.copy(data_path, "brazil/brasilia_data", recursive = TRUE)
+```
+
+#### Working with Brazilian demographic data
+
+Our files include a series of CSV files that represent characteristics of Census tracts in the Federal District. Let's read in the first file, `Basico_DF.csv`, and see what we get back. An important step here is to use `read_csv2()` rather than `read_csv()`; this is because the file is semicolon-delimited and uses commas for decimal places, meaning that `read_csv()` will interpret it incorrectly. The use of accented characters in the raw data file also requires setting the encoding to Latin-1.
+
+```{r read_brazil_csv}
+basico <- read_csv2("brazil/brasilia_data/CSV/Basico_DF.csv", 
+                     locale = locale(encoding = "latin1"))
+```
+
+```{r see-data, echo = FALSE}
+style_data(basico)
+```
+
+The file includes a series of ID codes then a series of variables associated with each Census tract. The meaning of the variables in the dataset can be looked up from a PDF data dictionary [available for download from the IBGE website](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_do_Universo/Agregados_por_Setores_Censitarios/Documentacao_Agregado_dos_Setores_20180416.zip). We'll focus here on variable `V007`, which represents the average monthly income in each Census tract for income-earning households.
+
+```{r brasilia_income}
+brasilia_income <- basico %>%
+  mutate(code_tract = as.character(Cod_setor)) %>%
+  select(code_tract, monthly_income = V007)
+
+ggplot(brasilia_income, aes(x = monthly_income)) + 
+  geom_histogram(bins = 100, alpha = 0.5, color = "navy", fill = "navy") + 
+  theme_minimal()
+```
+
+Typical of neighborhood income distributions, the histogram is heavily right-skewed with a large cluster of Census tracts with low earnings and a long tail of wealthier areas.
+
+#### Spatial analysis of Brazilian Census data
+
+This information can be used in concert with the geobr package to analyze the geographic distribution of earnings using techniques covered elsewhere in this book. The first step of the analysis involves returning to geobr to get Census tracts for Brasilia/the Federal District using Brasilia's municipality code. The argument `simplified = FALSE` is used given the need for higher-quality tract boundaries for spatial analysis. Next, the income data is merged to the tract shapes, then transformed to an appropriate coordinate reference system for Brasilia.
+
+```{r br-tracts, results = 'hide'}
+library(sf)
+library(geobr)
+
+brasilia_tracts <- read_census_tract(
+  code_tract = 5300108,
+  simplified = FALSE
+) %>%
+  select(code_tract)
+
+brasilia_income_geo <- brasilia_tracts %>%
+  left_join(brasilia_income, by = "code_tract") %>%
+  st_transform(22523)
+```
+
+After joining the data, the income information can be visualized on a map using familiar mapping tools like `geom_sf()`.
+
+```{r map-brasilia-income}
+ggplot(brasilia_income_geo, aes(fill = monthly_income)) + 
+  geom_sf(color = NA) + 
+  theme_void() + 
+  scale_fill_viridis_c()
+```
+
+As the spatial data have been prepared appropriately, methods from Section \@ref(global-and-local-spatial-autocorrelation) can be used to explore patterns of spatial autocorrelation by monthly income in the Brasilia area. The example below uses the local form of the Moran's I statistic, described in more detail in Section \@ref(identifying-clusters-and-spatial-outliers-with-local-indicators-of-spatial-association-lisa). The steps used are described in brief below:
+
+-   A queens-case contiguity-based spatial weights matrix is created with functions from the spdep package, using the argument `zero_policy = TRUE` as a small number of tracts in the dataset have no neighbors after omitting NA values;
+
+-   The `monthly_income` column is scaled to a z-score;
+
+-   The LISA statistic is computed with the `localmoran_perm()` function, using the permutation-based method to compute statistical significance;
+
+-   The LISA results are attached to the spatial dataset and recoded into cluster groups for visualization.
+
+```{r}
+library(spdep)
+set.seed(1983)
+
+# Generate contiguity-based weights with zero-policy = TRUE
+brasilia_weights <- brasilia_income_geo %>%
+  na.omit() %>%
+  poly2nb() %>%
+  nb2listw(zero.policy = TRUE)
+
+# Omit NAs and scale the income variable
+brasilia_input <- brasilia_income_geo %>%
+  na.omit() %>%
+  mutate(scaled_income = as.numeric(scale(monthly_income)))
+
+# Compute the LISA and convert to a tibble
+brasilia_lisa <- localmoran_perm(brasilia_input$scaled_income, 
+                                 brasilia_weights,
+                                 nsim = 999L, 
+                                 alternative = "two.sided") %>%
+  as_tibble() %>%
+  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
+
+# Add the LISA columns to the spatial dataset and recode them into cluster values
+brasilia_lisa_clusters <- brasilia_input %>%
+  select(code_tract, scaled_income) %>%
+  bind_cols(brasilia_lisa) %>%
+  mutate(lisa_cluster = case_when(
+    p_i >= 0.05 ~ "Not significant",
+    scaled_income > 0 & local_i > 0 ~ "High-high",
+    scaled_income > 0 & local_i < 0 ~ "High-low",
+    scaled_income < 0 & local_i > 0 ~ "Low-low",
+    scaled_income < 0 & local_i < 0 ~ "Low-high"
+  ))
+```
+
+Once computed, the results can be visualized on a map.
+
+```{r}
+color_values <- c(`High-high` = "red", 
+                  `High-low` = "pink", 
+                  `Low-low` = "blue", 
+                  `Low-high` = "lightblue", 
+                  `Not significant` = "white")
+
+ggplot(brasilia_lisa_clusters, aes(fill = lisa_cluster)) + 
+  geom_sf(size = 0.1) + 
+  theme_void() + 
+  scale_fill_manual(values = color_values) + 
+  labs(fill = "Cluster type")
+```
+
+The map illustrates strong clustering of high monthly incomes in central Brasilia with low-high spatial outliers scattered among the higher-earning areas. Low-low cluster census tracts tend to be found on the edges of the urbanized portions of the Federal District, representing more sparsely populated rural areas.
 
 ## Other data resources
 
