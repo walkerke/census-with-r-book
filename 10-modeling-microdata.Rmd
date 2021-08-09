@@ -2,6 +2,9 @@
 
 ```{r setup-ch10, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+library(tidycensus)
+source("R/book-functions.R")
 ```
 
 A major benefit of using the individual-level microdata returned by `get_pums()` is the ability to create detailed, granular estimates of ACS data. While the aggregate ACS data available with `get_acs()` includes tens of thousands of indicators to choose from, researchers and analysts still may be interested in cross-tabulations not available in the aggregate files. Additionally, microdata helps researchers design statistical models to assess demographic relationships at the individual level in a way not possible with aggregate data.
@@ -14,14 +17,16 @@ As covered in Chapter 3, data from the American Community Survey are based on a 
 
 As discussed in Chapter 9, `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights. These weights can loosely be interpreted as the number of households - or persons - represented by each individual row in the PUMS data. Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data. Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter 3.
 
-Let's get some sample PUMS data from the 2015-2019 ACS for Mississippi. We'll get information on the PUMA geography, along with sex, age (`AGEP`), and educational attainment (`SCHL`). **Adjust to a more complex tabulation.**
+### Basic tabulation of weights with tidyverse tools
+
+Let's get some basic sample PUMS data from the 2015-2019 ACS for Mississippi with information on sex and age.
 
 ```{r ms-pums, results = 'hide'}
 library(tidycensus)
 library(tidyverse)
 
 ms_pums <- get_pums(
-  variables = c("PUMA", "SEX", "AGEP", "SCHL"),
+  variables = c("SEX", "AGEP"),
   state = "MS",
   survey = "acs5",
   year = 2019,
@@ -76,29 +81,73 @@ We notice that our tabulations are very close to the ACS estimates available in 
 
 Analysts will often want to use PUMS data and the tabulated aggregate ACS data in tandem as appropriate, as each data type offers complimentary strengths. As the aggregate ACS data are based on a larger sample, its data aggregations will be preferable to those produced with PUMS data. However, PUMS data offer the ability to compute detailed cross-tabulations not available in aggregate ACS tables and to fit models of demographic relationships at the individual level. Examples of each follow in this chapter.
 
-## Group-wise data tabulation
+### Group-wise data tabulation
 
-Section \@ref(understanding-default-data-from-get_pums) and prior sections in this chapter cover the use of weights to tabulate population estimates using PUMS data. When combined with tidyverse tools as introduced in Chapter \@ref(wrangling-census-data-with-tidyverse-tools), PUMS data can produce highly detailed
+When combined with tidyverse tools as introduced in Chapter \@ref(wrangling-census-data-with-tidyverse-tools), PUMS data can produce highly detailed estimates not available in the regular aggregate ACS. The example below acquires data on rent burden, family type, and race/ethnicity to examine intersections between these variables for households in Mississippi. The `PUMA` variable is also included for use later in this chapter.
 
-```{r ms-summary}
-ms_pums_summary <- ms_pums %>% 
-  mutate(ba_above = SCHL %in% c("21", "22", "23", "24")) %>% 
-  group_by(PUMA, SEX_label) %>% 
-  summarize(
-    total_pop = sum(PWGTP),
-    mean_age = weighted.mean(AGEP, PWGTP),
-    ba_above = sum(PWGTP[ba_above == TRUE & AGEP >= 25]),
-    ba_above_pct = 100 * (ba_above / sum(PWGTP[AGEP >= 25]))
+Our guiding research question is as follows: how does rent burden vary by race/ethnicity and family type for Mississippi households? This requires obtaining data on rent burden (gross rent as percentage of household income) with variable `GRPIP`; race and ethnicity with variables `RAC1P` and `HISP`; and family type with variable `FES`. The `variables_filter` argument is used to filter the sample to only renter-occupied households paying cash rent, speeding download times.
+
+```{r ms-hh-data}
+hh_variables <- c("PUMA", "GRPIP", "RAC1P", 
+                  "HISP", "HHT")
+
+ms_hh_data <- get_pums(
+  variables = hh_variables, 
+  state = "MS",
+  variables_filter = list(
+    SPORDER = 1,
+    TEN = 3
+  ),
+  recode = TRUE
+)
+```
+
+We can take a quick look at our data:
+
+```{r style-ms-hh, echo = FALSE}
+style_data(ms_hh_data, n_rows = 5)
+```
+
+To analyze rent burdens with respect to the marital status and race/ethnicity of the householder, it will be useful to do some additional recoding using dplyr's `case_when()` function. A new `race_ethnicity` column will identify householders by general categories, and a `married` column will identify whether or not the household is a married-couple household.
+
+```{r wrangle-pums}
+ms_hh_recoded <- ms_hh_data %>%
+  mutate(
+    race_ethnicity = case_when(
+      RAC1P == "1" ~ "White",
+      RAC1P == "2" ~ "Black",
+      HISP == "01" ~ "Hispanic",
+      TRUE ~ "Other"
+    ),
+    married = case_when(
+      HHT == "1" ~ "Married",
+      TRUE ~ "Not married"
+    )
   )
 ```
 
-```{r show-ms-summary}
-ms_pums_summary
+This information can then be summarized with respect to the household weight variable `WGTP` and the rent burden variable `GRPIP` within a `group_by() %>% summarize()` workflow. The dataset is filtered to only non-Hispanic white, non-Hispanic Black, and Hispanic householders to focus on those groups, then grouped by race/ethnicity and marital status. Within the `summarize()` call, the percentage of each subgroup paying 40 percent or more of their household incomes in rent is calculated by summing over the household weight column `WGTP`, but filtering for households with rent burdens of 40 percent or more in the numerator.
+
+```{r}
+ms_hh_summary <- ms_hh_recoded %>%
+  filter(race_ethnicity != "Other") %>%
+  group_by(race_ethnicity, married) %>%
+  summarize(
+    percent_above_40 = 100 * (sum(WGTP[GRPIP >= 40]) / sum(WGTP))
+  )
 ```
 
-## Advanced example: mapping PUMS data
+We can now check our result:
 
--   Use the tigris package to obtain PUMA geometries and join data based on a common identifier for mapping
+```{r, echo = FALSE}
+style_data(ms_hh_summary)
+```
+
+The demographic group in this example with the largest rent burden is Black, Not married; nearly 42 percent of households in this group pay over 40 percent of their incomes in gross rent. The least rent-burdened group is White, Married, with a value under 14 percent. For each of the three racial/ethnic groups, there is a distinctive financial advantage for married-couple households over non-married households; this is particularly pronounced for Black householders.
+
+## Mapping PUMS data
+
+In the previous example, we see that rent burdens for Black, unmarried households are particularly acute in Mississippi. A follow-up question may involve an examination of how this trend varies geographically. As discussed in the previous chapter, the most granular geography available in the PUMS data is the PUMA, which generally includes 100,000-200,000 people. PUMA geographies are available in the tigris package with the function `pumas()`.
 
 ```{r join-ms-data}
 library(tigris)
@@ -107,25 +156,36 @@ options(tigris_use_cache = TRUE)
 
 ms_pumas <- pumas("MS", cb = TRUE)
 
-joined_pumas <- ms_pumas %>%
-  left_join(ms_pums_summary, by = c("PUMACE10" = "PUMA")) %>%
-  filter(SEX_label == "Female")
+plot(ms_pumas$geometry)
 ```
+
+A geographical visualization of rent burdens in Mississippi requires a slight adaptation of the above code. Instead of returning a comparative table, the dataset should also be grouped by the `PUMA` column then filtered for the combination of variables that represent the group the analyst wants to visualize. In this case, the focus is on unmarried Black households by PUMA.
+
+```{r}
+ms_data_for_map <- ms_hh_recoded %>%
+  group_by(race_ethnicity, married, PUMA) %>%
+  summarize(
+    percent_above_40 = 100 * (sum(WGTP[GRPIP >= 40]) / sum(WGTP))
+  ) %>%
+  filter(race_ethnicity == "Black",
+         married == "Not married")
+```
+
+The output dataset has one row per PUMA and is suitable for joining to the spatial dataset for visualization.
 
 ```{r ms-pums-map}
-ms_map <- tm_shape(joined_pumas) + 
-  tm_polygons(col = "ba_above_pct", 
-              palette = "Greens",
-              title = "% of women with\ncollege degree") + 
+library(tmap)
+
+joined_pumas <- ms_pumas %>%
+  left_join(ms_data_for_map, by = c("PUMACE10" = "PUMA"))
+
+tm_shape(joined_pumas) + 
+  tm_polygons(col = "percent_above_40", 
+              palette = "Reds",
+              title = "% rent-burdened\nunmarried Black households") + 
   tm_layout(legend.outside = TRUE,
-            legend.outside.position = "right")
+            legend.outside.position = "right"
 ```
-
-```{r show-ms-map}
-ms_map
-```
-
-## Calculating errors around tabulated estimates
 
 ## Survey design and the ACS PUMS
 

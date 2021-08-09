@@ -79,7 +79,7 @@ Of course, there are many other use cases for Census data that are not covered i
 
 ## Technical details
 
-This book was most recently built at `r Sys.time()` using the following R version:
+This book was most recently built on `r Sys.Date()` using the following R version:
 
 ```{r version-info, echo = FALSE}
 system("R --version")
@@ -89,9 +89,11 @@ To run all the examples in this book, you will need the following packages:
 
 ```{r pkgs, eval = FALSE}
 
-packages_in_book <- c("")
+cran_packages <- c("")
+github_packages <- c("")
 
-install.packages("packages", dependencies = TRUE)
+install.packages(cran_packages, dependencies = TRUE)
+purrr::walk(github_packages, remotes::install_github)
 
 ```
 
