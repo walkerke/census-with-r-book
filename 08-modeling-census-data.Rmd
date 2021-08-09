@@ -2,6 +2,8 @@
 
 ```{r setup-ch8, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+library(spatialreg)
 options(tigris_use_cache = TRUE)
 minutes_to_downtown <- readr::read_rds("data/ch8_minutes_to_downtown.rds")
 source("R/book-functions.R")
@@ -13,7 +15,9 @@ The previous chapter included a range of examples illustrating methods for analy
 
 A large body of research in the social sciences is concerned with neighborhood *segregation* and *diversity*. Segregation as addressed here generally refers to the measurement of the extent to which two or more groups live apart from each other; diversity as a companion metric measures neighborhood heterogeneity among groups. A wide range of indices have been developed by social scientists to measure segregation and diversity, and in many cases are inherently linked with spatial Census data which are often the best way to measure these concepts. Segregation and diversity indices are implemented in a variety of different R packages; the package recommended by this book is the segregation package [@elbers2021], which includes R functions for a variety of regional and local indices.
 
-Much of the segregation and diversity literature focuses on race and ethnicity, which will be explored in the example below. The data setup code uses spatial methods covered in the previous three chapters to acquire Census tract-level data on population estimates for non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic populations in California, then filters those Census tracts for those that intersect the boundary of the Los Angeles urbanized area.
+### Data setup with spatial analysis
+
+Much of the segregation and diversity literature focuses on race and ethnicity, which will be explored in the example below. The data setup code uses spatial methods covered in the previous three chapters to acquire Census tract-level data on population estimates for non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic populations in California, then filters those Census tracts those that intersect the largest urbanized areas by population in the state using an inner spatial join. In turn, it is an illustrative example of how spatial analysis tools can be important parts of data setup workflows for analysis.
 
 ```{r get-race-data-ch8}
 library(tidycensus)
@@ -22,10 +26,8 @@ library(segregation) # remotes::install_github("elbersb/segregation")
 library(tigris)
 library(sf)
 
-la_urban_area <- urban_areas(cb = TRUE, year = 2019) %>%
-  filter(NAME10 == "Los Angeles--Long Beach--Anaheim, CA")
-
-la_data <- get_acs(
+# Get California tract data by race/ethnicity
+ca_acs_data <- get_acs(
   geography = "tract",
   variables = c(
     white = "B03002_003",
@@ -36,15 +38,39 @@ la_data <- get_acs(
   state = "CA",
   geometry = TRUE,
   year = 2019
+) 
+
+# Use tidycensus to get urbanized areas by population with geometry, then filter for
+# those that have populations of 750,000 or more
+us_urban_areas <- get_acs(
+  geography = "urban area",
+  variables = "B01001_001",
+  geometry = TRUE,
+  year = 2019,
+  survey = "acs1"
 ) %>%
-  st_filter(la_urban_area) %>%
+  filter(estimate >= 750000) %>%
+  transmute(urban_name = str_remove(NAME, fixed(", CA Urbanized Area (2010)")))
+
+# Compute an inner spatial join between the California tracts and the 
+# urbanized areas, returning tracts in the largest California urban 
+# areas with the urban_name column appended
+ca_urban_data <- ca_acs_data %>%
+  st_join(us_urban_areas, left = FALSE) %>%
+  select(-NAME) %>%
   st_drop_geometry()
 ```
+
+To summarize, the spatial analysis workflow detailed above uses the following steps:
+
+1.  Data on race & ethnicity from the 2015-2019 5-year ACS for the four largest demographic groups in California is acquired with tidycensus's `get_acs()` at the Census tract level with feature geometry included. Depending on the goals of the study, other racial/ethnic groups (e.g. native American, native Hawaiian/Pacific Islander) should be added or removed as needed.
+2.  As urban areas as defined by the Census Bureau often cross state boundaries, urban areas must be obtained for the entire US with `get_acs()`. Once obtained, urban areas are filtered to only those areas with populations of 750,000 or greater, and then `transmute()` is used to retain only a new column representing the area name (along with the simple feature geometry column).
+3.  A spatial join between the Census tract data and the urban area data is computed with `st_join()`. The argument `left = FALSE` computes an *inner spatial join*, which retains only those Census tracts that intersect the urban area boundaries, and appends the corresponding `urban_name` column to each Census tract.
 
 The data structure appears as follows:
 
 ```{r}
-style_data(la_data, n_rows = 8)
+style_data(ca_urban_data, n_rows = 8)
 ```
 
 The data are in long (tidy) form, the default used by tidycensus; this data structure is ideal for computing indices in the segregation package.
@@ -54,14 +80,17 @@ The data are in long (tidy) form, the default used by tidycensus; this data stru
 The dissimilarity index is widely used to assess neighborhood segregation between two groups within a region. It is computed as follows:
 
 $$
-D = formula()
+D = \frac{1}{2}\sum\limits_{i=1}^{N}\left |\frac{a_i}{A}-\frac{b_i}{B}  \right |
 $$
 
-The index ranges from a low of 0 to a high of 1, where 0 represents perfect integration between the two groups and 1 represents complete segregation. This index is implemented in the segregation package with the `dissimilarity()` function.
+where $a_i$ represents the population of group $A$ in a given areal unit $i$; $A$ is the total population of that group in the study region (e.g. a metropolitan area); and $b_i$ and $B$ are the equivalent metrics for the second group. The index ranges from a low of 0 to a high of 1, where 0 represents perfect integration between the two groups and 1 represents complete segregation. This index is implemented in the segregation package with the `dissimilarity()` function.
+
+The example below computes the dissimilarity index between non-Hispanic white and Hispanic populations for the San Francisco/Oakland urbanized area. The data are filtered for only those rows that represent the target populations in the San Francisco/Oakland area, which is then piped to the `dissimilarity()` function. The function requires identification of a group column, for which we'll use `variable`; a unit column representing the neighborhood unit, for which we'll use `GEOID` to represent the Census tract; and a weight column that tells the function how many people are in each group.
 
 ```{r dissimilarity}
-la_data %>%
-  filter(variable %in% c("white", "black")) %>%
+ca_urban_data %>%
+  filter(variable %in% c("white", "hispanic"),
+         urban_name == "San Francisco--Oakland") %>%
   dissimilarity(
     group = "variable",
     unit = "GEOID",
@@ -69,41 +98,80 @@ la_data %>%
   )
 ```
 
-### Entropy indices
+The $D$ index of segregation between non-Hispanic white and Hispanic populations in the San Francisco-Oakland area is 0.51. This statistic, however, is more meaningful in comparison with other cities. To compute dissimilarity for each urban area, we can creatively apply tidyverse techniques covered in earlier chapters. The code below uses the `split()` function from base R to split the dataset into a list based on unique values of the `urban_name` column. `imap_dfr()` iterates over the list elements as well as the list indices (which are the values of `urban_name`), returning a combined data frame with a column representing the index values (the `.id` argument).
 
-Multi-group entropy:
-
-```{r multi-entropy}
-la_data %>%
-  mutual_total(
-    group = "variable",
-    unit = "GEOID",
-    weight = "estimate"
-  )
+```{r compare-dissim}
+ca_urban_data %>%
+  split(~urban_name) %>%
+  imap_dfr(~{
+    .x %>%
+      filter(variable %in% c("white", "hispanic")) %>%
+      dissimilarity(
+        group = "variable",
+        unit = "GEOID",
+        weight = "estimate"
+      )
+  }, .id = "urban_name") %>%
+  arrange(desc(est))
 ```
 
-Local segregation indices:
+The Los Angeles area is the most segregated of the large urbanized areas in California with respect to non-Hispanic white and Hispanic populations at the Census tract level, followed by San Francisco/Oakland. Riverside/San Bernardino and Sacramento are the least segregated of the large urban areas in the state.
+
+### Multi-group segregation indices
+
+One disadvantage of the dissimilarity index is that it only measures segregation between two groups. For a state as diverse as California, we may be interested in measuring segregation and diversity between multiple groups at a time. The segregation package implements two such indices: the Mutual Information Index $M$, and Theil's Entropy Index $H$ [@mora2011]. Following [@elbers2021], $M$ is computed as follows for a dataset $T$:
+
+$$
+M(\mathbf{T})=\sum_{u=1}^U\sum_{g=1}^Gp_{ug}\log\frac{p_{ug}}{p_{u}p_{g}}
+$$
+
+where $U$ is the total number of units $u$, $G$ is the total number of groups $g$, and $p_{ug}$ is the joint probability of being in unit $u$ and group $g$, with $p_u$ and $p_g$ referring to unit and group probabilities. Theil's $H$ for the same dataset $T$ can then be written as:
+
+$$
+H(\mathbf{T})=\frac{M(\mathbf{T})}{E(\mathbf{T})}
+$$
+
+where $E(T)$ is the entropy of $T$, normalizing $H$ to range between values of 0 and 1.
+
+Computing these indices is straightforward with the segregation package. The `mutual_total()` function computes both indices; when different regions are to be considered (like multiple urban areas, as in this example) the `mutual_within()` function will compute $M$ and $H$ by urban area with the `within` argument appropriately specified.
+
+```{r multi-entropy}
+mutual_within(
+  data = ca_urban_data,
+  group = "variable",
+  unit = "GEOID",
+  weight = "estimate",
+  within = "urban_name",
+  wide = TRUE
+)
+```
+
+When multi-group segregation is considered using these indices, Los Angeles remains the most segregated urban area, whereas Riverside/San Bernardino is the least segregated.
+
+The segregation package also offers a function for local segregation analysis, `mutual_local()`, which decomposes $M$ into unit-level segregation scores. In the example below, we will use `mutual_local()` to examine patterns of segregation across the most segregated urban area, Los Angeles.
 
 ```{r map-local-seg}
-
-la_local_seg <- la_data %>%
+la_local_seg <- ca_urban_data %>%
+  filter(urban_name == "Los Angeles--Long Beach--Anaheim") %>%
   mutual_local(
     group = "variable",
     unit = "GEOID",
     weight = "estimate", 
     wide = TRUE
   )
-
-glimpse(la_local_seg)
 ```
 
-Map the results:
+```{r show-local-seg, echo = FALSE}
+style_data(la_local_seg)
+```
 
-```{r}
-ca_tracts <- tracts("CA", cb = TRUE)
+The results can be mapped by joining the data to a dataset of Census tracts from tigris; the `inner_join()` function is used to retain tracts for the Los Angeles area only.
 
-ca_tracts %>%
-  inner_join(la_local_seg, by = "GEOID") %>%
+```{r local-seg-map}
+la_tracts_seg <- tracts("CA", cb = TRUE) %>%
+  inner_join(la_local_seg, by = "GEOID") 
+
+la_tracts_seg %>%
   ggplot(aes(fill = ls)) + 
   geom_sf(color = NA) + 
   coord_sf(crs = 26946) + 
@@ -114,18 +182,21 @@ ca_tracts %>%
 
 ### Visualizing the diversity gradient
 
-The *diversity gradient* is a concept that uses scatterplot smoothing to visualize how neighborhood diversity varies by distance or travel-time from the core of an urban region. Historically, literature on suburbanization in the social sciences assume a more heterogeneous urban core relative to segregated and homogeneous suburban neighborhoods. The diversity gradient is a visual heuristic used to evaluate the validity of this demographic model.
+The *diversity gradient* is a concept that uses scatterplot smoothing to visualize how neighborhood diversity varies by distance or travel-time from the core of an urban region [@walker2016b]. Historically, literature on suburbanization in the social sciences assume a more heterogeneous urban core relative to segregated and homogeneous suburban neighborhoods. The diversity gradient is a visual heuristic used to evaluate the validity of this demographic model.
 
 The entropy index for a given geographic unit is calculated as follows:
 
 $$
-E = formula()
+E = \sum\limits_{r=1}^{n}Q_rln\frac{1}{Q_r}
 $$
+
+$Q_r$ in this calculation represents group $r$'s proportion of the population in the geographic unit.
 
 This statistic is implemented in the `entropy()` function in the segregation package. As the `entropy()` function calculates this statistic for a specific unit at a time, we can iterate over Census tracts with `map_dbl()` from the purrr package and compute the entropy index for each tract. The argument `base = 4` is set by convention to the number of groups in the calculation; this sets the maximum value of the statistic to 1, which represents perfect evenness between the four groups in the area. Once computed, the indices are joined to a dataset of Census tracts from California; `inner_join()` is used to retain only those tracts in the Los Angeles urbanized area.
 
 ```{r}
-la_entropy <- la_data %>%
+la_entropy <- ca_urban_data %>%
+  filter(urban_name == "Los Angeles--Long Beach--Anaheim") %>%
   split(~GEOID) %>%
   map_dbl(~{
     entropy(
@@ -169,55 +240,31 @@ ggplot(la_entropy_geo, aes(x = minutes_to_downtown, y = entropy)) +
 
 ```
 
-The diversity gradient shows...
+The visualization of the diversity gradient shows that neighborhood diversity increases with distance from the urban core in Los Angeles, peaking at about 35 miles from the urban core then leveling off after that. The structure of the diversity gradient suggests that Census tracts near to downtown tend to be segregated, and suburban tracts more integrated;
 
 ## Regression modeling with US Census data
 
 *Regression modeling* is widely used in industry and the social sciences to understand social processes. In the social sciences, the goal of regression modeling is commonly to understand the relationships between a variable under study, termed an *outcome variable*, and one or more *predictors* that are believed to have some influence on the outcome variable. In very simple terms, a regression model can be written mathematically as follows:
 
 $$
-Y = X\beta + \epsilon
+Y = f(X,\beta) + \epsilon
 $$
 
-where $Y$ represents the outcome variable; $X$ is a matrix of predictors hypothesized to have some influence on the outcome variable; $\beta$ is a vector of *coefficients* that represent the modeled relationships between $X$ and $Y$, controlling for the other predictors in the model; and $\epsilon$ represents the *error terms* or residuals, the differences between the modeled values of $Y$ and the actual values. The relationships between $X$ and $Y$ will be modeled using a method appropriate for the structure of the data and selected by the analyst.
+where $Y$ represents the outcome variable; $X$ represents one or more predictors hypothesized to have some influence on the outcome variable; $\beta$ represents *coefficients* or *parameters* that represent the modeled relationships between $X$ and $Y$, controlling for the other predictors in the model; and $\epsilon$ represents the *error terms* or residuals, the differences between the modeled values of $Y$ and the actual values. The relationships between $X$ and $Y$ will be modeled using a method appropriate for the structure of the data and selected by the analyst.
 
-A complete treatment of regression modeling is beyond the scope of this book; recommended resources include X, Y, and Z. The purpose of this section is to illustrate an example workflow using regression modeling to analyze data from the American Community Survey. The section will start with a simple linear model and extend its discussion from there. In doing so, some problems with the application of the linear model to aggregated Census data will be discussed. First, demographic statistics are often highly correlated with one another, meaning that Census data-based models risk *multicollinearity* where predictors are not independent. Second, spatial demographic data commonly exhibit spatial autocorrelation, which may lead to a violation of the assumption of independent and identically distributed error terms ($i.i.d$) in the linear model. Suggested approaches for addressing these problems discussed in this section include dimension reduction and spatial regression.
+A complete treatment of regression modeling is beyond the scope of this book; recommended resources include [@james2013c], [@boehmke2019j], and [@matloff2017a]. The purpose of this section is to illustrate an example workflow using regression modeling to analyze data from the American Community Survey. The section will start with a simple linear model and extend its discussion from there. In doing so, some problems with the application of the linear model to aggregated Census data will be discussed. First, demographic statistics are often highly correlated with one another, meaning that Census data-based models risk *collinearity* where predictors are not independent of one another. Second, spatial demographic data commonly exhibit *spatial autocorrelation*, which may lead to a violation of the assumption of independent and identically distributed error terms ($i.i.d$) in the linear model. Suggested approaches for addressing these problems discussed in this section include dimension reduction and spatial regression.
 
 ### Data setup and exploratory data analysis
 
-The topic of study in this illustrative applied workflow will be median home value by Census tract in the Dallas-Fort Worth metropolitan area. To get started, we'll define several counties in north Texas that we'll use to represent the DFW region, and acquire
+The topic of study in this illustrative applied workflow will be median home value by Census tract in the Dallas-Fort Worth metropolitan area. To get started, we'll define several counties in north Texas that we'll use to represent the DFW region, and use a named vector of variables to acquire data that will represent both our outcome variable and predictors. Data are returned from tidycensus with the argument `output = "wide"`, giving one column per variable. The geometry is also transformed to an appropriate coordinate reference system for North Texas, EPSG code 32138 (NAD83 / Texas North Central with meters for measurement units).
 
-```{r}
+```{r get-regression-data, results = 'hide'}
 library(tidycensus)
-library(tidyverse)
-library(crsuggest)
-
-dfw_counties <- c("Collin County", "Dallas", "Denton", "Ellis", "Hunt", 
-                  "Kaufman", "Rockwall", "Johnson", "Parker", "Tarrant", "Wise")
-
-median_value <- get_acs(
-  geography = "tract",
-  variables = "B25077_001",
-  state = "TX",
-  county = dfw_counties,
-  geometry = TRUE
-)
-
-best_crs <- suggest_top_crs(median_value, units = "m")
-
-ggplot(median_value, aes(fill = estimate)) + 
-  geom_sf(color = NA) + 
-  coord_sf(crs = best_crs) + 
-  scale_fill_viridis_c(labels = scales::dollar) + 
-  theme_void() + 
-  labs(fill = "Median home value ")
-```
-
--   Fitting a simple regression model
-
-```{r}
 library(sf)
-library(units)
+
+dfw_counties <- c("Collin County", "Dallas", "Denton", 
+                  "Ellis", "Hunt", "Kaufman", "Rockwall", 
+                  "Johnson", "Parker", "Tarrant", "Wise")
 
 variables_to_get <- c(
   median_value = "B25077_001",
@@ -238,65 +285,238 @@ dfw_data <- get_acs(
   state = "TX",
   county = dfw_counties,
   geometry = TRUE,
-  output = "wide"
+  output = "wide",
+  year = 2019
 ) %>%
-  st_transform(best_crs) %>%
-  mutate(pop_density = as.numeric(set_units(total_populationE / st_area(.), "1/km2")),
-         median_structure_age = 2017 - median_year_builtE)
-
-glimpse(dfw_data)
+  st_transform(32138) # NAD83 / Texas North Central
 ```
 
-```{r simple-model}
-dfw_data_for_model <- dfw_data %>%
-  select(!ends_with("M")) %>%
-  na.omit()
+```{r show-variables, echo = FALSE}
+style_data(dfw_data, n_rows = 6, caption = "dfw_data")
+```
 
-formula <- "log(median_valueE) ~ median_roomsE + median_incomeE + pct_collegeE + pct_foreign_bornE + pct_whiteE + median_ageE + median_structure_age + percent_oohE + pop_density + total_populationE"
+The ACS estimates we've acquired include:
+
+-   `median_valueE`: The median home value of the Census tract (our outcome variable);
+
+-   `median_roomsE`: The median number of rooms for homes in the Census tract;
+
+-   `total_populationE`: The total population;
+
+-   `median_ageE`: The median age of the population in the Census tract;
+
+-   `median_year_builtE`: The median year built of housing structures in the tract;
+
+-   `median_incomeE`: The median income of households in the Census tract;
+
+-   `pct_collegeE`: The percentage of the population age 25 and up with a four-year college degree;
+
+-   `pct_foreign_bornE`: The percentage of the population born outside the United States;
+
+-   `pct_whiteE`: The percentage of the population that identifies as non-Hispanic white;
+
+-   `percent_oohE`: The percentage of housing units in the tract that are owner-occupied.
+
+### Inspecting the outcome variable with visualization
+
+To get started, we will examine both the geographic and data distributions of our outcome variable, median home value, with a quick map with `geom_sf()` and a histogram.
+
+```{r visualize-home-value}
+library(tidyverse)
+library(patchwork)
+
+mhv_map <- ggplot(dfw_data, aes(fill = median_valueE)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c(labels = scales::dollar) + 
+  theme_void() + 
+  labs(fill = "Median home value ")
+
+mhv_histogram <- ggplot(dfw_data, aes(x = median_valueE)) + 
+  geom_histogram(alpha = 0.5, fill = "navy", color = "navy",
+                 bins = 100) + 
+  theme_minimal() + 
+  scale_x_continuous(labels = scales::dollar) + 
+  labs(x = "Median home value")
+
+mhv_map + mhv_histogram
+```
+
+As is common with home values in metropolitan regions, the data distribution is right-skewed with a clustering of Census tracts on the lower end of the distribution of values and a long tail of very expensive areas, generally located north of downtown Dallas. This can lead to downstream violations of normality in model residuals. In turn, we might consider log-transforming our outcome variable, which will make its distribution closer to normal and will better capture the geographic variations in home values that we are trying to model.
+
+```{r}
+library(tidyverse)
+library(patchwork)
+
+mhv_map_log <- ggplot(dfw_data, aes(fill = log(median_valueE))) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c() + 
+  theme_void() + 
+  labs(fill = "Median home\nvalue (log)")
+
+mhv_histogram_log <- ggplot(dfw_data, aes(x = log(median_valueE))) + 
+  geom_histogram(alpha = 0.5, fill = "navy", color = "navy",
+                 bins = 100) + 
+  theme_minimal() + 
+  scale_x_continuous() + 
+  labs(x = "Median home value (log)")
+
+mhv_map_log + mhv_histogram_log
+```
+
+The expensive areas of north Dallas still stand out, but the log-transformation makes the distribution of values more normal and better shows geographic variation of home values on the map. This suggests that we require some data preparation prior to fitting the model.
+
+### "Feature engineering"
+
+A common term used when preparing data for regression modeling is "feature engineering," which refers to the transformation of predictors in ways that better represent the relationships between those predictors and the outcome variable. Many of the variables acquired from the ACS in the steps above are already "pre-engineered" as they were returned as percentages from the ACS data profile, saving some steps. However, some variables would benefit from additional transformation.
+
+The code below creates two new variables: `pop_density`, which represents the number of people in each Census tract per square kilometer, and `median_structure_age`, which represents the median age of housing structures in the tract.
+
+```{r}
+library(sf)
+library(units)
+
+dfw_data_for_model <- dfw_data %>%
+  mutate(pop_density = as.numeric(set_units(total_populationE / st_area(.), "1/km2")),
+         median_structure_age = 2017 - median_year_builtE) %>%
+  select(!ends_with("M"), -NAME) %>% 
+  rename_with(.fn = ~str_remove(.x, "E$")) %>%
+  na.omit()
+```
+
+The calculation of the `pop_density` column appears more complicated, so it is helpful to read it from the inside out. The `st_area()` function from the sf package calculates the area of the Census tract; by default this will be in square meters, using the base measurement unit of the data's coordinate reference system. The `total_population` column is then divided by the area of the tract. Next, the `set_units()` function is used to convert the measurement to population per square kilometer using `"1/km2"`. Finally, the calculation is converted from a units vector to a numeric vector with `as.numeric()`. Calculating median structure age is more straightforward, as the `median_year_builtE` column is subtracted from 2017, the mid-point of the 5-year ACS period from which our data are derived. Finally, to simplify the dataset, margin of error columns are dropped, the `E` at the end of the estimate columns is removed, and tracts with NA values are dropped as well with `na.omit()`.
+
+We can then examine our modified dataset:
+
+```{r inspect-dfw, echo = FALSE}
+style_data(dfw_data_for_model, n_rows = 5)
+```
+
+### A first regression model
+
+After inspecting the distribution of the outcome variable and completing feature engineering with respect to the predictors, we are ready to fit a first linear model. Our linear model with a log-transformed outcome variable can be written as follows:
+
+$$
+\begin{align*}\operatorname{log(median\_value)} &= \alpha + \beta_{1}(\operatorname{median\_rooms}) + \beta_{2}(\operatorname{median\_income})\ + \\&\quad \beta_{3}(\operatorname{pct\_college}) + \beta_{4}(\operatorname{pct\_foreign\_born}) + \\&\quad\beta_{5}(\operatorname{pct\_white})\ + \beta_{6}(\operatorname{median\_age}) + \\&\quad\beta_{7}(\operatorname{median\_structure\_age}) + \beta_{8}(\operatorname{percent\_ooh})\ + \\&\quad \beta_{9}(\operatorname{pop\_density}) + \beta_{10}(\operatorname{total\_population}) + \epsilon\end{align*}
+$$\
+where $\alpha$ is the model intercept, $\beta_{1}$ is the change in the log of median home value with a 1-unit increase in the median number of rooms (and so forth for all the model predictors) while holding all other predictors constant, and $\epsilon$ is the error term.
+
+Model formulas in R are generally written as `outcome ~ predictor_1 + predictor_2 + ... + predictor_n`, where `n` is the number of model predictors. The formula can be supplied as a character string to the model function (as shown below) or supplied unquoted in the call to the function. We use `lm()` to fit the linear model, and then check the results with `summary()`.
+
+```{r simple-model}
+formula <- "log(median_value) ~ median_rooms + median_income + pct_college + pct_foreign_born + pct_white + median_age + median_structure_age + percent_ooh + pop_density + total_population"
 
 model1 <- lm(formula = formula, data = dfw_data_for_model)
 
 summary(model1)
 ```
 
+The printed summary gives us information about the model fit. The `Estimate` column represents the model parameters (the $\beta$ values), followed by the standard error, the t-value test statistic, and the *p*-value which helps us assess relative statistical significance. @james2013c (p. 67) provides a concise summary of how *p*-values should be interpreted:
+
+> Roughly speaking, we interpret the *p-*value as follows: a small *p*-value indicates that it is unlikely to observe such a substantial association between the predictor and the response [outcome variable] due to chance, in the absence of any real association between the predictor and the response. Hence, if we see a small *p*-value, then we can infer that there is an association between the predictor and the response. We *reject the null hypothesis* -- that is, we declare a relationship to exist between X and Y -- if the *p-*value is small enough.
+
+By convention, researchers will use *p*-value cutoffs of 0.05, 0.01, or 0.001, depending on the topic under study; these values are highlighted with asterisks in the model summary printout. Examining the model parameters and *p*-values suggests that median household income, bachelor's degree attainment, the percentage non-Hispanic white population, and median age are positively associated with median home values, whereas the percentage owner-occupied housing is negatively associated with median home values. The R-squared value is 0.78, suggesting that our model explains around 78 percent of the variance in `median_value`.
+
+Somewhat surprisingly, `median_rooms` does not appear to have a significant relationship with median home value as per the model. On the one hand, this can be interpreted as "the effect of median rooms on median home value with all other predictors held constant" - but also could be suggestive of model mis-specification. As mentioned earlier, models using ACS data as predictors are highly vulnerable to *collinearity*. Collinearity occurs when two or more predictors are highly correlated with one another, which can lead to mis-interpretation of the actual relationships between predictors and the outcome variable.
+
+One way to inspect for collinearity is to visualize the *correlation matrix* of the predictors, in which correlations between all predictors are calculated with one another. The `correlate()` function in the corrr package [@kuhn2020] offers a straightforward method for calculating a correlation matrix over a rectangular data frame.
+
 ```{r evaluate_model}
 library(corrr)
 
 dfw_estimates <- dfw_data_for_model %>%
-  select(-GEOID, -NAME, -median_valueE, -median_year_builtE) %>%
+  select(-GEOID, -median_value, -median_year_built) %>%
   st_drop_geometry()
 
 correlations <- correlate(dfw_estimates, method = "pearson")
 ```
 
-```{r}
-correlations %>% network_plot()
+One calculated, the correlation matrix can be visualized with `network_plot()`:
+
+```{r network-plot}
+network_plot(correlations)
 ```
+
+We notice that most of the predictors are correlated with one another to some degree, which is unsurprising given that they all represent social demographic data. Collinearity can be diagnosed further by calculating the *variance inflation factor* (VIF) for the model, which takes into account not just pairwise correlations but the extent to which predictors are collinear with all other predictors. A VIF value of 1 indicates no collinearity; VIF values above 5 suggest a level of collinearity that is having a problematic influence on model interpretation. VIF is implemented by the `vif()` function in the car package [@fox2019].
 
 ```{r check-vif}
-car::vif(model1)
+library(car)
+
+vif(model1)
 ```
 
-```{r components}
+The most problematic variable is `median_income`, with a VIF value of over 8. A potential solution involves removing this variable and re-running the model; as it is highly correlated with other predictors in the model, the effect of median household income would in theory be captured by the remaining predictors.
 
-pca <- prcomp(formula = ~., data = dfw_estimates, scale. = TRUE, na.action = na.exclude)
+```{r}
+formula2 <- "log(median_value) ~ median_rooms + pct_college + pct_foreign_born + pct_white + median_age + median_structure_age + percent_ooh + pop_density + total_population"
+
+model2 <- lm(formula = formula2, data = dfw_data_for_model)
+
+summary(model2)
+```
+
+The model R-squared drops slightly but not substantially to 0.76. Notably, the effect of `median_rooms` on median home value now comes through as strongly positive and statistically significant, suggesting that collinearity with median household income was suppressing this relationship in the first model. As a diagnostic, we can re-compute the VIF for the second model:
+
+```{r vif2}
+vif(model2)
+```
+
+The VIF values for all predictors in the model are now below 5.
+
+### Dimension reduction with principal components analysis
+
+In the example above, dropping median household income from the model had a fairly negligible impact on the overall model fit and significantly improved the model's problems with collinearity. However, this will not always be the best solution for analysts, especially when dropping variables has a more significant impact on the model fit. An alternative approach to resolving problems with collinearity is *dimension reduction*, which transforms the predictors into a series of dimensions that represent the variance in the predictors but are uncorrelated with one another. Dimension reduction is also a useful technique when an analyst is dealing with a massive number of predictors (hundreds or even thousands) and needs to reduce the predictors in the model to a more manageable number while still retaining the ability to explain the variance in the outcome variable.
+
+One of the most popular methods for dimension reduction is *principal components analysis*. Principal components analysis (PCA) reduces a higher-dimensional dataset into a lower-dimensional representation based linear combinations of the variables used. The *first principal component* is the linear combination of variables that explains the most overall variance in the data; the *second principal component* explains the second-most overall variance but is also constrained to be uncorrelated with the first component; and so forth.
+
+PCA can be computed with the `prcomp()` function. We will use the `dfw_estimates` object that we used to compute the correlation data frame here as it includes only the predictors in the regression model, and use the notation `formula = ~.` to compute PCA over all the predictors. By convention, `scale.` and `center` should be set to `TRUE` as this normalizes the variables in the dataset before computing PCA given that they are measured differently.
+
+```{r components}
+pca <- prcomp(
+  formula = ~., 
+  data = dfw_estimates, 
+  scale. = TRUE, 
+  center = TRUE
+)
 
 summary(pca)
 ```
 
-Perhaps plot the loadings then make a map of one of the components?
+Printing the `summary()` of the PCA model shows 10 components that collectively explain 100% of the variance in the original predictors. The first principal component explains 41.8 percent of the overall variance; the second explains 17 percent; and so forth.
+
+To understand what the different principal components now mean, it is helpful to plot the variable *loadings*. This represents the relationships between the original variables in the model and the derived components. This approach is derived from [Julia Silge's blog post on the topic](https://juliasilge.com/blog/cocktail-recipes-umap/).
+
+First, the variable loading matrix (stored in the `rotation` element of the `pca` object) is converted to a tibble so we can view it easier.
 
 ```{r}
-pca$rotation
+pca_tibble <- pca$rotation %>%
+  as_tibble(rownames = "predictor")
 ```
+
+```{r, echo = FALSE}
+style_data(pca_tibble)
+```
+
+Positive values for a given row mean that the original variable is *positively loaded* onto a given component, and negative values mean that the variable is *negatively loaded*. Larger values in each direction are of the most interest to us; values near 0 mean the variable is not meaningfully explained by a given component. To explore this further, we can visualize the first five components with ggplot2:
+
+```{r}
+pca_tibble %>%
+  select(predictor:PC5) %>%
+  pivot_longer(PC1:PC5, names_to = "component", values_to = "value") %>%
+  ggplot(aes(x = value, y = predictor)) + 
+  geom_col(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
+  facet_wrap(~component, nrow = 1) + 
+  labs(y = NULL, x = "Value") + 
+  theme_minimal()
+```
+
+With respect to PC1, which explains nearly 42 percent of the variance in the overall predictor set, the variables `percent_ooh`, `pct_white`, `pct_college`, `median_rooms`, `median_income`, and `median_age` load negatively, whereas `pop_density` and to a lesser extent `pct_foreign_born` load positively. We can attach these principal components to our original data with `predict()` and `cbind()`, then make a map of PC1 for further exploration:
 
 ```{r pca_model}
 components <- predict(pca, dfw_estimates)
 
 dfw_pca <- dfw_data_for_model %>%
-  select(GEOID, median_valueE) %>%
-  cbind(components) %>%
-  na.omit()
+  select(GEOID, median_value) %>%
+  cbind(components) 
 
 ggplot(dfw_pca, aes(fill = PC1)) +
   geom_sf(color = NA) +
@@ -304,8 +524,12 @@ ggplot(dfw_pca, aes(fill = PC1)) +
   scale_fill_viridis_c()
 ```
 
+The map, along with the bar chart, helps us understand how the multiple variables represent latent social processes at play in Dallas-Fort Worth. The brighter yellow areas, which have higher values for PC1, are located in communities like east Fort Worth, east Arlington, Grand Prairie, and south Dallas. Generally speaking, these are low-to-middle income areas with larger nonwhite populations. The locations with the lowest values for PC1 are Southlake (northeast of Fort Worth) and Highland Park (north of downtown Dallas); these communities are segregated, predominantly non-Hispanic white, and are among the wealthiest neighborhoods in the entire United States. In turn, PC1 captures the gradient that represents these social differences, with which multiple demographic characteristics will be associated.
+
+These principal components can be used for *principal components regression*, in which the derived components themselves are used as model predictors. Generally, components should be chosen that account for at least 90 percent of the original variance in the predictors, though this will often be up to the discretion of the analyst. In the example below, we will fit a model using the first six principal components and the log of median home value as the outcome variable.
+
 ```{r new-model}
-pca_formula <- paste0("log(median_valueE) ~ ", paste0('PC', 1:8, collapse = ' + '))
+pca_formula <- paste0("log(median_value) ~ ", paste0('PC', 1:6, collapse = ' + '))
 
 pca_model <- lm(formula = pca_formula, data = dfw_pca)
 
@@ -313,129 +537,264 @@ summary(pca_model)
 
 ```
 
+The model fit, as represented by the R-squared value, is similar to the models fit earlier in this chapter. One possible disadvantage of principal components regression, however, is the interpretation of the results as the different variables which are comprehensible on their own are now spread across the components. It can be helpful to think of the different components as *indices* in this sense.
+
+As discussed above, PC1 represents a gradient from segregated, older, wealthy, white communities on the low end to more diverse, lower-income, and younger communities on the high end; this PC is negatively associated with median home values, with tracks with expectations. Reviewing the plot above, PC3 is associated with lower population densities, incomes, and educational attainment, but higher levels of owner-occupied housing; in turn, it can be thought of as an urban (on the low end) to rural (on the high end) gradient. A negative association with median home value is then expected as home values are higher in the urban core than on the rural fringe of the metropolitan area.
+
+## Spatial regression
+
+A core assumption of the linear model is that the errors are independent of one another and normally distributed. Log-transforming the right-skewed outcome variable, median home values, was indented to resolve the latter; we can check this by adding the residuals for `model2` to our dataset and drawing a histogram to check its distribution.
+
 ```{r residuals}
+dfw_data_for_model$residuals <- residuals(model2)
 
-dfw_data_for_model$residuals <- residuals(model1)
-
-ggplot(dfw_data_for_model, aes(fill = residuals)) +
-  geom_sf(color = NA) +
-  theme_void() +
-  scale_fill_viridis_c()
-
+ggplot(dfw_data_for_model, aes(x = residuals)) + 
+  geom_histogram(bins = 100, alpha = 0.5, color = "navy",
+                 fill = "navy") + 
+  theme_minimal()
 ```
 
-Check for spatial autocorrelation in residuals:
+The former assumption of independence of residuals is commonly violated in models that use spatial data, however. This is because models of spatial processes commonly are characterized by *spatial autocorrelation* in the error term, meaning that the model's performance itself depends on geographic location. We can assess this using techniques learned in the previous chapter such as Moran's $I$.
 
 ```{r check-autocorrelation}
 library(spdep)
 
-nbrs <- dfw_data_for_model %>%
-  poly2nb()
+wts <- dfw_data_for_model %>%
+  poly2nb() %>%
+  nb2listw()
 
-wts <- nb2listw(nbrs, style = "W")
-
-moran.test(dfw_data_for_model$residuals, wts, na.action = na.exclude)
+moran.test(dfw_data_for_model$residuals, wts)
 ```
 
-## Spatial regression
+The Moran's $I$ test statistic is modest and positive (0.21) but is statistically significant. This can be visualized with a Moran scatterplot:
 
--   Fitting a spatial regression model
--   Spatial lag vs. spatial error models
--   Intepreting results
+```{r residual-scatterplot}
+dfw_data_for_model$lagged_residuals <- lag.listw(wts, dfw_data_for_model$residuals)
 
-Show Lagrange multiplier test first
-
-```{r}
-lm.LMtests(model1, wts, test = "all")
+ggplot(dfw_data_for_model, aes(x = residuals, y = lagged_residuals)) + 
+  theme_minimal() + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", color = "red")
 ```
+
+The plot illustrates the positive spatial autocorrelation in the residuals, suggesting that the assumption of independence in the model error term is violated. To resolve this issue, we can turn to *spatial regression methods*.
+
+### Methods for spatial regression
+
+The field of *spatial econometrics* is broadly concerned with the estimation and specification of models that are appropriate for handling spatial dependence in statistical processes. In general, two families of models are used to address these concerns with respect to regression: *spatial lag models* and *spatial error models*. ; spatial error models use a spatial lag in the model's error term.
+
+#### Spatial lag models
+
+Spatial lag models account for spatial dependence by including a spatial lag of the outcome variable in the model. In doing so, it accounts for *spatial spillover effects* -- the possibility that values in neighboring areas have an influence on values in a given location. A spatial lag model can be written as follows:
+
+$$
+{Y_i} = \alpha + \rho{Y_{lag-i}} + \sum_k \beta_k X_{ki} + \epsilon_i, 
+$$
+
+where
+
+$$
+Y_{lag-i} = \sum\limits_{j}w_{i,j}Y_j
+$$
+
+with $w_{i,j}$ representing the spatial weights. In this notation, $\rho$ is the parameter measuring the effect of the spatial lag in the outcome variable, and $k$ is the number of predictors in the model. However, the inclusion of a spatially lagged outcome variable on the right-hand side of the equation violates the exogeneity assumption of the linear model. In turn, special methods are required for estimating the spatial lag model, which are implemented in R in the spatialreg package [@applied2013]. Below, we use the function `lagsarlm()` to estimate the relationship between logged median home value and its predictors as a spatial lag model:
 
 ```{r}
 library(spatialreg)
 
-lag_model <- lagsarlm(formula = formula, data = dfw_data_for_model, listw = wts)
+lag_model <- lagsarlm(
+  formula = formula2, 
+  data = dfw_data_for_model, 
+  listw = wts
+)
 
 summary(lag_model, Nagelkerke = TRUE)
 ```
 
-Error model:
+The general statistical relationships observed in the non-spatial model are preserved in the spatial lag model, though the effect sizes (the model parameters) shrink, illustrating the importance of controlling for the spatial lag. Additionally, the $\rho$ parameter is positive and statistically significant, suggesting the presence of spatial spillover effects. This finding makes practical sense, as median home values may be influenced by the values of homes in neighboring Census tracts along with the characteristics of the neighborhood itself. The argument `Nagelkerke = TRUE` computes a pseudo-R-squared value, which is slightly higher than the corresponding value for the non-spatial model.
 
-```{r}
-error_model <- errorsarlm(formula = formula, data = dfw_data_for_model, listw = wts)
+#### Spatial error models
+
+In contrast with spatial lag models, spatial error models include a spatial lag in model's error term. This is designed to capture latent spatial processes that are not currently being accounted for in the model estimation and in turn show up in the model's residuals. The spatial error model can be written as follows:
+
+$$
+Y_i = \alpha + \sum\limits_k\beta_kX_{ki} + u_i,
+$$
+
+where
+
+$$
+u_i = \lambda u_{lag-i} + \epsilon_i 
+$$
+
+and
+
+$$
+u_{lag-i} = \sum\limits_jw_{i,j}u_j
+$$
+
+Like the spatial lag model, estimating the spatial error model requires special methods, implemented with the `errorsarlm()` function in spatialreg.
+
+```{r error-model}
+error_model <- errorsarlm(
+  formula = formula2, 
+  data = dfw_data_for_model, 
+  listw = wts
+)
 
 summary(error_model, Nagelkerke = TRUE)
 ```
 
-Spatial Durbin model:
+The $\lambda$ value is large and statistically significant, again illustrating the importance of accounting for spatial autocorrelation in the model.
 
-```{r}
-durbin_model <- lagsarlm(formula = formula, data = dfw_data_for_model, listw = wts,
-                         Durbin = TRUE)
+### Choosing between spatial lag and spatial error models
 
-summary(durbin_model, Nagelkerke = TRUE)
+The spatial lag and spatial error models offer alternative approaches to accounting for processes of spatial autocorrelation when fitting models. This raises the question: which one of the two models should the analyst choose? On the one hand, this should be thought through in the context of the topic under study. For example, if spatial spillover effects are related to the hypotheses being evaluated by the analysts (e.g. the effect of neighboring home values on focal home values), a spatial lag model may be preferable; alternatively, if there are spatially autocorrelated factors that likely influence the outcome variable but are difficult to measure quantitatively (e.g. discrimination and racial bias in the housing market), a spatial error model might be preferred.
+
+The two types of models can also be evaluated with respect to some quantitative metrics. For example, we can re-compute Moran's $I$ over the model residuals to see if the spatial model has resolved our problems with spatial dependence. First, we'll check the spatial lag model:
+
+```{r moran-lag-model}
+moran.test(lag_model$residuals, wts)
 ```
+
+Next, the spatial error model:
+
+```{r moran-error-model}
+moran.test(error_model$residuals, wts)
+```
+
+Both models reduce Moran's $I$; however, the error model does a better job of eliminating spatial autocorrelation in the residuals entirely. We can also use *Lagrange multiplier tests* to evaluate the appropriateness of these models together [@anselin1996]. These tests check for spatial error dependence, whether a spatially lagged dependent variable is missing, and the robustness of each in the presence of the other.
+
+The `lm.LMtests()` function can be used with an input linear model to compute these tests:
+
+```{r lagrange}
+lm.LMtests(
+  model2, 
+  wts, 
+  test = c("LMerr", "LMlag", "RLMerr", "RLMlag")
+)
+```
+
+All test statistics are large and statistically significant; in this case, the robust versions of the statistics should be compared. While both the lag and error models would be appropriate for this data, the test statistic for the robust version of the error model is larger, suggesting that the spatial error model should be preferred over the spatial lag model in this example.
 
 ## Geographically weighted regression
 
--   Basic principles
--   Fitting model/mapping results
--   Dealing with potential issues (e.g. local multicollinearity)
+The models addressed in the previous sections -- both the regular linear model and its spatial adaptations -- estimate *global* relationships between the outcome variable, median home values, and its predictors. This lends itself to conclusions like "In the Dallas-Fort Worth metropolitan area, higher levels of educational attainment are associated with higher median home values." However, metropolitan regions like Dallas-Fort Worth are diverse and multifaceted. It is possible that a relationship between a predictor and the outcome variable that is observed for the entire region *on average* may vary significantly from neighborhood to neighborhood. This type of phenomenon is called *spatial non-stationarity*, and can be explored with *geographically weighted regression*, or GWR [@brunsdon1996].
 
-```{r}
+GWR is a technique designed to evaluate local variations in the results of regression models given a kernel (distance-decay) weighting function. Following [@lu2014], the basic form of GWR for a given location $i$ can be written as:
+
+$$
+Y_i = \alpha_i + \sum\limits_{k=1}^m\beta_{ik}X_{ik} + \epsilon_i
+$$
+
+where the model intercept, parameters, and error term are all location-specific. Notably, $\beta_{ik}$ represents a *local regression coefficient* for predictor $k$ (of the total number of predictors $m$) that is specific to location $i$.
+
+GWR is implemented in the GWmodel R package [@gollini2015] as well as the spgwr package [@bivand_gwr]. These packages offer an interface to a wider family of geographically weighted methods, such as binomial, generalized linear, and robust geographically weighted regression; geographically weighted PCA; and geographically weighted summary statistics. The example below will adapt the regression model used in earlier examples to a locally-variation model with GWR.
+
+### Choosing a bandwidth for GWR
+
+GWR relies on the concept of a "kernel bandwidth" to compute the local regression model for each location. A kernel bandwidth is based on the kernel type (fixed or adaptive) and a distance-decay function. A fixed kernel uses a cutoff distance to determine which observations will be included in the local model for a given location $i$, whereas an adaptive kernel uses the nearest neighbors to a given location. In most circumstances with Census tract data where the size of tracts in a region will vary widely, an adaptive kernel will be preferred to a fixed kernel to ensure consistency of neighborhoods across the region. The distance-decay function then governs how observations will be weighted in the local model relative to their distance from location $i$. Closer tracts to $i$ will have a greater influence on the results for location $i$, with influence falling with distance.
+
+Bandwidth sizes (either a distance cutoff or number of nearest neighbors) can be selected directly by the user; in the GWmodel R package, the `bw.gwr()` function also helps analysts choose an appropriate kernel bandwidth using cross-validation. The code below computes a bandwidth `bw` using this method. Note that we must first convert our data to a legacy `SpatialPolygonsDataFrame` object from the sp package as GWmodel does not yet support sf objects.
+
+```{r gwr-bandwidth, results = 'hide'}
 library(GWmodel)
+library(sf)
 
 dfw_data_sp <- dfw_data_for_model %>%
   as_Spatial()
 
-bw <- bw.gwr(formula = formula, data = dfw_data_sp, kernel = "gaussian")
+bw <- bw.gwr(
+  formula = formula2, 
+  data = dfw_data_sp, 
+  kernel = "bisquare",
+  adaptive = TRUE
+)
 ```
 
-Fit the model:
+`bw.gwr()` chose 131 as the number of nearest neighbors based on cross-validation. This means that for each Census tract, the nearest 131 of the total 1253 Census tracts in the Dallas-Fort Worth region will be used to estimate the local model, with weights calculated using the bisquare distance-decay function as follows:
 
-```{r}
-gw_model <- gwr.basic(formula = formula, data = dfw_data_sp, bw = bw,
-                      kernel = "gaussian")
+$$
+w_{ij} = 1-(\frac{d_{ij}^2}{h^2})^2
+$$
 
-gw_model
+where $d_{ij}$ is the distance between local observation $i$ and neighbor $j$, and $h$ is the kernel bandwidth. As we are using an adaptive kernel, $h$ will vary for each observation and take on the distance between location $i$ and its "neighbor" furthest from that location.
+
+### Fitting and evaluating the GWR model
+
+The basic form of GWR can be fit with the `gwr.basic()` function, which uses a similar argument structure to other models fit in this chapter. The formula can be passed to the `formula` parameter as a character string; we'll use the original formula with median household income omitted and include it below for a refresher. The derived bandwidth from `bw.gwr()` will be used with a bisquare, adaptive kernel.
+
+```{r fit-gwr-model}
+formula2 <- "log(median_value) ~ median_rooms + pct_college + pct_foreign_born + pct_white + median_age + median_structure_age + percent_ooh + pop_density + total_population"
+
+gw_model <- gwr.basic(
+  formula = formula2, 
+  data = dfw_data_sp, 
+  bw = bw,
+  kernel = "bisquare",
+  adaptive = TRUE
+)
 ```
 
-Plot the results:
+Printing the object `gw_model` will show both the results of the global model and the ranges of the locally varying parameter estimates. The model object itself has the following elements:
 
-```{r}
+```{r gwr-elements}
+names(gw_model)
+```
+
+Each element provides information about the model fit, but perhaps most interesting to the analyst is the `SDF` element, in this case a `SpatialPolygonsDataFrame` containing mappable model results. We will extract that element from the model object and convert it to simple features, then take a look at the columns in the object.
+
+```{r gwr-column-names}
 gw_model_results <- gw_model$SDF %>%
   st_as_sf() 
 
-
-ggplot(gw_model_results, aes(fill = median_roomsE)) + 
-  geom_sf(color = NA) + 
-  scale_fill_viridis_c() + 
-  theme_void()
-
+names(gw_model_results)
 ```
 
-```{r}
-bw2 <- bw.gwr(formula = formula, data = dfw_data_sp, kernel = "gaussian",
-              adaptive = TRUE)
-```
+The sf object includes columns with local parameter estimates, standard errors, and t-values for each predictor, along with local diagnostic elements such as the Local R-squared, giving information about how well a model performs in any particular location. Below, we use ggplot2 and `geom_sf()` to map the local R-squared, though it may be useful as well to use `mapview::mapview(gw_model_results, zcol = "Local_R2"` and explore these results interactively.
 
-Adaptive bandwidth model results:
-
-```{r, error = TRUE}
-gw_model2 <- gwr.basic(formula = formula, data = dfw_data_sp, bw = bw2,
-                      kernel = "gaussian", adaptive = TRUE)
-
-gw_model2
-```
-
-```{r}
-gw_model_results2 <- gw_model2$SDF %>%
-  st_as_sf() 
-
-
-ggplot(gw_model_results2, aes(fill = median_roomsE)) + 
+```{r map-local-r2}
+ggplot(gw_model_results, aes(fill = Local_R2)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c() + 
   theme_void()
 ```
+
+The map suggests that the model performs very well in Fort Worth, Collin County, and the eastern edge of the metropolitan area, with local R-squared values exceeding 0.9. It performs worse in northwestern Denton County and in the areas near the Dallas-Fort Worth airport (the large missing area in the center of the map).
+
+We can examine locally varying parameter estimates in much the same way. The first map below visualizes the local relationships between the percentage owner-occupied housing and median home values. Recall from the global model that this coefficient was negative and statistically significant.
+
+```{r}
+ggplot(gw_model_results, aes(fill = percent_ooh)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c() + 
+  theme_void()
+```
+
+The dark purple areas on the map are those areas where the global relationship in the model reflects the local relationship, as local parameter estimates are negative. The areas that stick out include the high-density area of uptown Dallas, where renter-occupied housing is common and median home values are very high. However, in rural areas on the fringe of the metropolitan area this relationship reverses, returning in some cases positive parameter estimates (the yellow parts of the map). This means that for those local areas, a greater percentage of owner-occupied housing is associated with higher home values.
+
+We can also explore local variations for a predictor that was not statistically significant in the global model, median structure age:
+
+```{r}
+ggplot(gw_model_results, aes(fill = median_structure_age)) + 
+  geom_sf(color = NA) + 
+  scale_fill_viridis_c() + 
+  theme_void()
+```
+
+For large portions of the metropolitan area, the relationship between median age of structures and median home values is negligible, which is what drives the global relationship. However, in the areas around the airport, we see a positive relationship between the variables, suggesting that neighborhoods with older homes have higher home values. Conversely, on the rural fringe, we observe the opposite relationship. In rural areas with new suburban developments, this makes intuitive sense; new suburban subdivisions will attract a different buyer than existing older rural housing stock, and will likely be more expensive.
+
+### Limitations of GWR
+
+While GWR is an excellent method for exploring spatial non-stationarity in regression model results, it does have some limitations. When the spgwr package itself *is loaded into your R environment*, it prints the following warning:
+
+> NOTE: This package does not constitute approval of GWR as a method of spatial analysis.
+
+Why would an R package itself warn the user about its use? GWR is particularly susceptible to problems that plague other regression models using spatial data. Earlier sections in this chapter covered the topic of *collinearity*, where parameter estimates are biased due to high correlations between predictors. Given that predictor values tend to cluster spatially, GWR models often suffer from *local multicollinearity* where predictors are highly correlated in local areas.
+
+Additionally, the impact of *edge effects* can be acute in GWR models. Edge effects - which are present in most spatial models and analysis techniques - refer to misleading results for observations on the edge of a dataset. In the example used in this chapter, the Dallas-Fort Worth metropolitan area represents the region under study. This artificially restricts the neighborhoods around Census tracts on the edge of the metropolitan area to only those tracts *that are also within the metropolitan area*, and omits the rural tracts that border them. For local models, this is a particular problem as results for observations on the edge of an area are based on incomplete information that may not reflect the true circumstances of that location.
+
+With these concerns in mind, GWR is generally recommended as an *exploratory technique* that serves as a useful companion to the estimation of a global model. For example, a global parameter estimate may suggest that in Dallas-Fort Worth, median home values tend to be higher in areas with lower percentages of owner-occupied housing, controlling for other predictors in the model. GWR, used as a follow-up, helps the analyst understand that this global relationship is driven by higher home values near to urban cores such as in the uptown Dallas area, and may not necessarily characterize the dynamics of rural and exurban areas elsewhere in the metropolitan region.
 
 ## Geodemographic classification
 

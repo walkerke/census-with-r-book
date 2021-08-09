@@ -240,7 +240,7 @@ The data can be browsed with the `View()` function in RStudio much like it is re
 
 Once determined, the appropriate codes can be passed as arguments to various parameters in the `get_census()` function, the main data access function used in cancensus. The example below fetches data on English speakers by Census tract in the Montreal area in this way.
 
-```{r montreal-english, eval = FALSE}
+```{r montreal-english, results = 'hide'}
 montreal_english <- get_census(
   dataset = "CA16",
   regions = list(CMA = "24462"),
@@ -363,15 +363,6 @@ ggplot(kenya_islam_map, aes(fill = prop_islam)) +
        title = "Percent Muslim by County in Kenya",
        subtitle = "2019 Kenyan Census",
        caption = "Data acquired with the rKenyaCensus R package")
-  
-
-tm_shape(kenya_islam_map) + 
-  tm_polygons(col = "pct_islam",
-              palette = "viridis", 
-              style = "jenks",
-              n = 7, 
-              title = "% Muslim",
-              alpha = 0.6)
 ```
 
 The map shows how the distinct religious divides in Kenya play out geographically in the country, with proportionally few Muslim residents in the western part of Kenya and much higher percentages in the eastern part of the country.
@@ -395,7 +386,8 @@ choropleth_inegi(token_inegi, state_regions,
                  indicator = "3104003001",
                  legend = "%",
                  title = "Percentage born outside\nstate of residence") + 
-  theme_void(base_size = 18)
+  theme_void(base_size = 14) + 
+  labs(caption = "Data sources: INEGI, mxmaps R package")
 ```
 
 The map illustrates that the states with the most internal migrants in Mexico include Baja California Sur, Quintana Roo, and Nuevo Leon. This information can also be accessed directly using the inegiR package. The `inegi_series()` function returns one state at a time, which can be combined into a country-wide dataset with `map_dfr()`.
@@ -603,14 +595,17 @@ ggplot(brasilia_lisa_clusters, aes(fill = lisa_cluster)) +
   geom_sf(size = 0.1) + 
   theme_void() + 
   scale_fill_manual(values = color_values) + 
-  labs(fill = "Cluster type")
+  labs(title = "LISA clusters of median monthly income",
+       subtitle = "Census tracts, Brasilia/Federal District",
+       fill = "Cluster type",
+       caption = "Data sources: 2010 Brazilian Census via IBGE; geobr R package")
 ```
 
 The map illustrates strong clustering of high monthly incomes in central Brasilia with low-high spatial outliers scattered among the higher-earning areas. Low-low cluster census tracts tend to be found on the edges of the urbanized portions of the Federal District, representing more sparsely populated rural areas.
 
 ## Other international data resources
 
-Many other international data resources in R exist, and a robust R ecosystem is emerging to standardize these data source. In Europe, the [nomisr](https://github.com/ropensci/nomisr) R package provides an interface to official statistics for the United Kingdom, and the insee package does the same for France. Europe-wide data can be acquired using the X package, which interacts with European Union data sources. In Africa, the [afrimapr](https://afrimapr.github.io/afrimapr.website/) project is an effort to disseminate Africa-wide datasets to R users. It includes a wide variety of spatial datasets for countries across Africa.
+Many other international data resources in R exist, and a robust R ecosystem is emerging to standardize these data source. In Europe, the [nomisr](https://github.com/ropensci/nomisr) R package provides an interface to official statistics for the United Kingdom, and the [insee](https://inseefr.github.io/R-Insee-Data/) package does the same for France. Europe-wide data can be acquired using the X package, which interacts with European Union data sources. In Africa, the [afrimapr](https://afrimapr.github.io/afrimapr.website/) project is an effort to disseminate Africa-wide datasets to R users. It includes a wide variety of spatial datasets for countries across Africa.
 
 Microdata users will be interested in the [IPUMS International project](https://international.ipums.org/international/), which makes historical microdata for over 100 countries available to researchers. Like US IPUMS data, the [ipumsr R package](https://github.com/mnpopcenter/ipumsr) can help users work with international microdata in R. A companion project from IPUMS is the International Historical Geographic Information System (IHGIS) project, which aims to disseminate international spatial and demographic data in much the same way that the NHGIS project (covered in Section \@ref(getting-started-with-nhgis) does for historical Census data for the US.
 
