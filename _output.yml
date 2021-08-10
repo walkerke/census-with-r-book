@@ -2,5 +2,5 @@ bookdown::bs4_book:
   theme:
     primary: "#035004"
   split_by: chapter
-  split_bib: yes
+  split_bib: no
 bookdown::epub_book: default

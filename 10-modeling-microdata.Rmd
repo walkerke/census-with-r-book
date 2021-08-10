@@ -4,6 +4,8 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(tidycensus)
+library(survey)
+library(srvyr)
 source("R/book-functions.R")
 ```
 
@@ -87,7 +89,7 @@ When combined with tidyverse tools as introduced in Chapter \@ref(wrangling-cens
 
 Our guiding research question is as follows: how does rent burden vary by race/ethnicity and family type for Mississippi households? This requires obtaining data on rent burden (gross rent as percentage of household income) with variable `GRPIP`; race and ethnicity with variables `RAC1P` and `HISP`; and family type with variable `FES`. The `variables_filter` argument is used to filter the sample to only renter-occupied households paying cash rent, speeding download times.
 
-```{r ms-hh-data}
+```{r ms-hh-data, results = 'hide'}
 hh_variables <- c("PUMA", "GRPIP", "RAC1P", 
                   "HISP", "HHT")
 
@@ -133,7 +135,7 @@ ms_hh_summary <- ms_hh_recoded %>%
   filter(race_ethnicity != "Other") %>%
   group_by(race_ethnicity, married) %>%
   summarize(
-    percent_above_40 = 100 * (sum(WGTP[GRPIP >= 40]) / sum(WGTP))
+    prop_above_40 = sum(WGTP[GRPIP >= 40]) / sum(WGTP)
   )
 ```
 
@@ -184,163 +186,257 @@ tm_shape(joined_pumas) +
               palette = "Reds",
               title = "% rent-burdened\nunmarried Black households") + 
   tm_layout(legend.outside = TRUE,
-            legend.outside.position = "right"
+            legend.outside.position = "right")
 ```
+
+The map illustrates geographic variations in our indicator of interest. In particular, unmarried Black households are particularly rent-burdened along the Gulf Coast, with over half of households paying at least 40 percent of their household incomes in gross rent. The least rent-burdened areas for this demographic group are in the suburban PUMAs around Jackson.
 
 ## Survey design and the ACS PUMS
 
--   As we covered in the first workshop, the American Community Survey is based on a *sample* of the US population and in turn subject to sampling error
+As earlier chapters have addressed, the American Community Survey is based on a *sample* of the US population and in turn subject to sampling error. This becomes particularly acute when dealing with small sub-populations like those explored at the PUMA level in the previous section. Given that PUMS data are individual-level records and not aggregates, standard errors and in turn margins of error must be computed by the analyst. Doing so correctly requires accounting for the complex sample design of the ACS. Fortunately, tidycensus with help from the survey/srvyr packages includes tools to assist with these tasks.
 
--   The complex sample design of the ACS further requires appropriate specification when fitting statistical models using PUMS data
+### Getting replicate weights
 
--   tidycensus, with help from the survey/srvyr packages, includes tools to assist with these tasks
+The Census Bureau recommends using the *Successive Difference Replication* method to compute standard errors around derived estimates from PUMS data. To calculate standard errors, the Census Bureau publishes 80 "replicate weights" for each observation, representing either person (PWGTP1 through PWGTP80) or household (WGTP1 through WGTP80) weights [@pums_readme]. The formula for computing the standard error $SE$ for a derived PUMS estimate $X$ is as follows:
 
-## Getting replicate weights
+$$
+SE(x) = \sqrt{\frac{4}{80}\sum\limits_{r=1}^{80}(x_r-x)^2 }
+$$
 
--   The Census Bureau publishes 80 "replicate weights" that can be used to calculate standard errors around tabulated estimates from microdata
+where $x$ is the PUMS estimate and $x_r$ is the rth weighted estimate.
 
--   The `rep_weights` parameter in `get_pums()` makes it easier for users to retrieve all of these variables without having to request all 80 directly. Choose `rep_weights = "person"` for person-weights or `"household"` for household weights
+With respect to SDR standard errors, the PUMS documentation acknowledges (p. 12),
+
+> Successive Difference Replication (SDR) standard errors and margins of error are expected to be more accurate than generalized variance formulas (GVF) standard errorsand margins of error, although they may be more inconvenient for some users to calculate.
+
+The "inconvenience" is generally due to the need to download 80 additional weighting variables and prepare the equation written above. The `rep_weights` parameter in `get_pums()` makes it easier for users to retrieve the replicate weights variables without having to request all 80 directly. In a call to `get_pums()`, an analyst can use `rep_weights = "person"` for person-weights, `"housing"` for household weights, or `"both"` to get both sets.
+
+The code below re-downloads the Mississippi rent burden dataset used above, but with household replicate weights included.
 
 ```{r rep-weights, eval = FALSE}
-ms_pums_replicate <- get_pums(
-  variables = c("PUMA", "SEX", "AGEP", "SCHL"),
+ms_hh_replicate <- get_pums(
+  variables = c("TEN", hh_variables), 
   state = "MS",
-  survey = "acs5",
-  year = 2019,
   recode = TRUE,
-  rep_weights = "person"
+  variables_filter = list(
+    SPORDER = 1
+  ),
+  rep_weights = "housing"
 )
 ```
 
 ```{r read-rep-weights, echo = FALSE}
-ms_pums_replicate <- read_rds("~/Dropbox/kwalkerdata/Umich/umich-workshop/microdata/data/ms_pums_replicate.rds")
+ms_hh_replicate <- read_rds("data/ms_hh_replicate.rds")
 ```
 
 ```{r show-rep-weights}
-ms_pums_replicate
+names(ms_hh_replicate)
 ```
 
-## Creating a `survey` object
+All 80 household replicate weights are included in the dataset. A key distinction in the above code, however, is that the housing tenure variable `TEN` is not included in the `variables_filter` argument, instead returning the full sample of households in Mississippi. This is because standard error estimation for complex survey samples requires special methods for *subpopulations*, which will be covered below.
 
--   The **survey** package is the standard for handling complex survey samples in R
+### Creating a survey object
 
--   The more recent **srvyr** package wraps **survey** to allow the use of tidyverse functions on survey objects
-
--   tidycensus includes a function, `to_survey()`, to convert ACS microdata to survey/srvyr objects
+With replicate weights in hand, analysts can turn to a suite of tools in R for handling complex survey samples. The **survey** package [@lumley2010] is the standard for handling these types of datasets in R. The more recent **srvyr** package [@ellis2021] wraps **survey** to allow the use of tidyverse functions on survey objects. Both packages return a `survey` class object that intelligently calculates standard errors when data are tabulated with appropriate functions. tidycensus includes a function, `to_survey()`, to convert ACS microdata to survey/srvyr objects in a way that incorporates the recommended formula for SDR standard error calculation with replicate weights.
 
 ```{r svy-object}
 library(survey)
 library(srvyr)
 
-ms_pums_svy <- ms_pums_replicate %>%
-  to_survey(type = "person", 
-            design = "rep_weights")
+ms_hh_svy <- ms_hh_replicate %>%
+  to_survey(type = "housing", 
+            design = "rep_weights") %>%
+  filter(TEN == 3)
 
-class(ms_pums_svy)
+class(ms_hh_svy)
 ```
 
-## Calculating estimates and errors with **srvyr**
+The `to_survey()` function returns the original dataset as an object of class `tbl_svy` and `svyrep.design` with minimal hassle.
 
--   srvyr's `survey_*()` family of functions automatically calculates standard errors around tabulated estimates for you
+Note the use of `filter()` after converting the replicate weights dataset to a survey object to subset the data to only renter-occupied households paying cash rent. When computing standard errors for derived estimates using complex survey samples, it is necessary to take the entire structure of the sample into account. In turn, it is important to *first* convert the dataset into a survey object *and then* identify the "subpopulation" for which the model will be fit.
 
-```{r svy-count}
-ms_pums_svy %>% 
-  survey_count(PUMA, SEX_label)
+For analysis of subpopulations, `srvyr::filter()` works like `survey::subset()` for appropriate standard error estimation. This data structure will then be taken into account when calculating standard errors.
+
+### Calculating estimates and errors with srvyr
+
+srvyr's `survey_*()` family of functions automatically calculates standard errors around tabulated estimates using tidyverse-equivalent functions. For example, analogous to the use of `count()` to tabulate weighted data, `survey_count()` will do the same for a survey object but will also return appropriately-calculated standard errors.
+
+```{r svy-count, eval = FALSE}
+ms_hh_svy %>% 
+  survey_count(PUMA, HHT_label)
 ```
 
-## Complex tabulations with **srvyr**
+```{r ms-svy-show, echo = FALSE}
+ms_hh_svy %>% 
+  survey_count(PUMA, HHT_label) %>%
+  style_data(n_rows = 5)
+```
+
+The `survey_count()` function returns tabulations for each household type by PUMA in Mississippi along with the estimate's standard error. The srvyr package can also accommodate more complex workflows. Below is an adaptation of the rent burden analysis computed above, but using the srvyr function `survey_mean()`.
 
 ```{r svy-summary}
-ms_svy_summary <- ms_pums_svy %>% 
-  mutate(ba_above = SCHL %in% c("21", "22", "23", "24")) %>% 
-  filter(AGEP >= 25) %>% 
-  group_by(PUMA, SEX_label) %>% 
+ms_svy_summary <- ms_hh_svy %>%
+  mutate(
+    race_ethnicity = case_when(
+      RAC1P == "1" ~ "White",
+      RAC1P == "2" ~ "Black",
+      HISP == "01" ~ "Hispanic",
+      TRUE ~ "Other"
+    ),
+    married = case_when(
+      HHT == "1" ~ "Married",
+      TRUE ~ "Not married"
+    ),
+    above_40 = GRPIP >= 40
+  ) %>%
+  filter(race_ethnicity != "Other") %>%
+  group_by(race_ethnicity, married) %>%
   summarize(
-    age_25_up = survey_total(vartype = "se"),
-    ba_above_n = survey_total(ba_above, vartype = "se"),
-    ba_above_prop = survey_mean(ba_above, vartype = "se")
-    )
-
-glimpse(ms_svy_summary)
+    prop_above_40 = survey_mean(above_40)
+  )  
 ```
 
-## Converting standard errors to MOEs
+```{r svy-summary-show, echo = FALSE}
+style_data(ms_svy_summary)
+```
 
--   To convert standard errors to the familiar margins of error at a 90 percent confidence level, multiply them by 1.645
+The derived estimates are the same as before, but the srvyr workflow also returns standard errors.
 
-```{r svy-plot, eval = FALSE}
+### Converting standard errors to margins of error
+
+To convert standard errors to *margins of error* around the derived PUMS estimates, analysts should multiply the standard errors by the following coefficients:
+
+-   90 percent confidence level: 1.645
+
+-   95 percent confidence level: 1.96
+
+-   99 percent confidence level: 2.56
+
+Computing margins of error around derived ACS estimates from PUMS data allows for familiar visualization of uncertainty in the ACS as shown earlier in this book. The example below calculates margins of error at a 90 percent confidence level for the rent burden estimates for Mississippi, then draws a margin of error plot as illustrated in Section \@ref(visualizing-margins-of-error).
+
+```{r svy-plot}
 ms_svy_summary_moe <- ms_svy_summary %>%
-  mutate(ba_above_prop_moe = ba_above_prop_se * 1.645) %>%
-  filter(SEX_label == "Female")
+  mutate(prop_above_40_moe = prop_above_40_se * 1.645,
+         label = paste(race_ethnicity, married, sep = ", ")) 
 
-ggplot(ms_svy_summary_moe, aes(x = ba_above_prop, y = reorder(PUMA, ba_above_prop))) +
-  geom_errorbarh(aes(xmin = ba_above_prop - ba_above_prop_moe, 
-                     xmax = ba_above_prop + ba_above_prop_moe)) +
+ggplot(ms_svy_summary_moe, aes(x = prop_above_40, 
+                               y = reorder(label, 
+                                           prop_above_40))) +
+  geom_errorbarh(aes(xmin = prop_above_40 - prop_above_40_moe, 
+                     xmax = prop_above_40 + prop_above_40_moe)) +
   geom_point(size = 3, color = "navy") +
-  labs(title = "Percent of women age 25+ with 4-year college degree",
-       subtitle = "PUMAs in Missisippi.  Error bars represent margin of error at 90 percent confidence level.",
+  labs(title = "Rent burdened-households in Mississippi",
        x = "2015-2019 ACS estimate (from PUMS data)",
-       y = "") +
+       y = "",
+       caption = "Rent-burdened defined when gross rent is 40 percent or more\nof household income. Error bars represent a 90 percent confidence level.") +
   scale_x_continuous(labels = scales::percent) + 
-  theme_grey(base_size = 14)
+  theme_grey(base_size = 12)
 ```
 
-<img src="img/errorbars.png" style="width: 800px"/>
+The plot effectively represents the uncertainty associated with estimates for the relatively small Hispanic population in Mississippi.
 
-## Advanced example: modeling with PUMS data
+## Modeling with PUMS data
 
--   Question (adapted from the tidycensus docs by Matt Herman): what is the relationship between wages/class of worker and commute times in Rhode Island?
+The rich complexity of demographic data available in the PUMS samples allow for the estimation of statistical models to study a wide range of social processes. Like the tabulation of summary statistics with PUMS data, however, statistical models that use complex survey samples require special methods. Fortunately, these methods are incorporated into the srvyr and survey packages.
 
-```{r ri-data, results = 'hide'}
+Before estimating the model, data should be acquired with `get_pums()` along with appropriate replicate weights. The example below will model whether or not an individual in the labor force aged between 25 and 49 changed residences in the past year as a function of educational attainment, wages, age, class of worker, and family status in Rhode Island.
+
+```{r ri-data, results = 'hide', echo = FALSE}
 ri_pums_to_model <- get_pums(
-  variables = c("PUMA", "WAGP", "JWMNP", "JWTRNS", "COW", "ESR"),
+  variables = c("PUMA", "SEX", "MIG",
+                "AGEP", "SCHL", "WAGP", 
+                "COW", "ESR", "MAR", "NOC"),
   state = "RI",
   survey = "acs5",
   year = 2019,
   rep_weights = "person"
+)
+```
+
+```{r ri-data-real, echo = FALSE}
+ri_pums_to_model <- read_rds("data/ri_pums_to_model.rds")
+```
+
+Even though our model will focus on the population in the labor force aged 25 to 49, `variables_filter` should not be used here as the full dataset is needed for appropriate model estimation. This will be addressed in the next section.
+
+### Data preparation
+
+Similar to Section \@ref(feature-engineering), we will perform some feature engineering before fitting the model. This largely involves recoding both the outcome variable and the predictors to more general categories to assist with ease of interpretation. As with other recoding workflows in this book, `case_when()` collapses the categories.
+
+```{r recode-ri-pums}
+ri_pums_recoded <- ri_pums_to_model %>%
+  mutate(
+    emp_type = case_when(
+      COW %in% c("1", "2") ~ "private",
+      COW %in% c("3", "4", "5") ~ "public",
+      TRUE ~ "self"
+      ), 
+    child = case_when(
+      NOC > 0 ~ "yes",
+      TRUE ~ "no"
+    ),
+    married = case_when(
+      MAR == 1 ~ "yes",
+      TRUE ~ "no"
+    ),
+    college = case_when(
+      SCHL %in% as.character(21:24) ~ "yes",
+      TRUE ~ "no"
+    ),
+    sex = case_when(
+      SEX == 2 ~ "female",
+      TRUE ~ "male"
+    ),
+    migrated = case_when(
+      MIG == 1 ~ 0,
+      TRUE ~ 1
+    )
   )
 ```
 
-## Data preparation
+Given that we will be estimating a logistic regression model with a binary outcome (whether or not an individual is a migrant, `migrated` is coded as either 0 or 1. The other recoded variables will be used as *categorical predictors*, in which parameter estimates refer to probabilities of having migrated relative to a reference category (e.g. college graduates relative to individuals who have not graduated college).
 
--   For analysis of subpopulations, `srvyr::filter()` works like `survey::subset()` for appropriate standard error estimation
+In the next step, the subpopulation for which the model will be estimated is identified using `filter()`. We will focus on individuals aged 25 to 49 who are employed and earned wages in the past year.
 
 ```{r ri-filter}
-ri_model_sd <- ri_pums_to_model %>% 
-  mutate(
-    emp_type = case_when(
-      COW %in% c("1", "2")      ~ "private",
-      COW %in% c("3", "4", "5") ~ "public",
-      TRUE                      ~ "self"
-      )
-    ) %>%
+ri_model_svy <- ri_pums_recoded %>% 
   to_survey() %>%
   filter(
     ESR == 1,   # civilian employed
-    JWTRNS != 11, # does not work at home
     WAGP > 0,   # earned wages last year
-    JWMNP > 0   # commute more than zero min
-  ) 
+    AGEP >= 25,
+    AGEP <= 49
+  ) %>%
+  rename(age = AGEP, wages = WAGP)
 ```
 
-## Fitting a model
+### Fitting and evaluating the model
 
--   The family of modeling functions in the **survey** package should be used for modeling data in survey design objects, e.g. `survey::svyglm()`
+The family of modeling functions in the **survey** package should be used for modeling data in survey design objects, as they will take into account the replicate weights, survey design, and subpopulation structure. In the example below, we use the `svyglm()` function for this purpose. The formula is written using standard R formula notation, the survey design object is passed to the `design` parameter, and `family = quasibinomial()` is used to fit a logistic regression model.
 
 ```{r ri-model}
-model <- survey::svyglm(log(JWMNP) ~ log(WAGP) + emp_type + PUMA, 
-                        design = ri_model_sd)
+library(survey)
+
+migration_model <- svyglm(
+  formula = migrated ~ log(wages) + sex + age + emp_type + 
+    child + married + college + PUMA,
+  design = ri_model_svy,
+  family = quasibinomial()
+) 
+
 ```
 
-## Evaluating the model
+Once fit, we can examine the results:
 
 ```{r ri-model-summary}
-summary(model)
+summary(migration_model)
 ```
 
-## Part 2 exercises
+The model identifies some notable differences in recent migrants relative to non-migrants, controlling for other demographic factors. Males are more likely to have moved than females, as are younger people relative to older people in the subpopulation. Married individuals are more stationary, whereas college-educated individuals in the sample are much more likely to have moved. The PUMAs are included as a categorical predictor largely to control for geographic differences in the state; however the model suggests that current residents in the Newport PUMA are slightly more likely to have moved than residents of northwest Rhode Island, the reference PUMA.
 
--   Using the dataset you acquired from the exercises in Part 1 (or the example Wyoming dataset), tabulate a group-wise summary using the PWGTP column and dplyr functions as you've learned in this section.
+## Exercises
+
+-   Using the dataset you acquired from the exercises in Chapter \@ref(introduction-to-census-microdata) (or the example Wyoming dataset in that chapter), tabulate a group-wise summary using the PWGTP column and dplyr functions as you've learned in this section.
 
 -   Advanced follow-up: using `get_acs()`, attempt to acquire the same aggregated data from the ACS. Compare your tabulated estimate with the ACS estimate.
 
