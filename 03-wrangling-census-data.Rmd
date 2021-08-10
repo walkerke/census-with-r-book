@@ -2,80 +2,98 @@
 
 ```{r setup-ch3, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+source("R/book-functions.R")
 ```
 
-One of the most popular frameworks for data analysis in R is the **tidyverse**, a suite of packages designed for integrated data wrangling, visualization, and modeling. The "tidy" or long-form data returned by default in tidycensus is designed to work well with tidyverse analytic workflows. This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with tidycensus. It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
+One of the most popular frameworks for data analysis in R is the **tidyverse**, a suite of packages designed for integrated data wrangling, visualization, and modeling. The "tidy" or long-form data returned by default in **tidycensus** is designed to work well with tidyverse analytic workflows. This chapter provides an overview of how to use tidyverse tools to gain additional insights about US Census data retrieved with **tidycensus**. It concludes with discussion about margins of error (MOEs) in the American Community Survey and how to wrangle and interpret MOEs appropriately.
 
 ## The tidyverse
 
 [The tidyverse](https://www.tidyverse.org/) is a collection of R packages that are designed to work together in common data wrangling, analysis, and visualization projects. These R packages are maintained by RStudio, many of which are among the most popular R packages worldwide. Some of the key packages you'll use in the tidyverse include:
 
--   readr, which contains tools for importing and exporting datasets;
+-   **readr**, which contains tools for importing and exporting datasets;
 
--   dplyr, a powerful framework for data wrangling tasks;
+-   **dplyr**, a powerful framework for data wrangling tasks;
 
--   tidyr, a package for reshaping data;
+-   **tidyr**, a package for reshaping data;
 
--   purrr, a comprehensive framework for functional programming and iteration;
+-   **purrr**, a comprehensive framework for functional programming and iteration;
 
--   ggplot2, a data visualization package based on the Grammar of Graphics
+-   **ggplot2**, a data visualization package based on the Grammar of Graphics
 
-The core data structure used in the tidyverse is the *tibble*, which is an R data frame with some small enhancements to improve the user experience. tidycensus returns tibbles by default.
+The core data structure used in the tidyverse is the *tibble*, which is an R data frame with some small enhancements to improve the user experience. **tidycensus** returns tibbles by default.
 
-A full treatment of the tidyverse and its functionality is beyond the scope of this book; however, the examples in this chapter will introduce you to several key tidyverse features using US Census Bureau data. For a more general and broader treatment of the tidyverse, I recommend the [*R for Data Science*](https://r4ds.had.co.nz/index.html)text (cite here)
+A full treatment of the tidyverse and its functionality is beyond the scope of this book; however, the examples in this chapter will introduce you to several key tidyverse features using US Census Bureau data. For a more general and broader treatment of the tidyverse, I recommend the [*R for Data Science*](https://r4ds.had.co.nz/index.html)book [@r4ds].
 
 ## Exploring Census data with tidyverse tools
 
-Census data queries using tidycensus, combined with core tidyverse functions, are excellent ways to explore downloaded Census data. Chapter 2 covered how to download data from various Census datasets using tidycensus and return the data in a desired format. A common next step in an analytic process will involve data exploration, which is handled by a wide range of tools in the tidyverse.
+Census data queries using **tidycensus**, combined with core tidyverse functions, are excellent ways to explore downloaded Census data. Chapter \@ref(an-introduction-to-tidycensus) covered how to download data from various Census datasets using **tidycensus** and return the data in a desired format. A common next step in an analytic process will involve data exploration, which is handled by a wide range of tools in the tidyverse.
 
-To get started, the tidycensus and tidyverse packages are loaded. "tidyverse" is not specifically a package itself, but rather loads several core packages within the tidyverse. The package load message gives you more information:
+To get started, the **tidycensus** and **tidyverse** packages are loaded. "tidyverse" is not specifically a package itself, but rather loads several core packages within the tidyverse. The package load message gives you more information:
 
 ```{r load-tidyverse, message = TRUE}
 library(tidycensus)
 library(tidyverse)
 ```
 
-Eight tidyverse packages are loaded: ggplot2, tibble, purrr, dplyr, readr, and tidyr are included along with stringr for string manipulation and forcats for working with factors. These tools collectively can be used for many core Census data analysis tasks.
+Eight tidyverse packages are loaded: **ggplot2**, **tibble**, **purrr**, **dplyr**, **readr**, and **tidyr** are included along with **stringr** for string manipulation and **forcats** for working with factors. These tools collectively can be used for many core Census data analysis tasks.
 
 ### Sorting and filtering data
 
 For a first example, let's request data on median age from the 2015-2019 ACS with `get_acs()` for all counties in the United States. This requires specifying `geography = "county"` and leaving state set to `NULL`, the default.
 
-```{r, median-age}
+```{r median-age}
 median_age <- get_acs(
   geography = "county",
   variables = "B01002_001",
   year = 2019
 )
-
-median_age
 ```
 
-The default method for printing data used by the tibble package shows the first 10 rows of the dataset, which in this case prints counties in Alabama. A first exploratory data analysis question might involve understanding which counties are the *youngest* and *oldest* in the United States as measured by median age. This task can be accomplished with the `arrange()` function found in the dplyr package. `arrange()` sorts a dataset by values in one or more columns and returns the sorted result. To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
+```{r median-age-show, echo = FALSE}
+style_data(median_age, caption = "Median age for US counties")
+```
 
-```{r youngest-counties}
+The default method for printing data used by the tibble package shows the first 10 rows of the dataset, which in this case prints counties in Alabama. A first exploratory data analysis question might involve understanding which counties are the *youngest* and *oldest* in the United States as measured by median age. This task can be accomplished with the `arrange()` function found in the **dplyr** package. `arrange()` sorts a dataset by values in one or more columns and returns the sorted result. To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
+
+```{r youngest-counties, eval = FALSE}
 arrange(median_age, estimate)
+```
+
+```{r youngest-counties-show, echo = FALSE}
+arrange(median_age, estimate) %>%
+  style_data(caption = "The youngest counties in the US by median age")
 ```
 
 Per the 2015-2019 ACS, the two youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University. The youngest *county* then by median age is Madison County Idaho.
 
-To retrieve the *oldest* counties in the United States by median age, an analyst can use the `desc()` function available in dplyr to sort the `estimate` column in descending order.
+To retrieve the *oldest* counties in the United States by median age, an analyst can use the `desc()` function available in **dplyr** to sort the `estimate` column in descending order.
 
-```{r oldest-counties}
+```{r oldest-counties, eval = FALSE}
 arrange(median_age, desc(estimate))
+```
+
+```{r oldest-counties-show, echo = FALSE}
+arrange(median_age, desc(estimate)) %>%
+  style_data(caption = "The oldest counties in the US by median age")
 ```
 
 The oldest county in the United States by almost 7 years over the second-oldest is Sumter County, Florida. Sumter County is home to The Villages, a Census-designated place that includes a large age-restricted community [also called The Villages](https://www.thevillages.com/).
 
-The tidyverse includes several tools for parsing datasets that allow for exploration beyond sorting and browsing data. The `filter()` function in dplyr queries a dataset for rows where a given condition evaluates to `TRUE`, and retains those rows only. For analysts who are familiar with databases and SQL, this is equivalent to a `WHERE` clause. This helps analysts subset their data for specific areas by their characteristics, and answer questions like "how many counties in the US have a median age of 50 or older?"
+The tidyverse includes several tools for parsing datasets that allow for exploration beyond sorting and browsing data. The `filter()` function in **dplyr** queries a dataset for rows where a given condition evaluates to `TRUE`, and retains those rows only. For analysts who are familiar with databases and SQL, this is equivalent to a `WHERE` clause. This helps analysts subset their data for specific areas by their characteristics, and answer questions like "how many counties in the US have a median age of 50 or older?"
 
-```{r fifty-or-over}
+```{r fifty-or-over, eval = FALSE}
 filter(median_age, estimate >= 50)
 ```
 
-Functions like `arrange()` and `filter()` operate on row values and organize data by row. Other tidyverse functions, like tidyr's `separate()`, operate on columns. The `NAME` column, returned by default by most tidycensus functions, contains a basic description of the location that can be more intuitive than the `GEOID`. For the 2015-2019 ACS, `NAME` is formatted as "X County, Y", where X is the county name and Y is the state name. `separate()` can split this column into two columns where one retains the county name and the other retains the state; this can be useful for analysts who need to complete a comparative analysis by state.
+```{r fifty-or-over-show, echo = FALSE}
+filter(median_age, estimate >= 50) %>%
+  style_data(caption = "Counties with a median age of 50 or above")
+```
 
-```{r}
+Functions like `arrange()` and `filter()` operate on row values and organize data by row. Other tidyverse functions, like **tidyr**'s `separate()`, operate on columns. The `NAME` column, returned by default by most **tidycensus** functions, contains a basic description of the location that can be more intuitive than the `GEOID`. For the 2015-2019 ACS, `NAME` is formatted as "X County, Y", where X is the county name and Y is the state name. `separate()` can split this column into two columns where one retains the county name and the other retains the state; this can be useful for analysts who need to complete a comparative analysis by state.
+
+```{r separate, eval = FALSE}
 separate(
   median_age,
   NAME,
@@ -84,11 +102,19 @@ separate(
 )
 ```
 
-\`\`\`{block2, note-text, type='rmdtip'}
+```{r separate-show, echo = FALSE}
+separate(
+  median_age,
+  NAME,
+  into = c("county", "state"),
+  sep = ", "
+) %>%
+  style_data(caption = "Separate columns for county and state")
+```
 
-You may have noticed above that existing variable names are *unquoted* when referenced in tidyverse functions. Many tidyverse functions use *non-standard evaluation* to refer to column names, which means that column names can be used as arguments directly without quotation marks. Non-standard evaluation makes interactive programming faster, especially for beginners; however, it can introduce some complications when writing your own functions or R packages. A full treatment of non-standard evaluation is beyond the scope of this book; [Hadley Wickham's *Advanced R*](https://adv-r.hadley.nz/metaprogramming.html) is the best resource on the topic if you'd like to learn more.
-
-\`\`\`
+```{block2, note-text, type='rmdtip'}
+You may have noticed above that existing variable names are unquoted when referenced in tidyverse functions. Many tidyverse functions use non-standard evaluation to refer to column names, which means that column names can be used as arguments directly without quotation marks. Non-standard evaluation makes interactive programming faster, especially for beginners; however, it can introduce some complications when writing your own functions or R packages. A full treatment of non-standard evaluation is beyond the scope of this book; Hadley Wickham's Advanced R is the best resource on the topic if you'd like to learn more.
+```
 
 ### Using summary variables and calculating new columns
 
@@ -96,11 +122,11 @@ Data in Census and ACS tables, as in the example above, are frequently comprised
 
 A solution to this issue might involve **normalizing** the estimated count data by dividing it by the overall population from which the sub-group is derived. Appropriate denominators for ACS tables are frequently found in the tables themselves as variables. In ACS table B19001, which covers the number of households by income bands, the variable `B19001_001` represents the total number of households in a given enumeration unit, which we removed from our analysis earlier. Given that this variable is an appropriate denominator for the other variables in the table, it merits its own column to facilitate the calculation of proportions or percentages.
 
-In tidycensus, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions. Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.
+In **tidycensus**, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions. Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.
 
 With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2015-2019 ACS.
 
-```{r}
+```{r az_race}
 race_vars <- c(
   White = "B03002_003",
   Black = "B03002_004",
@@ -116,26 +142,29 @@ az_race <- get_acs(
   variables = race_vars,
   summary_var = "B03002_001"
 ) 
+```
 
-az_race
-
+```{r az_race_show, echo = FALSE}
+style_data(az_race, caption = "Race and ethnicity in Arizona")
 ```
 
 By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2015-2019. The `select()` function, also in dplyr, retains only those columns that we need to view.
 
-```{r}
+```{r az_race_percent}
 az_race_percent <- az_race %>%
   mutate(percent = 100 * (estimate / summary_est)) %>%
   select(NAME, variable, percent)
-
-az_race_percent
 ```
 
-The above example introduces some additional syntax common to tidyverse data analyses. The `%>%` operator from the magrittr R package is a *pipe* operator that allows for analysts to develop *analytic pipelines*, which are deeply embedded in tidyverse-centric data analytic workflows. The pipe operator passes the result of a given line of code as the first argument of the code on the next line. In turn, analysts can develop data analysis pipelines of related operations that fit together in a coherent way.
+```{r az_race_percent_show, echo = FALSE}
+style_data(az_race_percent, caption = "Race and ethnicity in Arizona as percentages")
+```
+
+The above example introduces some additional syntax common to tidyverse data analyses. The `%>%` operator from the **magrittr** R package is a *pipe* operator that allows for analysts to develop *analytic pipelines*, which are deeply embedded in tidyverse-centric data analytic workflows. The pipe operator passes the result of a given line of code as the first argument of the code on the next line. In turn, analysts can develop data analysis pipelines of related operations that fit together in a coherent way.
 
 tidyverse developers recommend that the pipe operator be read as "then". The above code can in turn be interpreted as "Create a new data object `az_race_percent` by using the existing data object `az_race` THEN creating a new `percent` column THEN selecting the `NAME`, `variable`, and `percent` columns."
 
-Since R version 4.1, the base installation of R also includes a pipe operator, `|>`. It works much the same way as the magrittr pipe `%>%`, though `%>%` has some small additional features that make it work well within tidyverse analysis pipelines. In turn, `%>%` will be used in the examples throughout this book.
+Since R version 4.1, the base installation of R also includes a pipe operator, `|>`. It works much the same way as the **magrittr** pipe `%>%`, though `%>%` has some small additional features that make it work well within tidyverse analysis pipelines. In turn, `%>%` will be used in the examples throughout this book.
 
 ## Group-wise Census data analysis
 
@@ -147,59 +176,71 @@ The split-apply-combine model of data analysis, as discussed in @wickham2011, is
 
 -   Finally, the results of the function applied to each group are **combined** back into a single dataset, allowing the analyst to compare the results by group.
 
-Given the hierarchical nature of US Census Bureau data, "groups" across which analysts can make comparisons are found in just about every analytic tasks.  In many cases, the split-apply-combine model of data analysis will be useful to analysts as they make sense of patterns and trends found in Census data.  
+Given the hierarchical nature of US Census Bureau data, "groups" across which analysts can make comparisons are found in just about every analytic tasks. In many cases, the split-apply-combine model of data analysis will be useful to analysts as they make sense of patterns and trends found in Census data.
 
-In the tidyverse, split-apply-combine is implemented with the `group_by()` function in the dplyr package.  `group_by()` does the work for the analyst of splitting a dataset into groups, allowing subsequent functions used by the analyst in an analytic pipeline to be applied to each group then combined back into a single dataset.  The examples that follow illustrate some common group-wise analyses.  
+In the tidyverse, split-apply-combine is implemented with the `group_by()` function in the dplyr package. `group_by()` does the work for the analyst of splitting a dataset into groups, allowing subsequent functions used by the analyst in an analytic pipeline to be applied to each group then combined back into a single dataset. The examples that follow illustrate some common group-wise analyses.
 
 ### Making group-wise comparisons
 
-The `az_race_percent` dataset created above is an example of a dataset suitable for group-wise data analysis.  It includes two columns that could be used as group definitions: `NAME`, representing the county, and `variable`, representing the racial or ethnic group.  Split-apply-combine could be used for either group definition to make comparisons for data in Arizona across these categories.  
+The `az_race_percent` dataset created above is an example of a dataset suitable for group-wise data analysis. It includes two columns that could be used as group definitions: `NAME`, representing the county, and `variable`, representing the racial or ethnic group. Split-apply-combine could be used for either group definition to make comparisons for data in Arizona across these categories.
 
-In a first example, we can deploy group-wise data analysis to identify the largest racial or ethnic group in each county in Arizona.  This involves setting up a data analysis pipeline with the magrittr pipe and calculating a _grouped filter_ where the `filter()` operation will be applied specific to each group.  In this example, the filter condition will be specified as `percent == max(percent)`.  We can read the analytic pipeline then as "Create a new dataset, `largest_group`, by using the `az_race_dataset` THEN grouping the dataset by the `NAME` column THEN filtering for rows that are equal to the maximum value of `percent` for each group."
+In a first example, we can deploy group-wise data analysis to identify the largest racial or ethnic group in each county in Arizona. This involves setting up a data analysis pipeline with the **magrittr** pipe and calculating a *grouped filter* where the `filter()` operation will be applied specific to each group. In this example, the filter condition will be specified as `percent == max(percent)`. We can read the analytic pipeline then as "Create a new dataset, `largest_group`, by using the `az_race_dataset` THEN grouping the dataset by the `NAME` column THEN filtering for rows that are equal to the maximum value of `percent` for each group."
 
 ```{r largest-group}
 largest_group <- az_race_percent %>%
   group_by(NAME) %>%
   filter(percent == max(percent))
-
-largest_group
 ```
 
-The result of the grouped filter allows us to review the most common racial or ethnic group in each Arizona County along with how their percentages vary.  For example, in two Arizona counties (Greenlee and Navajo), none of the racial or ethnic groups form a majority of the population.  
+```{r largest-group-show, echo = FALSE}
+style_data(largest_group, caption = "Largest group by county in Arizona")
+```
 
-`group_by()` is commonly paired with the `summarize()` function in data analysis pipelines.  `summarize()` generates a new, compressed dataset that by default returns a column for the grouping variable(s) and columns representing the results of one or more functions applied to those groups.  In the example below, the `median()` function is used to identify the median percentage for each of the racial & ethnic groups in the dataset across counties in Arizona.  In turn, `variable` is passed to `group_by()` as the grouping variable.  
+The result of the grouped filter allows us to review the most common racial or ethnic group in each Arizona County along with how their percentages vary. For example, in two Arizona counties (Greenlee and Navajo), none of the racial or ethnic groups form a majority of the population.
 
-```{r median-by-group}
+`group_by()` is commonly paired with the `summarize()` function in data analysis pipelines. `summarize()` generates a new, compressed dataset that by default returns a column for the grouping variable(s) and columns representing the results of one or more functions applied to those groups. In the example below, the `median()` function is used to identify the median percentage for each of the racial & ethnic groups in the dataset across counties in Arizona. In turn, `variable` is passed to `group_by()` as the grouping variable.
+
+```{r median-by-group, eval = FALSE}
 az_race_percent %>%
   group_by(variable) %>%
   summarize(median_pct = median(percent))
 ```
-The result of this operation tells us the median county percentage of each racial and ethnic group for the state of Arizona.  A broader analysis might involve the calculation of these percentages hierarchically, finding the median county percentage of given attributes across states, for example.  
+
+```{r median-by-group-show, echo = FALSE}
+az_race_percent %>%
+  group_by(variable) %>%
+  summarize(median_pct = median(percent)) %>%
+  style_data(caption = "Median percentage by group")
+```
+
+The result of this operation tells us the median county percentage of each racial and ethnic group for the state of Arizona. A broader analysis might involve the calculation of these percentages hierarchically, finding the median county percentage of given attributes across states, for example.
 
 ### Tabulating new groups
 
-In the examples above, suitable groups in the `NAME` and `variable` columns were already found in the data retrieved with `get_acs()`.  Commonly, analysts will also need to calculate new custom groups to address specific analytic questions.  For example, variables in ACS table B19001 represent groups of households whose household incomes fall into a variety of categories: less than \$10,000/year, between \$10,000/year and \$19,999/year, and so forth. These categories may be more granular than needed by an analyst. As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.
+In the examples above, suitable groups in the `NAME` and `variable` columns were already found in the data retrieved with `get_acs()`. Commonly, analysts will also need to calculate new custom groups to address specific analytic questions. For example, variables in ACS table B19001 represent groups of households whose household incomes fall into a variety of categories: less than \$10,000/year, between \$10,000/year and \$19,999/year, and so forth. These categories may be more granular than needed by an analyst. As such, an analyst might take the following steps: 1) recode the ACS variables into wider income bands; 2) group the data by the wider income bands; 3) calculate grouped sums to generate new estimates.
 
 Consider the following example, using household income data for Minnesota counties from the 2012-2016 ACS:
 
-```{r}
+```{r mn-hh-income}
 mn_hh_income <- get_acs(
   geography = "county",
   table = "B19001",
   state = "MN",
   year = 2016
 )
+```
 
-mn_hh_income
+```{r mn-hh-income-show, echo = FALSE}
+style_data(mn_hh_income, caption = "Table B19001 for counties in Minnesota")
 ```
 
 Our data include household income categories for each county in the rows. However, let's say we only need three income categories for purposes of analysis: below \$35,000/year, between \$35,000/year and \$75,000/year, and \$75,000/year and up.
 
-We first need to do some transformation of our data to recode the variables appropriately. First, we will remove variable `B19001_001`, which represents the total number of households for each county. Second, we use the `case_when()` function from the **dplyr** package to identify groups of variables that correspond to our desired groupings.  Given that the variables are ordered in the ACS table in relationship to the household income values, the less than operator can be used to identify groups.  
+We first need to do some transformation of our data to recode the variables appropriately. First, we will remove variable `B19001_001`, which represents the total number of households for each county. Second, we use the `case_when()` function from the **dplyr** package to identify groups of variables that correspond to our desired groupings. Given that the variables are ordered in the ACS table in relationship to the household income values, the less than operator can be used to identify groups.
 
-The syntax of `case_when()` can appear complex to beginners, so it is worth stepping through how the function works.  Inside the `mutate()` function, which is used to create a new variable named `incgroup`, `case_when()` steps through a series of logical conditions that are evaluated in order similar to a series of if/else statements.  The first condition is evaluated, telling the function to assign the value of `below35k` to all rows with a `variable` value that comes before `"B19001_008"` - which in this case will be `B19001_002` (income less than $10,000) through `B19001_007` (income between $30,000 and $34,999).  The second condition is then evaluated _for all those rows not accounted for by the first condition_.  This means that `case_when()` knows not to assign `"bw35kand75k"` to the income group of $10,000 and below even though its variable comes before `B19001_013`.  The final condition in `case_when()` can be set to `TRUE` which in this scenario translates as "all other values."  
+The syntax of `case_when()` can appear complex to beginners, so it is worth stepping through how the function works. Inside the `mutate()` function, which is used to create a new variable named `incgroup`, `case_when()` steps through a series of logical conditions that are evaluated in order similar to a series of if/else statements. The first condition is evaluated, telling the function to assign the value of `below35k` to all rows with a `variable` value that comes before `"B19001_008"` - which in this case will be `B19001_002` (income less than \$10,000) through `B19001_007` (income between \$30,000 and \$34,999). The second condition is then evaluated *for all those rows not accounted for by the first condition*. This means that `case_when()` knows not to assign `"bw35kand75k"` to the income group of \$10,000 and below even though its variable comes before `B19001_013`. The final condition in `case_when()` can be set to `TRUE` which in this scenario translates as "all other values."
 
-```{r}
+```{r mn-recode}
 mn_hh_income_recode <- mn_hh_income %>%
   filter(variable != "B19001_001") %>%
   mutate(incgroup = case_when(
@@ -207,32 +248,35 @@ mn_hh_income_recode <- mn_hh_income %>%
     variable < "B19001_013" ~ "bw35kand75k", 
     TRUE ~ "above75k"
   )) 
-
-mn_hh_income_recode
 ```
 
-Our result illustrates how the different variable IDs are mapped to the new, recoded categories that we specified in `case_when()`.  The `group_by() %>% summarize()` workflow can now be applied to the recoded categories by county to tabulate the data into a smaller number of groups.  
+```{r mn-recode-show, echo = FALSE}
+style_data(mn_hh_income_recode, caption = "Recoded household income categories")
+```
 
-```{r}
+Our result illustrates how the different variable IDs are mapped to the new, recoded categories that we specified in `case_when()`. The `group_by() %>% summarize()` workflow can now be applied to the recoded categories by county to tabulate the data into a smaller number of groups.
+
+```{r mn-group-sums}
 mn_group_sums <- mn_hh_income_recode %>%
   group_by(GEOID, incgroup) %>%
   summarize(estimate = sum(estimate))
+```
 
-mn_group_sums
-  
+```{r mn-group-sums-show, echo = FALSE}
+style_data(mn_group_sums, caption = "Grouped sums by income bands")
 ```
 
 Our data now reflect the new estimates by group by county.
 
 ## Comparing ACS estimates over time
 
-A common task when working with Census data is to examine demographic change over time.  Data from the Census API - and consequently tidycensus - only go back to the 2000 Decennial Census. For historical analysts who want to go even further back, decennial Census data are available since 1790 from the [National Historical Geographic Information System](https://www.nhgis.org/), or NHGIS, which will be covered in detail in Chapter 11.
+A common task when working with Census data is to examine demographic change over time. Data from the Census API - and consequently **tidycensus** - only go back to the 2000 Decennial Census. For historical analysts who want to go even further back, decennial Census data are available since 1790 from the [National Historical Geographic Information System](https://www.nhgis.org/), or NHGIS, which will be covered in detail in Chapter \@ref(other-census-and-government-data-resources).
 
-### A warning: inconsistent variable IDs in the ACS Data Profile
+### A warning: inconsistent variable IDs over time for the ACS Data Profile
 
-One advantage to working with ACS data is that it includes a rich yearly time series going back to 2005 for the 1-year ACS and 2005-2009 for the 5-year ACS.  This allows analysts to examine recent demographic shifts in a relatively consistent way.  However, it is important to take care when performing time series analysis.  For example, the ACS Data Profile is commonly used for pre-computed normalized ACS estimates.  Let's say that we are interested in analyzing the percentage of residents age 25 and up with a 4-year college degree for counties in Colorado from the 2019 1-year ACS.  We'd first look up the appropriate variable ID with `load_variables(2019, "acs1/profile")` then use `get_acs()`:
+One advantage to working with ACS data is that it includes a rich yearly time series going back to 2005 for the 1-year ACS and 2005-2009 for the 5-year ACS. This allows analysts to examine recent demographic shifts in a relatively consistent way. However, **it is important to take care when performing time series analysis**. For example, the ACS Data Profile is commonly used for pre-computed normalized ACS estimates. Let's say that we are interested in analyzing the percentage of residents age 25 and up with a 4-year college degree for counties in Colorado from the 2019 1-year ACS. We'd first look up the appropriate variable ID with `load_variables(2019, "acs1/profile")` then use `get_acs()`:
 
-```{r}
+```{r co-college-19}
 co_college19 <- get_acs(
   geography = "county",
   variables = "DP02_0068P",
@@ -240,12 +284,15 @@ co_college19 <- get_acs(
   survey = "acs1",
   year = 2019
 )
-
-co_college19
 ```
+
+```{r co-college-19-show, echo = FALSE}
+style_data(co_college19, n_rows = 5, caption = "Variable DP02_0068P in 2019")
+```
+
 We get back data for counties of population 65,000 and greater as these are the geographies available in the 1-year ACS. The data make sense: Boulder County, home to the University of Colorado, has a very high percentage of its population with a 4-year degree or higher. However, when we run the exact same query for the 2018 1-year ACS:
 
-```{r}
+```{r co-college-18}
 co_college18 <- get_acs(
   geography = "county",
   variables = "DP02_0068P",
@@ -253,16 +300,19 @@ co_college18 <- get_acs(
   survey = "acs1",
   year = 2018
 )
-
-co_college18
 ```
-The values are completely different, and clearly not percentages!  This is because variable IDs for the Data Profile __are unique to each year__ and in turn should not be used for time-series analysis.  The returned results above represent the civilian population age 18 and up, and have nothing to do with educational attainment.  
+
+```{r co-college-18-show, echo = FALSE}
+style_data(co_college18, n_rows = 5, caption = "Variable DP02_0068P in 2018")
+```
+
+The values are completely different, and clearly not percentages! This is because variable IDs for the Data Profile **are unique to each year** and in turn should not be used for time-series analysis. The returned results above represent the civilian population age 18 and up, and have nothing to do with educational attainment.
 
 ### Preparing time-series ACS estimates
 
-A safer way to perform time-series analysis of the ACS, then, is to use the Detailed Tables.  While this option lacks the convenience of the pre-computed estimates in the Data Profile, it ensures that variable IDs will remain consistent across years allowing for consistent and correct analysis.  That said, there still are some potential pitfalls to account for when using the Detailed Tables.  The Census Bureau will add and remove variables from survey to survey depending on data needs and data availability.  For example, questions are sometimes added and removed from the ACS survey meaning that you won't always be able to get every data point for every year and geography combination.  In turn, it is still important to check on data availability using `load_variables()` for the years you plan to analyze before carrying out your time-series analysis.  
+A safer way to perform time-series analysis of the ACS, then, is to use the Detailed Tables. While this option lacks the convenience of the pre-computed estimates in the Data Profile, it ensures that variable IDs will remain consistent across years allowing for consistent and correct analysis. That said, there still are some potential pitfalls to account for when using the Detailed Tables. The Census Bureau will add and remove variables from survey to survey depending on data needs and data availability. For example, questions are sometimes added and removed from the ACS survey meaning that you won't always be able to get every data point for every year and geography combination. In turn, it is still important to check on data availability using `load_variables()` for the years you plan to analyze before carrying out your time-series analysis.
 
-Let's re-engineer the analysis above on educational attainment in Colorado counties, which below will be computed for a time series from 2010 to 2019.  Information on "bachelor's degree or higher" is split by sex and across different tiers of educational attainment in the detailed tables, found in ACS table 15002.  Given that we only need a few variables (representing estimates of populations age 25+ who have finished a 4-year degree or graduate degrees, by sex), we'll request those variables directly rather than the entire B15002 table.  
+Let's re-engineer the analysis above on educational attainment in Colorado counties, which below will be computed for a time series from 2010 to 2019. Information on "bachelor's degree or higher" is split by sex and across different tiers of educational attainment in the detailed tables, found in ACS table 15002. Given that we only need a few variables (representing estimates of populations age 25+ who have finished a 4-year degree or graduate degrees, by sex), we'll request those variables directly rather than the entire B15002 table.
 
 ```{r}
 college_vars <- c("B15002_015",
@@ -275,9 +325,9 @@ college_vars <- c("B15002_015",
                   "B15002_035")
 ```
 
-We'll now use these variables to request data on college degree holders from the ACS for counties in Colorado for each of the 1-year ACS surveys from 2010 to 2019.  In most cases, this process should be streamlined with _iteration_.  Thus far, we are familiar with using the `year` argument in `get_acs()` to request data for a specific year.  Writing out ten different calls to `get_acs()`, however - one for each year - would be tedious and would require a fair amount of repetitive code!  Iteration helps us avoid repetitive coding as it allows us to carry out the same process over a sequence of values.  Programmers familiar with iteration will likely know of "loop" operators like `for` and `while`, which are available in base R and most other programming languages in some variety.  Base R also includes the `*apply()` family of functions (e.g. `lapply()`, `mapply()`, `sapply()`), which iterates over a sequence of values and applies a given function to each value.  
+We'll now use these variables to request data on college degree holders from the ACS for counties in Colorado for each of the 1-year ACS surveys from 2010 to 2019. In most cases, this process should be streamlined with *iteration*. Thus far, we are familiar with using the `year` argument in `get_acs()` to request data for a specific year. Writing out ten different calls to `get_acs()`, however - one for each year - would be tedious and would require a fair amount of repetitive code! Iteration helps us avoid repetitive coding as it allows us to carry out the same process over a sequence of values. Programmers familiar with iteration will likely know of "loop" operators like `for` and `while`, which are available in base R and most other programming languages in some variety. Base R also includes the `*apply()` family of functions (e.g. `lapply()`, `mapply()`, `sapply()`), which iterates over a sequence of values and applies a given function to each value.
 
-The tidyverse approach to iteration is found in the purrr package.  purrr includes a variety of functions that are designed to integrate well in workflows that require iteration and use other tidyverse tools.  The `map_()` family of functions iterate over values and try to return a desired result; `map()` returns a list, `map_int()` returns an integer vector, and `map_chr()` returns a character vector, for example.  With tidycensus, the `map_dfr()` function is particularly useful.  `map_dfr()` iterates over an input and applies it to a function or process defined by the user, then row-binds the result into a single data frame.  The example below illustrates how this works for the years 2010 through 2019.   
+The tidyverse approach to iteration is found in the **purrr** package. **purrr** includes a variety of functions that are designed to integrate well in workflows that require iteration and use other tidyverse tools. The `map_*()` family of functions iterate over values and try to return a desired result; `map()` returns a list, `map_int()` returns an integer vector, and `map_chr()` returns a character vector, for example. With tidycensus, the `map_dfr()` function is particularly useful. `map_dfr()` iterates over an input and applies it to a function or process defined by the user, then row-binds the result into a single data frame. The example below illustrates how this works for the years 2010 through 2019.
 
 ```{r purrr-example}
 years <- 2010:2019
@@ -295,23 +345,32 @@ college_by_year <- map_dfr(years, ~{
 }, .id = "year")
 ```
 
-For users newer to R, iteration and purrr syntax can feel complex, so it is worth stepping through how the above code sample works.  
+For users newer to R, iteration and purrr syntax can feel complex, so it is worth stepping through how the above code sample works.
 
-* First, a numeric vector of years is defined with the syntax `2010:2019`. This will create a vector of years at 1-year intervals.  These values are set as the names of the vector as well, as `map_dfr()` has additional functionality for working with named objects.  
-* `map_dfr()` then takes three arguments above.  
-  - The first argument is the object that `map_dfr()` will iterate over, which in this case is our `years` vector.  This means that the process we set up will be run once for each element of `years`.  
-  - The second argument is a formula we specify with the tilde (`~`) operator and curly braces (`{...}`).  The code inside the curly braces will be run once for each element of `years`.  The local variable `.x`, used inside the formula, takes on each value of `years` sequentially.  In turn, we are running the equivalent of `get_acs()` with `year = 2010`, `year = 2011`, and so forth. Once `get_acs()` is run for each year, the result is combined into a single output data frame.
-  - The `.id` argument, which is optional but used here, creates a new column in the output data frame that contains values equivalent to the names of the input object, which in this case is `years`.  By setting `.id = "year"`, we tell `map_dfr()` to name the new column that will contain these values `year`.  
+-   First, a numeric vector of years is defined with the syntax `2010:2019`. This will create a vector of years at 1-year intervals. These values are set as the names of the vector as well, as `map_dfr()` has additional functionality for working with named objects.\
+
+-   `map_dfr()` then takes three arguments above.
+
+    -   The first argument is the object that `map_dfr()` will iterate over, which in this case is our `years` vector. This means that the process we set up will be run once for each element of `years`.
+    -   The second argument is a formula we specify with the tilde (`~`) operator and curly braces (`{...}`). The code inside the curly braces will be run once for each element of `years`. The local variable `.x`, used inside the formula, takes on each value of `years` sequentially. In turn, we are running the equivalent of `get_acs()` with `year = 2010`, `year = 2011`, and so forth. Once `get_acs()` is run for each year, the result is combined into a single output data frame.
+    -   The `.id` argument, which is optional but used here, creates a new column in the output data frame that contains values equivalent to the names of the input object, which in this case is `years`. By setting `.id = "year"`, we tell `map_dfr()` to name the new column that will contain these values `year`.
 
 Let's review the result:
-  
-```{r}
-college_by_year %>% arrange(NAME, variable, year) %>% glimpse()
+
+```{r college-by-year, eval = FALSE}
+college_by_year %>% 
+  arrange(NAME, variable, year)
 ```
 
-The result is a long-form dataset that contains a time series of each requested ACS variable for each county in Colorado that is available in the 1-year ACS.  The code below outlines a `group_by() %>% summarize()` workflow for calculating the percentage of the population age 25 and up with a 4-year college degree, then uses the `pivot_wider()` function from the tidyr package to spread the years across the columns for tabular data display.  
+```{r college-by-year-show, echo = FALSE}
+college_by_year %>% 
+  arrange(NAME, variable, year) %>%
+  style_data(caption = "Educational attainment over time")
+```
 
-```{r}
+The result is a long-form dataset that contains a time series of each requested ACS variable for each county in Colorado that is available in the 1-year ACS. The code below outlines a `group_by() %>% summarize()` workflow for calculating the percentage of the population age 25 and up with a 4-year college degree, then uses the `pivot_wider()` function from the tidyr package to spread the years across the columns for tabular data display.
+
+```{r pct-college-by-year}
 percent_college_by_year <- college_by_year %>%
   group_by(NAME, year) %>%
   summarize(numerator = sum(estimate),
@@ -322,23 +381,21 @@ percent_college_by_year <- college_by_year %>%
               values_from = pct_college)
 ```
 
-```{r, echo = FALSE}
-knitr::kable(percent_college_by_year, digits = 1) %>% kableExtra::kable_styling()
+```{r pct-college-by-year-show, echo = FALSE}
+style_data(percent_college_by_year, caption = "Percent college by year")
 ```
 
-This particular format is suitable for data display or writing to an Excel spreadsheet for colleagues who are not R-based.  In addition, Chapter 4 will address appropriate methods for visualization of this data.
+This particular format is suitable for data display or writing to an Excel spreadsheet for colleagues who are not R-based. In addition, Chapter 4 will address appropriate methods for visualization of this data.
 
 ## Handling margins of error in the American Community Survey with tidycensus
 
-A topic of critical importance when working with data from the American Community Survey is the _margin of error_.  As opposed to the decennial US Census, which is based on a complete enumeration of the US population, the ACS is based on a sample with estimates characterized by margins of error.  By default, MOEs are returned at a 90 percent confidence level.  This can be translated roughtly as "we are 90 percent sure that the true value falls within a range defined by the estimate plus or minus the margin of error."  
+A topic of critical importance when working with data from the American Community Survey is the *margin of error*. As opposed to the decennial US Census, which is based on a complete enumeration of the US population, the ACS is based on a sample with estimates characterized by margins of error. By default, MOEs are returned at a 90 percent confidence level. This can be translated roughtly as "we are 90 percent sure that the true value falls within a range defined by the estimate plus or minus the margin of error."
 
-As discussed in Chapter 2, tidycensus takes an opinionated approach to margins of error.  When applicable, tidycensus will always return the margin of error associated with an estimate, and does not have an option available to return estimates only.  For "tidy" or long-form data, these margins of error will be found in the `moe` column; for wide-form data, margins of error will be found in columns with an `M` suffix.  
+As discussed in Chapter 2, **tidycensus** takes an opinionated approach to margins of error. When applicable, **tidycensus** will always return the margin of error associated with an estimate, and does not have an option available to return estimates only. For "tidy" or long-form data, these margins of error will be found in the `moe` column; for wide-form data, margins of error will be found in columns with an `M` suffix.
 
-The confidence level of the MOE can be controlled with the `moe_level` argument in `get_acs()`.  The default `moe_level` is 90, which is what the Census Bureau returns by default.  tidycensus can also return MOEs at a confidence level of `95` or `99` which uses Census Bureau-recommended formulas to adjust the MOE.  For example, we might look at data on median household income by county in Rhode Island using the default `moe_level` of 90: 
+The confidence level of the MOE can be controlled with the `moe_level` argument in `get_acs()`. The default `moe_level` is 90, which is what the Census Bureau returns by default. tidycensus can also return MOEs at a confidence level of `95` or `99` which uses Census Bureau-recommended formulas to adjust the MOE. For example, we might look at data on median household income by county in Rhode Island using the default `moe_level` of 90:
 
-```{r default-moe}
-library(tidycensus)
-
+```{r default-moe, eval = FALSE}
 get_acs(
   geography = "county",
   state = "Rhode Island",
@@ -346,9 +403,18 @@ get_acs(
 )
 ```
 
+```{r default-moe-show, echo = FALSE}
+get_acs(
+  geography = "county",
+  state = "Rhode Island",
+  variables = "B19013_001"
+) %>%
+  style_data(caption = "Default MOE at 90 percent confidence level")
+```
+
 A stricter margin of error will increase the size of the MOE relative to its estimate.
 
-```{r moe-level-99}
+```{r moe-level-99, eval = FALSE}
 get_acs(
   geography = "county",
   state = "Rhode Island",
@@ -357,13 +423,21 @@ get_acs(
 )
 ```
 
+```{r moe-level-99-show, echo = FALSE}
+get_acs(
+  geography = "county",
+  state = "Rhode Island",
+  variables = "B19013_001",
+  moe_level = 99
+) %>%
+  style_data(caption = "MOE at 99 percent confidence level")
+```
+
 ### Calculating derived margins of error in tidycensus
 
-For small geographies or small populations, margins of error can get quite large, in some cases exceeding their corresponding estimates.  In the example below, we can examine data on age groups by sex for the population age 65 and older for Census tracts in Salt Lake County, Utah. 
+For small geographies or small populations, margins of error can get quite large, in some cases exceeding their corresponding estimates. In the example below, we can examine data on age groups by sex for the population age 65 and older for Census tracts in Salt Lake County, Utah.
 
-```{r}
-library(tidyverse)
-
+```{r salt-lake-example}
 vars <- paste0("B01001_0", c(20:25, 44:49))
 
 salt_lake <- get_acs(
@@ -373,60 +447,72 @@ salt_lake <- get_acs(
   county = "Salt Lake",
   year = 2019
 )
+```
 
+We can examine values for a specific Census tract:
+
+```{r specific-tract, eval = FALSE}
 example_tract <- salt_lake %>%
   filter(GEOID == "49035100100")
 
-example_tract %>% select(-NAME)
+example_tract %>% 
+  select(-NAME)
 ```
 
-In many cases, the margins of error exceed their corresponding estimates.  For example, the ACS data suggest that in Census tract 49035100100, for the male population age 85 and up (variable ID `B01001_0025`), there are anywhere between 0 and 45 people in that Census tract.  This can make ACS data for small geographies problematic for planning and analysis purposes.  
+```{r salt-lake-example-show, echo = FALSE}
+example_tract <- salt_lake %>%
+  filter(GEOID == "49035100100")
 
-A potential solution to large margins of error for small estimates in the ACS is to aggregate data upwards until a satisfactory margin of error to estimate ratio is reached.  [The US Census Bureau publishes formulas for appropriately calculating margins of error around such derived estimates](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2018_Instructions_for_Stat_Testing_ACS.pdf?), which are included in tidycensus with the following functions: 
+example_tract %>% 
+  select(-NAME) %>%
+  style_data(caption = "Example Census tract in Salt Lake City")
+```
 
-* `moe_sum()`: calculates a margin of error for a derived sum;
-* `moe_product()`: calculates a margin of error for a derived product;
-* `moe_ratio()`: calculates a margin of error for a derived ratio;
-* `moe_prop()`: calculates a margin of error for a derived proportion.  
+In many cases, the margins of error exceed their corresponding estimates. For example, the ACS data suggest that in Census tract 49035100100, for the male population age 85 and up (variable ID `B01001_0025`), there are anywhere between 0 and 45 people in that Census tract. This can make ACS data for small geographies problematic for planning and analysis purposes.
 
-In their most basic form, these functions can be used with constants.  For example, let's say we had an ACS estimate of 25 with a margin of error of 5 around that estimate.  The appropriate denominator for this estimate is 100 with a margin of error of 3.  To determine the margin of error around the derived proportion of 0.25, we can use `moe_prop()`: 
+A potential solution to large margins of error for small estimates in the ACS is to aggregate data upwards until a satisfactory margin of error to estimate ratio is reached. [The US Census Bureau publishes formulas for appropriately calculating margins of error around such derived estimates](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2018_Instructions_for_Stat_Testing_ACS.pdf?), which are included in tidycensus with the following functions:
+
+-   `moe_sum()`: calculates a margin of error for a derived sum;
+-   `moe_product()`: calculates a margin of error for a derived product;
+-   `moe_ratio()`: calculates a margin of error for a derived ratio;
+-   `moe_prop()`: calculates a margin of error for a derived proportion.
+
+In their most basic form, these functions can be used with constants. For example, let's say we had an ACS estimate of 25 with a margin of error of 5 around that estimate. The appropriate denominator for this estimate is 100 with a margin of error of 3. To determine the margin of error around the derived proportion of 0.25, we can use `moe_prop()`:
 
 ```{r moe-prop}
 moe_prop(25, 100, 5, 3)
 ```
 
-Our margin of error around the derived estimate of 0.25 is approximately 0.049.  
+Our margin of error around the derived estimate of 0.25 is approximately 0.049.
 
 ### Calculating group-wise margins of error
 
-These margin of error functions in tidycensus can in turn be integrated into tidyverse-centric analytic pipelines to handle large margins of error around estimates.  Given that the smaller age bands in the Salt Lake City dataset are characterized by too much uncertainty for our analysis, we decide in this scenario to aggregate our data upwards to represent populations aged 65 and older by sex.  
+These margin of error functions in **tidycensus** can in turn be integrated into tidyverse-centric analytic pipelines to handle large margins of error around estimates. Given that the smaller age bands in the Salt Lake City dataset are characterized by too much uncertainty for our analysis, we decide in this scenario to aggregate our data upwards to represent populations aged 65 and older by sex.
 
-In the code below, we use the `if_else()` function to create a new column, `sex`, that represents a mapping of the variables we pulled from the ACS to their sex categories.  We then employ a familiar `group_by() %>% summarize()` method to aggregate our data by Census tract and sex.  Notably, the call to `summarize()` includes a call to tidycensus's `moe_sum()` function, which will generate a new column that represents the margin of error around the derived sum.  
+In the code below, we use the `case_when()` function to create a new column, `sex`, that represents a mapping of the variables we pulled from the ACS to their sex categories. We then employ a familiar `group_by() %>% summarize()` method to aggregate our data by Census tract and sex. Notably, the call to `summarize()` includes a call to tidycensus's `moe_sum()` function, which will generate a new column that represents the margin of error around the derived sum.
 
 ```{r summarize-moe}
 salt_lake_grouped <- salt_lake %>%
-  mutate(sex = if_else(str_sub(variable, start = -2) < "26",
-                       "Male", 
-                       "Female")) %>%
+  mutate(sex = case_when(
+    str_sub(variable, start = -2) < "26" ~ "Male",
+    TRUE ~ "Female"
+  )) %>%
   group_by(GEOID, sex) %>%
   summarize(sum_est = sum(estimate), 
             sum_moe = moe_sum(moe, estimate))
-
-
-salt_lake_grouped
 ```
-The margins of error relative to their estimates are now much more reasonable than in the disaggregated data.  
 
-That said, the Census Bureau issues a note of caution: 
+```{r summarize-moe-show, echo = FALSE}
+style_data(salt_lake_grouped, caption = "Grouped margins of error")
+```
 
-> All [derived MOE methods] are approximations and users should be cautious in using them.
-This is because these methods do not consider the correlation or covariance between the basic
-estimates. They may be overestimates or underestimates of the derived estimate’s standard error
-depending on whether the two basic estimates are highly correlated in either the positive or
-negative direction. As a result, the approximated standard error may not match direct
-calculations of standard errors or calculations obtained through other methods.
+The margins of error relative to their estimates are now much more reasonable than in the disaggregated data.
 
-This means that your "best bet" is to first search the ACS tables to see if your data are found in aggregated form elsewhere before doing the aggregation and MOE estimation yourself.  In many cases, you'll find aggregated information in the ACS combined tables, Data Profile, or Subject Tables that will include pre-computed margins of error for you.  
+That said, [the Census Bureau issues a note of caution](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2019_Instructions_for_Stat_Testing_ACS.pdf?) [@acs_moe]:
+
+> All [derived MOE methods] are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate's standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
+
+This means that your "best bet" is to first search the ACS tables to see if your data are found in aggregated form elsewhere before doing the aggregation and MOE estimation yourself. In many cases, you'll find aggregated information in the ACS combined tables, Data Profile, or Subject Tables that will include pre-computed margins of error for you.
 
 ## Exercises
 

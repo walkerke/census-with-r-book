@@ -4,6 +4,7 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(spatialreg)
+library(plotly)
 options(tigris_use_cache = TRUE)
 minutes_to_downtown <- readr::read_rds("data/ch8_minutes_to_downtown.rds")
 source("R/book-functions.R")
@@ -796,25 +797,51 @@ Additionally, the impact of *edge effects* can be acute in GWR models. Edge effe
 
 With these concerns in mind, GWR is generally recommended as an *exploratory technique* that serves as a useful companion to the estimation of a global model. For example, a global parameter estimate may suggest that in Dallas-Fort Worth, median home values tend to be higher in areas with lower percentages of owner-occupied housing, controlling for other predictors in the model. GWR, used as a follow-up, helps the analyst understand that this global relationship is driven by higher home values near to urban cores such as in the uptown Dallas area, and may not necessarily characterize the dynamics of rural and exurban areas elsewhere in the metropolitan region.
 
-## Geodemographic classification
+## Classification and clustering of ACS data
+
+The statistical models discussed earlier in this chapter were fit for the purpose of understanding relationships between an outcome variable and a series of predictors. In the social sciences, such models are generally used for *inference*, where a researcher tests those hypotheses with respect to those relationships to understand social processes. In industry, regression models are commonly used instead for *prediction,* where a model is trained on the relationship between an observed outcome and predictors then used to make predictions on out-of-sample data. In machine learning terminology, this is referred to as *supervised learning*, where the prediction target is known.
+
+In other cases, the researcher is interested in discovering the structure of a dataset and generating meaningful labels for it rather than making predictions based on a known outcome. This type of approach is termed *unsupervised machine learning*. This section will explore two common applications of unsupervised machine learning with respect to demographic data: *geodemographic classification*, which identifies "clusters" of similar areas based on common demographic characteristics, and *regionalization*, which partitions an area into salient *regions* that are both spatially contiguous and share common demographic attributes.
+
+### Geodemographic classification
+
+*Geodemographic classification* refers to the grouping of geographic observations based on similar demographic (or other) characteristics [@singleton2013]. It is commonly used to generate neighborhood "typologies" that can help explain general similarities and differences among neighborhoods in a broader region. While the geodemographic approach has been criticized for essentializing neighborhoods [@goss1995], it is also widely used to understand dynamics of urban systems [@vicino2011] and has been proposed as a possible solution to problems with large margins of error for individual variables in the ACS [@spielman2015]. In industry, geodemographics are widely used for marketing and customer segmentation purposes. Popular frameworks include [Esri's Tapestry Segmentation](https://www.esri.com/en-us/arcgis/products/data/data-portfolio/tapestry-segmentation) and [Experian's Mosaic product](https://www.experian.com/marketing-services/consumer-segmentation).
+
+While the exact methodology to produce a geodemographic classification system varies from implementation to implementation, the general process used involves *dimension reduction* applied to a high-dimensional input dataset of model features, followed by a *clustering algorithm* to partition observations into groups based on the derived dimensions. As we have already employed principal components analysis for dimension reduction on the Dallas-Fort Worth dataset, we can re-use those components for this purpose.
+
+The *k*-means clustering algorithm is one of the most common unsupervised algorithms used to partition data in this way. *K-*means works by attempting to generate $K$ clusters that are internally similar but dissimilar from other clusters. Following @james2013c and @boehmke2019j, the goal of *K-*means clustering can be written as:
+
+$$
+\underset{C_1...C_k}{\text{minimize}}\left \{ \sum\limits_{k=1}^KW(C_k) \right \}
+$$
+
+where the within-cluster variation $W(C_k)$ is computed as
+
+$$
+W(C_k) = \sum_{x_i \in C_k}(x_{i} - \mu_k) ^ 2
+$$
+
+with $x_i$ representing an observation in the cluster $C_k$ and $\mu_k$ representing the mean value of all observations in cluster $C_k$.
+
+To compute *k-*means, the analyst must first choose the number of desired clusters, represented with $k$. The analyst then specifies $k$ initial "centers" from the data (this is generally done at random) to seed the algorithm. The algorithm then iteratively assigns observations to clusters until the total within-cluster variation is minimized, returning a cluster solution.
+
+In R, *k-*means can be computed with the `kmeans()` function. This example solution will generate 6 cluster groups. Given that the algorithm relies on random seeding of the cluster centers, `set.seed()` should be used to ensure stability of the solution.
 
 ```{r}
 set.seed(1983)
 
 dfw_kmeans <- dfw_pca %>%
   st_drop_geometry() %>%
-  na.omit() %>%
   select(PC1:PC8) %>%
-  kmeans(centers = 8)
+  kmeans(centers = 6)
 
 table(dfw_kmeans$cluster)
 ```
 
-Map the clusters:
+The algorithm has partitioned the data into six clusters; the smallest (Cluster 1) has 65 Census tracts, whereas the largest (Cluster 3) has 380 Census tracts. At this stage, it is useful to explore the data in both *geographic space* and *variable space* to understand how the clusters differ from one another. We can assign the cluster ID to the original dataset as a new column and map it with `geom_sf()`.
 
-```{r}
+```{r map-clusters}
 dfw_clusters <- dfw_pca %>%
-  na.omit() %>%
   mutate(cluster = as.character(dfw_kmeans$cluster))
 
 ggplot(dfw_clusters, aes(fill = cluster)) + 
@@ -823,33 +850,67 @@ ggplot(dfw_clusters, aes(fill = cluster)) +
   theme_void()
 ```
 
-## Spatial clustering & regionalization
+Some notable geographic patterns in the clusters are evident from the map, even if the viewer does not have local knowledge of the Dallas-Fort Worth region. Cluster 6 represents more rural communities on the edges of the metropolitan area, whereas Cluster 3 tends to be located in the core counties of Tarrant and Dallas as well as higher-density tracts in outer counties. Cluster 5 covers both big-city downtowns of Fort Worth and Dallas along with a scattering of suburban tracts.
 
--   Concept: clustering with spatial constraints
--   SKATER and minimum spanning trees
--   Potential applications
--   Alternative approaches
+A useful companion visualization to the map is a color-coded scatterplot using two of the principal components in the PCA dataset. We will use the two components discussed as "indices" in Section \@ref(dimension-reduction-with-principal-components-analysis): PC1, which is a gradient from affluent/older/white to lower-income/younger/nonwhite, and PC3, which is an urban-to-rural gradient. Given the data density, `ggplotly()` from the **plotly** package will convert the scatterplot to a graphic with an interactive legend, allowing the analyst to turn cluster groups on and off.
 
-```{r}
+```{r cluster-scatterplot}
+library(plotly)
+
+cluster_plot <- ggplot(dfw_clusters, aes(x = PC1, y = PC3, color = cluster)) + 
+  geom_point() + 
+  scale_color_brewer(palette = "Set1") + 
+  theme_minimal()
+
+ggplotly(cluster_plot) %>%
+  layout(legend = list(orientation = "h", y = -0.15, x = 0.2, title = "Cluster"))
+```
+
+While Cluster 1 overlaps with several other clusters in the feature space shown on the plot (double-click it in the legend to isolate it), the other five clusters show distinctive differences with respect to the two principal components. Cluster 4 represents affluent, homogeneous, urban communities; the Dallas enclave of Highland Park falls within this cluster. Cluster 5, which includes the two downtowns, also scores lower on the "rurality" index PC3 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.
+
+### Spatial clustering & regionalization
+
+The geodemographic classification outlined in the previous section offers a useful methodology for identifying similar types of Census tracts in varying parts of a metropolitan region. However, this approach was *aspatial* in that it did not take the geographic properties of the Census tracts into account. In other applications, an analyst may want to generate meaningful clusters that are constrained to be neighboring or contiguous areas. An application of this workflow might be sales territory generation, where sales representatives will be assigned to communities in which they have local market knowledge but also want to minimize overall travel time.
+
+A suite of *regionalization* algorithms are available that adapt the clustering approach by introducing spatial constraints. A spatial constraint might be an additional requirement that the algorithm minimize overall geographic distance between observations, or even that the derived clusters must be geographically contiguous. The latter scenario is explored in this subsection.
+
+The workflow below illustrates the SKATER algorithm [@assunção2006], an acronym that stands for "Spatial 'K'luster Analysis by Tree Edge Removal." This algorithm is implemented in R with the `skater()` function in the **spdep** package, and is also available in PySAL, GeoDa, and ArcGIS as the "[Spatially Constrained Multivariate Clustering](https://pro.arcgis.com/en/pro-app/latest/tool-reference/spatial-statistics/how-spatially-constrained-multivariate-clustering-works.htm)" tool.
+
+SKATER relies on the concept of *minimum spanning trees*, where a connectivity graph is drawn between all observations in the dataset with graph edges weighted by the attribute similarity between observations. The graph is then "pruned" by removing edges that connect observations that are not similar to one another.
+
+The setup for SKATER involves similar steps to clustering algorithms used in Chapter \@ref(spatial-analysis-with-us-census-data), as a queens-case contiguity weights matrix is generated. The key differences include the use of *costs* - which represent the differences between neighbors based on an input set of variables, which in this example will be principal components 1 through 8 - and the use of a binary weights matrix with `style = "B"`.
+
+```{r skater-setup}
+library(spdep)
+
 input_vars <- dfw_pca %>%
   select(PC1:PC8) %>%
   st_drop_geometry() %>%
-  as.data.frame() %>%
-  na.omit()
+  as.data.frame() 
 
-skater_nbrs <- poly2nb(na.omit(dfw_pca), queen = TRUE)
+skater_nbrs <- poly2nb(dfw_pca, queen = TRUE)
 costs <- nbcosts(skater_nbrs, input_vars)
 skater_weights <- nb2listw(skater_nbrs, costs, style = "B")
-
-mst <- mstree(skater_weights)
-
-regions <- skater(mst[,1:2], input_vars, ncuts = 7,
-                  crit = 10)
 ```
 
-Plot the regions:
+Once the weights have been generated, a minimum spanning tree is created with `mstree()`, and used in the call to `skater()`.
 
-```{r}
+```{r run-skater}
+mst <- mstree(skater_weights)
+
+regions <- skater(
+  mst[,1:2], 
+  input_vars, 
+  ncuts = 7,
+  crit = 10
+)
+```
+
+The `ncuts` parameter dictates how many times the algorithm should prune the minimum spanning tree; a value of `7` will create 8 groups. The `crit` parameter is used to determine the minimum number of observations per group; above, we have set this value to `10`, requiring that each region will have at least 10 Census tracts.
+
+The solution can be extracted and assigned to the spatial dataset, then visualized with `geom_sf()`:
+
+```{r map-skater}
 dfw_clusters$region <- as.character(regions$group)
 
 ggplot(dfw_clusters, aes(fill = region)) + 
@@ -857,3 +918,13 @@ ggplot(dfw_clusters, aes(fill = region)) +
   scale_fill_brewer(palette = "Set1") + 
   theme_void()
 ```
+
+The algorithm has partitioned the data into eight contiguous regions. These regions are largely geographic in nature (regions 1, 2, and 8 cover the western, eastern, and southern portions of the metro respectively), but they also incorporate demographic variations in the data. For example, the very affluent Highland Park area, which is demographically distinct from the rest of the region in both socioeconomic status and age (it is much older), is given its own cluster. Additionally, Cluster 6 represents the "northeast Tarrant County" suburban community, which is a socially meaningful designation in north Texas.
+
+## Exercises
+
+Identify a different region of the United States of interest to you. Complete the following tasks:
+
+1.  Acquire race/ethnicity data from **tidycensus** for your chosen region and compute the dissimilarity index. How does segregation in your chosen region compare with urban areas in California?
+2.  Reproduce the regression modeling workflow outlined in this chapter for your chosen region. Is residual spatial autocorrelation more, or less, of an issue for your region than in Dallas-Fort Worth?
+3.  Create a geodemographic classification for your region using the sample code in this chapter. Does the typology you've generated resemble that of Dallas-Fort Worth, or does it differ?

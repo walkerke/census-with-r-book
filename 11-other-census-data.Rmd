@@ -4,13 +4,11 @@
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(blscrapeR)
+library(sf)
+library(crsuggest)
 options(tigris_use_cache = TRUE)
 
-style_data <- function(dat, n_rows = 10, caption = NULL) {
-  dat[1:n_rows,] |>
-    knitr::kable(caption = caption) |>
-    kableExtra::kable_styling()
-}
+source("R/book-functions.R")
 ```
 
 Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with tidycensus and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated [ipumsr](http://tech.popdata.org/ipumsr/) R package to help analysts integrate these datasets into R-based workflows.
@@ -65,7 +63,6 @@ nyc_1910 <- read_nhgis_sf(
   shape_layer = starts_with("US_tract_1910")
 ) %>%
   filter(!is.na(TRACTA))
-
 ```
 
 `read_nhgis_sf()` has read in the tracts shapefile as a simple features object then joined the corresponding CSV file to it *and* imported data labels from the data codebook. Note that if you are reproducing this example with data downloaded yourself, you will have a unique zipped folder & file name based on your unique download ID. The "99" in the example above reflects the 99th extract from NHGIS for a given user, not a unique dataset name.
@@ -90,11 +87,16 @@ plot(nyc_1910$geometry)
 
 The data reflect Census tracts for New York City, but appear rotated counter-clockwise. This is because the coordinate reference system used, `ESRI:100023`, is appropriate for the entire United States (in fact, it is the base CRS used for `tigris::shift_geometry()`), but will not be appropriate for any specific small area. As covered in Chapter 5, the crsuggest package helps identify more appropriate projected coordinate reference system options.
 
-```{r suggest-nyc-crs}
+```{r suggest-nyc-crs, eval = FALSE}
 library(crsuggest)
 library(sf)
 
 suggest_crs(nyc_1910)
+```
+
+```{r suggest-nyc-crs-show, echo = FALSE}
+suggest_crs(nyc_1910) %>%
+  style_data(caption = "Suggested CRS options for New York City")
 ```
 
 Based on these suggestions, we'll select the CRS "NAD83(2011) / New York Long Island" which has an EPSG code of 6538.
@@ -135,10 +137,17 @@ Manhattan's Lower East Side stands out as the part of the city with the largest 
 
 An alternative view could focus on one of the specific groups represented in the columns in the dataset. For example, the number of Italy-born residents by Census tract is represented in the column `A6G014`; this type of information could be represented by either a graduated symbol map or a dot-density map. Using techniques learned in Section \@ref(dot-density-maps), `st_sample()` in the code below generates one dot for approximately every 100 Italian immigrants. Next, the Census tracts are dissolved with the `st_union()` function to generate a base layer on top of which the dots will be plotted.
 
-```{r generate-italy-dots}
+```{r generate-italy-dots, eval = FALSE}
 italy_dots <- nyc_1910_proj %>%
   st_sample(size = as.integer(.$A6G014 / 100)) %>%
   st_sf()
+
+nyc_base <- nyc_1910_proj %>%
+  st_union()
+```
+
+```{r generate-italy-dots2, echo = FALSE}
+italy_dots <- read_rds("data/italy_dots.rds")
 
 nyc_base <- nyc_1910_proj %>%
   st_union()
