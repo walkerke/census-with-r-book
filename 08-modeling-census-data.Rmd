@@ -3,6 +3,7 @@
 ```{r setup-ch8, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
+library(spdep)
 library(spatialreg)
 library(plotly)
 options(tigris_use_cache = TRUE)

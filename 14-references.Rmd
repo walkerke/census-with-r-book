@@ -1,0 +1,8 @@
+# References {-}
+
+```{css, echo = FALSE}
+div#refs > div.csl-entry {
+  margin-bottom: 10px
+}
+```
+

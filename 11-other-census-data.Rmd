@@ -19,7 +19,7 @@ The first part of this chapter provides an overview of how to access and use his
 
 ## Mapping historical geographies of New York City with NHGIS
 
-The National Historical Geographic Information System (NHGIS) project is a tremendous resource for both contemporary and historical US Census data. While some datasets (e.g. the 2000 and 2010 decennial US Censuses, the ACS) can be accessed with both tidycensus and NHGIS, NHGIS is an excellent option for users who prefer browsing data menus to request data and/or who require historical information earlier than 2000. The example in this section will illustrate an applied workflow using NHGIS and its companion R package, ipumsr [@ellis_and_burk2020] to map geographies of immigration in New York City from the 1910 Census.
+The National Historical Geographic Information System (NHGIS) project [@manson2021] is a tremendous resource for both contemporary and historical US Census data. While some datasets (e.g. the 2000 and 2010 decennial US Censuses, the ACS) can be accessed with both tidycensus and NHGIS, NHGIS is an excellent option for users who prefer browsing data menus to request data and/or who require historical information earlier than 2000. The example in this section will illustrate an applied workflow using NHGIS and its companion R package, ipumsr [@ellis_and_burk2020] to map geographies of immigration in New York City from the 1910 Census.
 
 ### Getting started with NHGIS
 

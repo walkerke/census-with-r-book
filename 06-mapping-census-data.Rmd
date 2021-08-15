@@ -3,15 +3,19 @@
 ```{r setup-ch6, include = FALSE}
 options(tigris_use_cache = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+library(tigris)
+
+source("R/book-functions.R")
 ```
 
-Data from the United States Census Bureau are commonly visualized using maps, given that Census and ACS data are aggregated to enumeration units. This chapter will cover the process of map-making using the tidycensus R package. Notably, tidycensus enables R users to download *simple feature geometry* for common geographies, linking demographic information with their geographic locations in a dataset. In turn, this data model facilitates the creation of both static and interactive demographic maps.
+Data from the United States Census Bureau are commonly visualized using maps, given that Census and ACS data are aggregated to enumeration units. This chapter will cover the process of map-making using the **tidycensus** R package. Notably, **tidycensus** enables R users to download *simple feature geometry* for common geographies, linking demographic information with their geographic locations in a dataset. In turn, this data model facilitates the creation of both static and interactive demographic maps.
 
-In this chapter, readers will learn how to use the `geometry` parameter in tidycensus functions to download geographic data along with demographic data from the US Census Bureau. The chapter will then cover how to make static maps of Census demographic data using the popular ggplot2 and tmap visualization packages. The closing parts of the chapter will then turn to interactive mapping, with a focus on the mapview and Leaflet R packages for interactive cartographic visualization.
+In this chapter, readers will learn how to use the `geometry` parameter in tidycensus functions to download geographic data along with demographic data from the US Census Bureau. The chapter will then cover how to make static maps of Census demographic data using the popular **ggplot2** and **tmap** visualization packages. The closing parts of the chapter will then turn to interactive mapping, with a focus on the **mapview** and **Leaflet** R packages for interactive cartographic visualization.
 
 ## Using geometry in tidycensus
 
-As covered in the previous chapter, Census geographies are available from the tigris R package as simple features objects, using the data model from the sf R package. tidycensus wraps several common geographic data functions in the tigris package to allow R users to return simple feature geometry pre-linked to downloaded demographic data with a single function call. The key argument to accomplish this is `geometry = TRUE`, which is available in the core data download functions in tidycensus, `get_acs()`, `get_decennial()`, and `get_estimates()`.
+As covered in the previous chapter, Census geographies are available from the **tigris** R package as simple features objects, using the data model from the **sf** R package. tidycensus wraps several common geographic data functions in the **tigris** package to allow R users to return simple feature geometry pre-linked to downloaded demographic data with a single function call. The key argument to accomplish this is `geometry = TRUE`, which is available in the core data download functions in tidycensus, `get_acs()`, `get_decennial()`, and `get_estimates()`.
 
 Traditionally, getting "spatial" Census data requires a tedious multi-step process that can involve several software platforms. These steps include:
 
@@ -23,7 +27,7 @@ Traditionally, getting "spatial" Census data requires a tedious multi-step proce
 
 -   Aligning key fields in your desktop GIS and joining your data.
 
-A major motivation for developing tidycensus was my frustration with having to go through this process over and over again before making a simple map of Census data. `geometry = TRUE` combines the automated data download functionality of tidycensus and tigris to allow R users to bypass this process entirely. The following example illustrates the use of the `geometry = TRUE` argument, fetching information on median household income for Census tracts in the District of Columbia. As discussed in the previous chapter, the option `tigris_use_cache = TRUE` is used to cache the downloaded geographic data on the user's computer.
+A major motivation for developing **tidycensus** was my frustration with having to go through this process over and over again before making a simple map of Census data. `geometry = TRUE` combines the automated data download functionality of tidycensus and tigris to allow R users to bypass this process entirely. The following example illustrates the use of the `geometry = TRUE` argument, fetching information on median household income for Census tracts in the District of Columbia. As discussed in the previous chapter, the option `tigris_use_cache = TRUE` is used to cache the downloaded geographic data on the user's computer.
 
 ```{r get-geometry}
 library(tidycensus)
@@ -35,16 +39,15 @@ dc_income <- get_acs(geography = "tract",
                      geometry = TRUE)
 
 dc_income
-
 ```
 
 As shown in the example call, the structure of the object returned by tidycensus resembles the object we've become familiar with to this point in the book. For example, median household income data are found in the `estimate` column with associated margins of error in the `moe` column, along with a variable ID, GEOID, and Census tract name. However, there are some notable differences. The `geometry` column contains polygon feature geometry for each Census tract, allowing for a linking of the estimates and margins of error with their corresponding locations in Washington, DC. Beyond that, the object is associated with coordinate system information - using the NAD 1983 geographic coordinate system in which Census geographic datasets are stored by default.
 
 ### Basic mapping of sf objects with `plot()`
 
-Such geographic information is very difficult to parse, however, without visualization. As the returned object is a simple features spatial object as represented by the **sf** package, it can be plotted using sf's `plot()` function. Key here is specifying the name of the column to be plotted - `"estimate"` in this case - inside of brackets.
+Such geographic information is very difficult to parse, however, without visualization. As the returned object is a simple features spatial object as represented by the **sf** package, it can be plotted using **sf**'s `plot()` function. Key here is specifying the name of the column to be plotted - `"estimate"` in this case - inside of brackets.
 
-```{r}
+```{r plot-dc-income-1}
 plot(dc_income["estimate"])
 ```
 
@@ -54,15 +57,15 @@ The remainder of this chapter, however, will focus on map-making with additional
 
 ## Map-making with ggplot2 and geom_sf
 
-As illustrated in Chapter 5, `geom_sf()` in ggplot2 can be used for quick plotting of sf objects using familiar ggplot2 syntax. `geom_sf()` goes far beyond simple cartographic display. The full power of ggplot2 is available to create highly customized maps and geographic data visualizations.
+As illustrated in Chapter 5, `geom_sf()` in **ggplot2** can be used for quick plotting of sf objects using familiar **ggplot2** syntax. `geom_sf()` goes far beyond simple cartographic display. The full power of **ggplot2** is available to create highly customized maps and geographic data visualizations.
 
 ### Choropleth mapping
 
 One of the most common ways to visualize statistical information on a map is with *choropleth mapping*. Choropleth maps use shading to represent how underlying data values vary by feature in a spatial dataset. The income plot of Washington, DC shown earlier in this chapter is an example of a choropleth map.
 
-In the example below, tidycensus is used to obtain linked ACS and spatial data on median age by state for the 50 US states plus the District of Columbia and Puerto Rico. For national maps, it is often preferable to generate insets of Alaska, Hawaii, and Puerto Rico so that they can all be viewed comparatively with the continental United States. We'll use the `shift_geometry()` function in **tigris** to shift and rescale these areas for national mapping.
+In the example below, **tidycensus** is used to obtain linked ACS and spatial data on median age by state for the 50 US states plus the District of Columbia and Puerto Rico. For national maps, it is often preferable to generate insets of Alaska, Hawaii, and Puerto Rico so that they can all be viewed comparatively with the continental United States. We'll use the `shift_geometry()` function in **tigris** to shift and rescale these areas for national mapping. The argument `resolution = "20m"` is necessary here for appropriate results, as it will omit the long archipelago of islands to the northwest of Hawaii.
 
-```{r}
+```{r plot-geometry-1}
 library(tidycensus)
 library(tidyverse)
 library(tigris)
@@ -76,28 +79,27 @@ us_median_age <- get_acs(geography = "state",
   shift_geometry()
 
 plot(us_median_age$geometry)
-
 ```
 
 The state polygons can be styled using ggplot2 conventions and the `geom_sf()` function. With two lines of ggplot2 code, a basic map of median age by state can be created with ggplot2 defaults.
 
-```{r}
-m1 <- ggplot(data = us_median_age, aes(fill = estimate)) + 
+```{r first-choropleth}
+ggplot(data = us_median_age, aes(fill = estimate)) + 
   geom_sf()
-
-m1
 ```
 
-The `geom_sf()` function in the above example interprets the geometry of the sf object (in this case, polygon) and visualizes the result as a filled *choropleth* map. A choropleth map is a type of map that displays statistical variation as color differences along a gradient. In this case, the ACS estimate of median age is mapped to the default blue dark-to-light color ramp in ggplot2, highlighting the youngest states (such as Utah) with darker blues and the oldest states (such as Maine) with lighter blues.
+The `geom_sf()` function in the above example interprets the geometry of the sf object (in this case, polygon) and visualizes the result as a filled *choropleth* map. A choropleth map is a type of map that displays statistical variation as color differences along a gradient. In this case, the ACS estimate of median age is mapped to the default blue dark-to-light color ramp in **ggplot2**, highlighting the youngest states (such as Utah) with darker blues and the oldest states (such as Maine) with lighter blues.
 
 ### Customizing ggplot2 maps
 
-In many cases, map-makers using ggplot2 will want to customize this graphic further. For example, a designer may want to modify the color palette and reverse it so that darker colors represent older areas. The map would also benefit from some additional information describing its content and data sources. These modifications can be specified in the same way a user would update a regular ggplot2 graphic. The `scale_fill_distiller()` function allows users to specify a [ColorBrewer](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) palette to use for the map, which includes a wide range of sequential, diverging, and qualitative color palettes [@brewer2003]. The `labs()` function can then be used to add a title, caption, and better legend label to the plot. Finally, ggplot2 cartographers will often want to use the `theme_void()` function to remove the background and gridlines from the map.
+In many cases, map-makers using ggplot2 will want to customize this graphic further. For example, a designer may want to modify the color palette and reverse it so that darker colors represent older areas. The map would also benefit from some additional information describing its content and data sources. These modifications can be specified in the same way a user would update a regular ggplot2 graphic. The `scale_fill_distiller()` function allows users to specify a [ColorBrewer](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) palette to use for the map, which includes a wide range of sequential, diverging, and qualitative color palettes [@brewer2003]. The `labs()` function can then be used to add a title, caption, and better legend label to the plot. Finally, **ggplot2** cartographers will often want to use the `theme_void()` function to remove the background and gridlines from the map.
 
-```{r}
-m1 + scale_fill_distiller(palette = "RdPu", 
+```{r styled-age-map}
+ggplot(data = us_median_age, aes(fill = estimate)) + 
+  geom_sf() + 
+  scale_fill_distiller(palette = "RdPu", 
                        direction = 1) + 
-  labs(title = "Median Age by State, 2019",
+  labs(title = "  Median Age by State, 2019",
        caption = "Data source: 2019 1-year ACS, US Census Bureau",
        fill = "ACS estimate") + 
   theme_void()
@@ -105,12 +107,11 @@ m1 + scale_fill_distiller(palette = "RdPu",
 
 ## Map-making with tmap
 
-For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The tmap package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
+For ggplot2 users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
 
 To get started, let's grab some ACS data on race and ethnicity from the American Community Survey's Data Profile. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
 ```{r hennepin-race-ethnicity}
-
 hennepin_race <- get_acs(
   geography = "tract",
   state = "MN",
@@ -124,9 +125,10 @@ hennepin_race <- get_acs(
   geometry = TRUE
 ) %>%
   mutate(percent = 100 * (estimate / summary_est))
+```
 
-hennepin_race
-
+```{r show-hennepin-race, echo = FALSE}
+style_data(hennepin_race, caption = "Race and ethnicity in Hennepin County, MN")
 ```
 
 We've returned ACS data in tidycensus's regular "tidy" or long format, which will be useful in a moment for comparative map-making. To get started, we'll extract a single group from the dataset to illustrate how tmap works.
@@ -142,26 +144,24 @@ hennepin_black <- filter(hennepin_race,
                          variable == "Black")
 tm_shape(hennepin_black) + 
   tm_polygons()
-
-
 ```
 
 We get a default view of Census tracts in Hennepin County, Minnesota. Alternatively, the `tm_fill()` function can be used to produce choropleth maps, as illustrated in the ggplot2 examples above.
 
-```{r}
+```{r tmap-plot-polygons}
 tm_shape(hennepin_black) + 
   tm_polygons(col = "percent")
 ```
 
 You'll notice that tmap uses a classed color scheme rather than the continuous palette used by ggplot2, by default. This involves the identification of "classes" in the distribution of data values and mapping a color from a color palette to data values that belong to each class. The default classification scheme used by `tm_fill()` is `"pretty"`, which identifies clean-looking intervals in the data based on the data range. In this example, data classes change every 10 percent. However, this approach will always be sensitive to the distribution of data values. Let's take a look at our data distribution to understand why:
 
-```{r}
+```{r hist-black-data}
 hist(hennepin_black$percent)
 ```
 
 As the histogram illustrates, most Census tracts in Hennepin County have Black populations below 20 percent. In turn, variation within this bucket is not visible on the map given that most tracts fall into one class. The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`). Let's switch to quantiles below, where each class will contain the same number of Census tracts. We can also change the color palette and add some contextual text as we did with ggplot2.
 
-```{r}
+```{r update-hennepin-map}
 tm_shape(hennepin_black, 
          projection = sf::st_crs(26915)) + 
   tm_polygons(col = "percent",
@@ -194,13 +194,13 @@ tm_shape(hennepin_black,
 
 ### Choosing a color palette
 
-The examples shown in this chapter thus far have used a variety of *color palettes* to display statistical variation on choropleth maps. Software packages like sf, ggplot2, and tmap will have color palettes built in as "defaults"; I've shown the default palettes for all three, then changed the palettes used in ggplot2 and in tmap. So how do you go about choosing an appropriate color palette? There are a variety of considerations to take into account.
+The examples shown in this chapter thus far have used a variety of *color palettes* to display statistical variation on choropleth maps. Software packages like sf, ggplot2, and tmap will have color palettes built in as "defaults"; I've shown the default palettes for all three, then changed the palettes used in **ggplot2** and in **tmap**. So how do you go about choosing an appropriate color palette? There are a variety of considerations to take into account.
 
 First, it is important to understand the type of data you are working with. If your data are *quantitative* - that is, expressed with numbers, which you'll commonly be working with using Census data - you'll want a color palette that can show the statistical variation in your data correctly. In the demographic examples shown above, ACS data range from a low value to a high value. This type of information is effectively represented with a *sequential* color palette. **Sequential** color palettes use either a single hue or related hues then modify the color lightness or intensity to generate a sequence of colors. An example single-hue palette is the "Purples" ColorBrewer palette used in the map above.
 
 ![](images/paste-5A599E3A.png)
 
-With this palette, lighter colors should generally be used to represent lower data values, and darker values should represent higher values, suggesting a greater density/concentration of that attribute. In other color palettes, however, the more intense colors may be the lighter colors and should be used accordingly to represent data values. This is the case with the popular viridis color palettes, implemented in R with the viridis package [@garnier2021] and shown below.
+With this palette, lighter colors should generally be used to represent lower data values, and darker values should represent higher values, suggesting a greater density/concentration of that attribute. In other color palettes, however, the more intense colors may be the lighter colors and should be used accordingly to represent data values. This is the case with the popular viridis color palettes, implemented in R with the **viridis** package [@garnier2021] and shown below.
 
 ![](images/paste-E6B78870.png)
 
@@ -267,7 +267,7 @@ Dot-density maps scatter dots within areal units relative to the size of a data 
 
 Generating a dot-density map in R requires some more advanced code that uses some of the programmatic skills learned in prior chapters and introduces some new techniques. The code below converts the data in the `hennepin_race` object to a new object, `hennepin_dots`, that is of geometry type `POINT` instead of `MULTIPOLYGON`. Each point in the output spatial dataset will roughly represent an estimated 50 residents of each Census tract who identified as part of a particular racial or ethnic group on the 2015-2019 ACS.
 
-purrr's `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est50`, which is the population estimate for each group divided by 50. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
+**purrr**'s `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est50`, which is the population estimate for each group divided by 50. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
 
 This code can take a few minutes to run, so be patient when reproducing.
 
@@ -296,7 +296,7 @@ tm_shape(hennepin_dots) +
           size = 0.005)
 ```
 
-<img src="img/hennepin_dots.png" style="width: 100%"/>
+<img src="img/hennepin_dots.png" width="75%"/>
 
 Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, as dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be inhabited then runs the dot-generation algorithm over those modified areas.
 
@@ -317,7 +317,7 @@ library(tigris)
 # Data source: https://cookpolitical.com/2020-national-popular-vote-tracker
 vote2020 <- read_csv("data/us_vote_2020.csv")
 
-glimpse(vote2020)
+names(vote2020)
 ```
 
 The data include a wide variety of columns that can be visualized on a map. As discussed in the previous chapter, a comparative map of the United States can use the `shift_geometry()` function in the tigris package to shift and rescale Alaska and Hawaii. State geometries are available in tigris with the `states()` function, which should be used with the arguments `cb = TRUE` and `resolution = "20m"` to appropriately generalize the state geometries for national mapping.
@@ -333,7 +333,6 @@ us_states <- states(cb = TRUE, resolution = "20m") %>%
 
 us_states_joined <- us_states %>%
   left_join(vote2020, by = c("NAME" = "state"))
-
 ```
 
 Before proceeding we'll want to do some quality checks. In `left_join()`, values must match exactly between `NAME` and `state` to merge correctly - and this is not always guaranteed when using data from different sources. Let's check to see if we have any problems:
@@ -342,13 +341,7 @@ Before proceeding we'll want to do some quality checks. In `left_join()`, values
 table(is.na(us_states_joined$state))
 ```
 
-We've matched all the 50 states plus the District of Columbia correctly. Let's now examine our output object:
-
-```{r}
-us_states_joined
-```
-
-The joined dataset has retained the shifted and rescaled geometry of the US states and now includes the election information from the tabular dataset which can be used for mapping. To achieve this structure, specifying the directionality of the join was critical. For spatial information to be retained in a join, the spatial object *must* be on the left-hand side of the join. In our pipeline, we specified the `us_states` object first and used `left_join()` to join the election information *to* the states object. If we had done this in reverse, we would have lost the spatial class information necessary to make the map.
+We've matched all the 50 states plus the District of Columbia correctly. In turn, the joined dataset has retained the shifted and rescaled geometry of the US states and now includes the election information from the tabular dataset which can be used for mapping. To achieve this structure, specifying the directionality of the join was critical. For spatial information to be retained in a join, the spatial object *must* be on the left-hand side of the join. In our pipeline, we specified the `us_states` object first and used `left_join()` to join the election information *to* the states object. If we had done this in reverse, we would have lost the spatial class information necessary to make the map.
 
 For a basic red state/blue state map using ggplot2 and `geom_sf()`, a manual color palette can be supplied to the `scale_fill_manual()` function, filling state polygons based on the `called` column which represents the party for whom the state was called.
 
@@ -366,12 +359,12 @@ ggplot(us_states_joined, aes(fill = called)) +
 
 For example, the most granular geography at which many agencies release data is at the zip code level. This is not an ideal geography for visualization, given that zip codes represent collections of US Postal Service routes (or sometimes even a single building, or Post Office box) that are not guaranteed to form coherent geographies. The US Census Bureau allows for an approximation of zip code mapping with Zip Code Tabulation Areas, or ZCTAs. ZCTAs are shapes built from Census blocks in which the most common zip code for addresses in each block determines how blocks are allocated to corresponding ZCTAs. While ZCTAs are not recommended for spatial analysis due to these irregularities, they are effective for visualizing data distributions when no other granular geographies are available.
 
-An example of this is the [Internal Revenue Service's Statistics of Income (SOI) data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-2018-zip-code-data-soi), which includes a wide range of indicators derived from tax returns. The most detailed geography available is the zip code level in this dataset, meaning that within-county visualizations require using ZCTAs. Let's read in and take a quick look at the data:
+An example of this is the [Internal Revenue Service's Statistics of Income (SOI) data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-2018-zip-code-data-soi), which includes a wide range of indicators derived from tax returns. The most detailed geography available is the zip code level in this dataset, meaning that within-county visualizations require using ZCTAs. Let's read in the data from the IRS website:
 
 ```{r}
 irs_data <- read_csv("https://www.irs.gov/pub/irs-soi/18zpallnoagi.csv")
 
-irs_data
+ncol(irs_data)
 ```
 
 The dataset contains 153 columns [which are identified in the linked codebook](https://www.irs.gov/pub/irs-soi/18zpdoc.docx). Geographies are identified by the `ZIPCODE` column, which shows aggregated data by state (`ZIPCODE == "000000"`) and by zip code. We might be interested in understanding the geography of self-employment income within a given region. We'll retain the variables `N09400`, which represents the number of tax returns with self-employment tax, and `N1`, which represents the total number of returns.
@@ -398,7 +391,7 @@ boston_zctas <- zctas(cb = TRUE,
 
 The ZCTA prefixes `021`, `022`, and `024` cover much of the Boston metropolitan area; "holes" in the region represent areas like Boston Common which are not covered by ZCTAs. Let's take a quick look at its attributes:
 
-```{r}
+```{r, echo = FALSE}
 glimpse(boston_zctas)
 ```
 
@@ -434,7 +427,7 @@ The examples addressed in this chapter thus far have all focused on *static maps
 
 ### Interactive mapping with Leaflet
 
-With over 31,000 GitHub stars as of July 2021, the Leaflet JavaScript library [@leaflet] is one of the most popular frameworks worldwide for interactive mapping. The RStudio team brought the Leaflet to R with the leaflet R package [@cheng2021], which now powers several approaches to interactive mapping in R. The following examples cover how to visualize Census data on an interactive Leaflet map using approaches from mapview, tmap, and the core Leaflet package.
+With over 31,000 GitHub stars as of July 2021, the Leaflet JavaScript library [@leaflet] is one of the most popular frameworks worldwide for interactive mapping. The RStudio team brought the Leaflet to R with the **leaflet** R package [@cheng2021], which now powers several approaches to interactive mapping in R. The following examples cover how to visualize Census data on an interactive Leaflet map using approaches from **mapview**, **tmap**, and the core **leaflet** package.
 
 Let's start by getting some illustrative data on the percentage of the population aged 25 and up with a bachelor's degree or higher from the 2015-2019 ACS. We'll look at this information by Census tract in Dallas County, Texas.
 
@@ -449,7 +442,7 @@ dallas_bachelors <- get_acs(
 )
 ```
 
-In Chapter 5, you learned how to quickly visualize geographic data obtained with tigris on an interactive map by using the `mapview()` function in the mapview package. The `mapview()` function also includes a parameter `zcol` that takes a column in the dataset as an argument, and visualizes that column with an interactive choropleth map.
+In Chapter 5, you learned how to quickly visualize geographic data obtained with tigris on an interactive map by using the `mapview()` function in the **mapview** package. The `mapview()` function also includes a parameter `zcol` that takes a column in the dataset as an argument, and visualizes that column with an interactive choropleth map.
 
 ```{r dallas-mapview, eval = FALSE}
 library(mapview)
@@ -460,7 +453,7 @@ mapview(dallas_bachelors, zcol = "estimate")
 knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
 ```
 
-Conversion of tmap maps to interactive Leaflet maps is also straightforward with the command `tmap_mode("view")`. After entering this command, all subsequent tmap maps in your R session will be rendered as interactive Leaflet maps using the same tmap syntax you'd use to make static maps.
+Conversion of **tmap** maps to interactive Leaflet maps is also straightforward with the command `tmap_mode("view")`. After entering this command, all subsequent tmap maps in your R session will be rendered as interactive Leaflet maps using the same tmap syntax you'd use to make static maps.
 
 ```{r dallas-tmap, eval = FALSE}
 library(tmap)
@@ -477,7 +470,7 @@ knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
 
 To switch back to static plotting mode, run the command `tmap_mode("plot")`.
 
-For more fine-grained control over your Leaflet maps, the core Leaflet package can be used. Below, we'll reproduce the mapview/tmap examples using the leaflet package's native syntax. First, a color palette will be defined using the `colorNumeric()` function. This function itself creates a function we're calling `pal()`, which translates data values to color values for a given color palette. Our chosen color palette in this example is the viridis magma palette.
+For more fine-grained control over your Leaflet maps, the core **leaflet** package can be used. Below, we'll reproduce the **mapview**/**tmap** examples using the leaflet package's native syntax. First, a color palette will be defined using the `colorNumeric()` function. This function itself creates a function we're calling `pal()`, which translates data values to color values for a given color palette. Our chosen color palette in this example is the viridis magma palette.
 
 ```{r dallas-palette}
 library(leaflet)
@@ -522,13 +515,13 @@ leaflet() %>%
 knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
 ```
 
-This example only scratches the surface of what the Leaflet R package can accomplish; I'd encourage you to [review the documentation for more examples](https://rstudio.github.io/leaflet/).
+This example only scratches the surface of what the **leaflet** R package can accomplish; I'd encourage you to [review the documentation for more examples](https://rstudio.github.io/leaflet/).
 
 ### Alternative approaches to interactive mapping
 
 Like most interactive mapping platforms, Leaflet uses [*tiled mapping*](https://wiki.openstreetmap.org/wiki/Slippy_Map) in the Web Mercator coordinate reference system. Web Mercator works well for tiled web maps that need to fit within rectangular computer screens, and preserves angles at large scales (zoomed-in areas) which is useful for local navigation. However, it grossly distorts the area of geographic features near the poles, making it inappropriate for small-scale thematic mapping of the world or world regions [@battersby2014].
 
-Let's illustrate this by mapping median home value by state from the 1-year ACS using Leaflet. We'll first acquire the data with geometry using tidycensus, setting the output resolution to "20m" to get low-resolution boundaries to speed up our interactive mapping.
+Let's illustrate this by mapping median home value by state from the 1-year ACS using **leaflet**. We'll first acquire the data with geometry using tidycensus, setting the output resolution to "20m" to get low-resolution boundaries to speed up our interactive mapping.
 
 ```{r us-value-data}
 us_value <- get_acs(
@@ -573,11 +566,10 @@ knitr::include_url("img/leaflet/us_leaflet.html", height = "500px")
 
 The disadvantages of Web Mercator - as well as this general approach to mapping the United States - are on full display. Alaska's area is grossly distorted relative to the rest of the United States. It is also difficult on this map to compare Alaska and Hawaii to the continental US - which is particularly important in this example as Hawaii's median home value is the highest in the entire country. The solution proposed elsewhere in this book is to use `tigris::shift_geometry()` which adopts appropriate coordinate reference systems for Alaska, Hawaii, and the continental US and arranges them in a better comparative fashion on the map. However, this approach risks losing the interactivity of a Leaflet map.
 
-A compromise solution can involve other R packages that allow for interactive mapping. An excellent option is the ggiraph package [@gohel2021], which like the plotly package can convert ggplot2 graphics into interactive plots. In the example below, interactivity is added to a ggplot2 plot with ggiraph, allowing for panning and zooming with a hover tooltip on a shifted and rescaled map of the US.
+A compromise solution can involve other R packages that allow for interactive mapping. An excellent option is the **ggiraph** package [@gohel2021], which like the plotly package can convert ggplot2 graphics into interactive plots. In the example below, interactivity is added to a ggplot2 plot with **ggiraph**, allowing for panning and zooming with a hover tooltip on a shifted and rescaled map of the US.
 
 ```{r ggiraph-alternative}
 library(ggiraph)
-library(tidyverse)
 
 us_value_shifted <- us_value %>%
   shift_geometry(position = "outside") %>%
@@ -599,11 +591,11 @@ girafe(ggobj = gg) %>%
 
 ## Advanced examples
 
-The examples discussed in this chapter thus far likely cover a large proportion of cartographic use cases for Census data analysts. However, R allows cartographers to go beyond these core map types. This final section of the chapter introduces some options for more advanced visualization using data from tidycensus.
+The examples discussed in this chapter thus far likely cover a large proportion of cartographic use cases for Census data analysts. However, R allows cartographers to go beyond these core map types. This final section of the chapter introduces some options for more advanced visualization using data from **tidycensus**.
 
 ### Mapping migration flows
 
-In 2021, tidycensus co-author Matt Herman added support for the ACS Migration Flows API in the package, covered briefly in Chapter \@ref(2). One notable feature of this new functionality, available in the `get_flows()` function, is built-in support for flow mapping with the argument `geometry = TRUE`. Geometry operates differently for migration flows data given that the geography of interest is not a single location for a given row, but rather the connection between those locations. In turn, for `get_flows()`, `geometry = TRUE` returns two `POINT` geometry columns: one for the location itself, and one for the location to which it is linked.
+In 2021, **tidycensus** co-author Matt Herman added support for the ACS Migration Flows API in the package, covered briefly in Section \@ref(using-get_flows). One notable feature of this new functionality, available in the `get_flows()` function, is built-in support for flow mapping with the argument `geometry = TRUE`. Geometry operates differently for migration flows data given that the geography of interest is not a single location for a given row, but rather the connection between those locations. In turn, for `get_flows()`, `geometry = TRUE` returns two `POINT` geometry columns: one for the location itself, and one for the location to which it is linked.
 
 Let's take a look for one of the most popular recent migration destinations in the United States: Travis County Texas, home to Austin.
 
@@ -623,7 +615,7 @@ travis_inflow
 
 The dataset is filtered to focus on in-migration, represented by the `MOVEDIN` variable, and drops migrations from outside the United States with `na.omit()` (as these areas do not have a `GEOID` value).
 
-The mapdeck R package [@cooley2020] offers excellent support for interactive flow mapping with minimal code. mapdeck is a wrapper of [deck.gl](https://deck.gl/), a tremendous visualization library originally developed at Uber that offers 3D mapping capabilities built on top of [Mapbox's GL JS library](https://www.mapbox.com/mapbox-gljs). Users will need to sign up for a Mapbox account and get a Mapbox access token to use mapdeck; [see the mapdeck documentation for more information](https://symbolixau.github.io/mapdeck/articles/mapdeck.html#the-basics).
+The **mapdeck** R package [@cooley2020] offers excellent support for interactive flow mapping with minimal code. mapdeck is a wrapper of [deck.gl](https://deck.gl/), a tremendous visualization library originally developed at Uber that offers 3D mapping capabilities built on top of [Mapbox's GL JS library](https://www.mapbox.com/mapbox-gljs). Users will need to sign up for a Mapbox account and get a Mapbox access token to use mapdeck; [see the mapdeck documentation for more information](https://symbolixau.github.io/mapdeck/articles/mapdeck.html#the-basics).
 
 Once set, flow maps can be created by initializing a mapdeck map with `mapdeck()` then using the `add_arc()` function, which can link either X/Y coordinate columns or `POINT` geometry columns, as shown below. In this example, we are using the top 30 origins for migrants to Travis County, and generating a new `weight` column that makes the proportional arc widths less bulky.
 
@@ -646,7 +638,7 @@ travis_inflow %>%
 
 ### Linking maps and charts
 
-This chapter and Chapter \@ref(4) are linked in many ways. The visualization principles discussed in each chapter apply to each other; the key difference is that this chapter focuses on *geographic visualization* whereas Chapter \@ref(4) does not. In many cases, you'll want to take advantage of the strengths of both geographic and non-geographic visualization. Maps are excellent at showing patterns and trends over space, and offer a familiar reference to viewers; charts are better at showing rankings and ordering of data values between places.
+This chapter and Chapter \@ref(exploring-us-census-data-with-visualization) are linked in many ways. The visualization principles discussed in each chapter apply to each other; the key difference is that this chapter focuses on *geographic visualization* whereas Chapter \@ref(exploring-us-census-data-with-visualization) does not. In many cases, you'll want to take advantage of the strengths of both geographic and non-geographic visualization. Maps are excellent at showing patterns and trends over space, and offer a familiar reference to viewers; charts are better at showing rankings and ordering of data values between places.
 
 The example below illustrates how to combine two chart types discussed in this book: a choropleth map and a margin of error plot. Margins of error are notoriously difficult to display on maps; possible options include superimposing patterns on choropleth maps to highlight areas with high levels of uncertainty [@wong2013] or using bivariate choropleth maps to simultaneously visualize estimates and MOEs [@lucchesi2017].
 
@@ -802,8 +794,8 @@ shinyApp(ui = ui, server = server)
 
 ## Exercises
 
-Using one of the mapping frameworks introduced in this chapter (either ggplot2, tmap, or leaflet) complete the following tasks:
+Using one of the mapping frameworks introduced in this chapter (either **ggplot2**, **tmap**, or **leaflet**) complete the following tasks:
 
--   If you are just getting started with tidycensus/the tidyverse, make a race/ethnicity map by adapting the code provided in this section but for a different county.
+-   If you are just getting started with **tidycensus**/the tidyverse, make a race/ethnicity map by adapting the code provided in this section but for a different county.
 
 -   Next, find a different variable to map with `tidycensus::load_variables()`. Review the discussion of cartographic choices in this chapter and visualize your data appropriately.
