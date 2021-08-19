@@ -3,10 +3,10 @@ bibliography: references.bib
 ---
 
 ```{r setup-ch1, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tigris)
 library(tidyverse)
 options(tigris_use_cache = TRUE)
+source("R/book-functions.R")
 ```
 
 # The United States Census and the R programming language
@@ -15,7 +15,7 @@ The main focus of this book is applied social data analysis in the R programming
 
 ## Census data: an overview
 
-The United States Constitution mandates in Article I, sections 2 and 9 that a complete enumeration of the US population be taken every 10 years. The language from the Constitution is as follows (see <https://www.census.gov/programs-surveys/decennial-census/about.html>):
+The United States Constitution mandates in Article I, Sections 2 and 9 that a complete enumeration of the US population be taken every 10 years. The language from the Constitution is as follows (see <https://www.census.gov/programs-surveys/decennial-census/about.html>):
 
 > The actual enumeration shall be made within three years after the first meeting of the Congress of the United States, and within every subsequent term of ten years, in such manner as they shall by law direct.
 
@@ -33,11 +33,13 @@ Aggregate data from the decennial US Census, American Community Survey, and othe
 
 Enumeration units represent different levels of the *Census hierarchy.* This hierarchy is summarized in the graphic below (from <https://www.census.gov/programs-surveys/geography/guidance/hierarchy.html>).
 
-![](images/paste-8508FEDF.png){width="100%"}
+```{r census-hierarchy, echo = FALSE, fig.cap = "Census hierarchy of enumeration units"}
+knitr::include_graphics("img/screenshots/census-hierarchies.png")
+```
 
 The central axis of the diagram represents the central Census hierarchy of enumeration units, as each geography from Census blocks all the way up to the nation *nests* within its parent unit. This means that block groups are fully composed of Census blocks, Census tracts are fully composed of block groups, and so forth. An example of nesting is shown in the graphic below for 2020 Census tracts in Benton County, Oregon.
 
-```{r benton-tracts, echo = FALSE}
+```{r benton-tracts, echo = FALSE, fig.cap = "Benton County, OR Census tracts in relationship to the county boundary"}
 library(patchwork)
 
 benton_tracts <- tracts("OR", "Benton", cb = TRUE, year = 2020)
@@ -64,7 +66,7 @@ The plot illustrates how Census tracts in Benton County neatly nest within its p
 
 Reviewing the diagram shows that some Census geographies, like congressional districts, only nest within states, and that some other geographies do not nest within any parent geography at all. A good example of this is the Zip Code Tabulation Area (ZCTA), which is used by the Census Bureau to represent postal code geographies in the US. A more in-depth discussion of ZCTAs (and some of their pitfalls) is found in Section \@ref(understanding-and-working-with-zctas); a brief illustration is represented by the graphic below.
 
-```{r benton-zctas, echo = FALSE}
+```{r benton-zctas, echo = FALSE, fig.cap = "Benton County, OR ZCTAs in relationship to the county boundary"}
 all_zctas <- zctas(cb = TRUE)
 
 benton_centers <- all_zctas %>%
@@ -92,13 +94,17 @@ US Census data are available from a variety of sources, both directly from the C
 
 For years, researchers would visit the US Census Bureau's [American FactFinder site](https://www.census.gov/acs/www/data/data-tables-and-tools/american-factfinder/) to download Census data for custom geographies. American FactFinder was decomissioned in 2020, giving way to a new data download interface, [data.census.gov](https://data.census.gov/cedsci/). Users can interactively search several Census Bureau datasets (the decennial Census & ACS, along with the Economic Census, Population Estimates Program, and others), generate custom queries by geography, and download data extracts.
 
-![](images/paste-5E301A5B.png){width="100%"}
+```{r data-census-gov, echo = FALSE, fig.cap = "View of the data.census.gov interface"}
+knitr::include_graphics("img/screenshots/data-census-gov.png")
+```
 
 The graphic above shows ACS table DP02 from the ACS Data Profile for Census tracts in Arkansas.
 
 Users who are comfortable dealing with data in bulk and want to download the raw data will instead prefer the US Census Bureau's FTP site, <https://www2.census.gov/programs-surveys/>. This site includes a directory of Census surveys that can be navigated and downloaded. The image below shows the directory structure for the [2019 American Community Survey](https://www2.census.gov/programs-surveys/acs/summary_file/2019/data/), which is available by state or alternatively for the entire country.
 
-![](images/paste-3FD7076B.png)
+```{r census-ftp, echo = FALSE, fig.cap = "View of the Census FTP download site"}
+knitr::include_graphics("img/screenshots/census-ftp-site.png")
+```
 
 National files are very large (the full 5-year file for all geographies is over 10GB of data zipped) so users will require dedicated software and computing workflows to interact with this data.
 
@@ -243,9 +249,9 @@ A large ecosystem of R packages exists to help analysts work with US Census data
 
 ### Census data packages in R: a brief summary
 
-For users who prefer to work with the raw Census data files, the **totalcensus** package [@li2021] helps download Census data in bulk from the FTP server and loads it into R. For election analysts, the **PL94171** package [@mccartan2021] processes and loads PL-94171 redistricting files, including the most recent data from the 2020 Census.
+For users who prefer to work with the raw Census data files, the **totalcensus** package [@li2021] helps download Census data in bulk from the Census FTP server and loads it into R. For election analysts, the **PL94171** package [@mccartan2021] processes and loads PL-94171 redistricting files, including the most recent data from the 2020 Census.
 
-Users who want to make more custom queries will be interested in R packages that interact with the Census APIs. The pioneering package in this area is the **acs** package [@haberglenn2019], which uses a custom interface to interact with Census APIs and return data extracts. This package has informed a variety of other convenient Census data packages, such as **choroplethr** [@lamstein2020] which automates map production with data from the Census API. More recently, the **censusapi** package [@recht2021] offers a comprehensive interface to the hundreds of datasets available from the Census Bureau via API. The examples in this book largely focus on the **tidycensus** and **tigris** packages created by the author, which interact with several Census API endpoints and return geographic data for mapping and spatial analysis.
+Users who want to make more custom queries will be interested in R packages that interact with the Census APIs. The pioneering package in this area is the **acs** package [@haberglenn2019], which uses a custom interface and class system to return data extracts from various Census APIs. This package has informed a variety of other convenient Census data packages, such as **choroplethr** [@lamstein2020] which automates map production with data from the Census API. More recently, the **censusapi** package [@recht2021] offers a comprehensive interface to the hundreds of datasets available from the Census Bureau via API. The examples in this book largely focus on the **tidycensus** and **tigris** packages created by the author, which interact with several Census API endpoints and return geographic data for mapping and spatial analysis.
 
 R interfaces to third-party Census data resources have emerged as well. A good example is the **ipumsr** R package [@ellis_and_burk2020], which helps users interact with datasets from the Minnesota Population Center like NHGIS. The aforementioned R packages - along with R's rich ecosystem for data analysis - have contributed to wide range of projects using Census data in a variety of fields. A few such examples are highlighted below.
 
@@ -253,7 +259,9 @@ R interfaces to third-party Census data resources have emerged as well. A good e
 
 R and Census data have widespread applications in the analysis of health care and resource access. An excellent example is **censusapi** developer Hannah Recht's study of stroke care access in the Mississippi Delta and Appalachia, published in KHN in 2021 [@pattani2021]. The graphic below illustrate Recht's work integrating travel-time analytics with Census data to identify populations with limited access to stroke care across the US South.
 
-![](images/paste-9025ED10.png){width="100%"}
+```{r recht-isochrones, echo = FALSE, fig.cap = "Accessibility to stroke care across the US South from Pattani et al. (2021). Image reprinted with permission from the publisher."}
+knitr::include_graphics("img/screenshots/recht-isochrones.png")
+```
 
 Recht published her analysis code [in a corresponding GitHub repository](https://github.com/khnews/2021-delta-appalachia-stroke-access), allowing readers and developers to understand the methodology and reproduce the analysis. R packages used in the analysis include **censusapi** for Census data, **sf** for spatial analysis, and the **tidyverse** framework for data preparation and wrangling.
 
@@ -261,7 +269,9 @@ Recht published her analysis code [in a corresponding GitHub repository](https:/
 
 R and Census data can also be used together to generate applications to the benefit of public health initiatives. A great example of this is the [Texas COVID-19 Vaccine Tracker](https://texasvaccinetracker.com/), developed by Matt Worthington at the University of Texas LBJ School of Public Affairs.
 
-![](images/paste-E7C5CB1D.png){width="100%"}
+```{r worthington-vaccines, echo = FALSE, fig.cap = "Screenshot of the Texas COVID-19 Vaccine Tracker website"}
+knitr::include_graphics("img/screenshots/worthington-vaccines.png")
+```
 
 The application, illustrated in the graphic above, provides a comprehensive set of information about vaccine uptake and access around Texas. The example map shown visualizes vaccine doses administered per 1,000 persons in Austin-area ZCTAs. Census data are used throughout the application to help visitors understand differential vaccine update by regions and by demographics.
 
@@ -273,7 +283,7 @@ As discussed above, one of the primary purposes of the US Census is to determine
 
 [Harvard University's ALARM project](https://alarm-redist.github.io/) uses R to analyze redistricting and gerrymandering and contribute to equitable solutions. The ALARM project has developed a veritable ecosystem of R packages that incorporate Census data and make Census data accessible to redistricting analysts. This includes the **PL94171** package mentioned above to get 2020 redistricting data, the **geomander** package to prepare data for redistricting analysis [@kenny2021], and the **redist** package to algorithmically derive and evaluate redistricting solutions [@kenny2021]. The example below, which is generated with modified code from the **redist** documentation, shows a basic example of potential redistricting solutions based on Census data for Iowa.
 
-```{r iowa, echo = FALSE}
+```{r iowa, echo = FALSE, results = 'hide'}
 library(redist)
 library(dplyr)
 library(ggplot2)
@@ -285,8 +295,9 @@ iowa_map = redist_map(iowa, existing_plan=cd_2010, pop_tol=0.0001, total_pop = p
 
 set.seed(1983)
 iowa_plans = redist_smc(iowa_map, nsims=250, verbose=FALSE)
+```
 
-
+```{r iowa-redist-map, echo = FALSE, fig.cap = "Example redistricting solutions using the redist package"}
 redist.plot.plans(iowa_plans, draws=c("cd_2010", "1", "2", "3"),
                   geom=iowa_map)
 ```
@@ -295,10 +306,18 @@ As court battles and contentious discussions around redistricting ramp up follow
 
 ### Social equity research
 
-Census data is a core resource for a large body of research in the social sciences as it speaks directly to issues of inequality and opportunity. Jerry Shannon's study of dollar store geography [@shannon2020] uses Census data with R in a compelling way for this purpose. His analysis examines the growth of dollar stores across the United States in relationship to patterns of racial segregation in the United States. Shannon finds that dollar stores are more likely to be found nearer to predominantly Black and Latino neighborhoods as opposed to predominantly white neighborhoods, even after controlling for structural and economic characteristics of those neighborhoods. This relationship is illustrated in the figure below from Shannon's paper, showing how dollar stores tend to be in closer proximity to Black and Latino neighborhoods than white and Asian neighborhoods.
+Census data is a core resource for a large body of research in the social sciences as it speaks directly to issues of inequality and opportunity. Jerry Shannon's study of dollar store geography [@shannon2020] uses Census data with R in a compelling way for this purpose. His analysis examines the growth of dollar stores across the United States in relationship to patterns of racial segregation in the United States. Shannon finds that dollar stores are more likely to be found nearer to predominantly Black and Latino neighborhoods as opposed to predominantly white neighborhoods, even after controlling for structural and economic characteristics of those neighborhoods. Shannon's analysis was completed in R, and his analysis code [is available in the corresponding GitHub repository](https://github.com/jshannon75/metrodollars). The demographic analysis uses American Community Survey data obtained from NHGIS.
 
-![](images/paste-6A36398D.png){width="100%"}
+### Census data visualization
 
-Shannon's analysis was completed in R, and his analysis code [is available in the corresponding GitHub repository](https://github.com/jshannon75/metrodollars). The demographic analysis uses American Community Survey data obtained from NHGIS.
+One of my favorite projects that I have worked on is *Mapping Immigrant America*, an interactive map of the US foreign-born population. The map scatters dots within Census tracts to proportionally represent the residences of immigrants based on data from the American Community Survey. [The map is viewable at this link](<https://personal.tcu.edu/kylewalker/immigrant-america/#11.08/41.872/-87.7436>) .
+
+```{r mb-immigrants-show, echo = FALSE, fig.cap = "Screenshot of the Mapping Immigrant America interactive map"}
+knitr::include_graphics("img/screenshots/mb-immigrants.png")
+```
+
+While version 1 of the map used a variety of tools to process the data including ArcGIS and QGIS, the data processing for version 2 was completed entirely in R, with data then uploaded to the [Mapbox Studio](<https://studio.mapbox.com/>) platform for hosting and visualization. The data preparation code can be viewed [in the map's GitHub repository](<https://github.com/walkerke/mb-immigrants>).
+
+The map uses a *dasymetric dot-density* methodology [@walker2018a] implemented in R using a series of techniques covered in this book. ACS data and their corresponding Census tract boundaries were acquired using tools learned in Chapter \@ref(an-introduction-to-tidycensus) and Section \@ref(using-geometry-in-tidycensus); areas with no population were removed from Census tracts using a spatial analysis technique covered in Section \@ref(erasing-areas-from-census-polygons); and dots were generated for mapping using a method introduced in Section \@ref(dot-density-maps).
 
 These examples are only a small sampling of the volumes of work completed by analysts using R and US Census Bureau data. In the next chapter, you will get started using R to access Census data for yourselves, with a focus on the **tidycensus** package.

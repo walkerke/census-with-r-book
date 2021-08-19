@@ -1,7 +1,6 @@
 # Spatial analysis with US Census data
 
 ```{r ch7-setup, include = FALSE}
-knitr::opts_chunk$set(cache = FALSE, warning = FALSE, message = FALSE)
 library(mapboxapi)
 library(tidyverse)
 library(tigris)
@@ -24,7 +23,9 @@ Spatial data analysis allows practitioners to consider how geographic datasets i
 
 One common use-case employed by the geospatial analyst is *spatial overlay*. Key to the concept of spatial overlay is the representation of geographic datasets as *layers* in a GIS. This representation is exemplified by the graphic below ([credit to Rafael Pereira for the implementation](https://www.urbandemographics.org/post/figures-map-layers-r/)).
 
-![](images/paste-47AEF3CD.png){width="473"}
+```{r layers-view, echo = FALSE, fig.cap = "Conceptual view of GIS layers"}
+knitr::include_graphics("img/screenshots/layers-view.png")
+```
 
 In this representation, different components of the landscape that interact in the real world are abstracted out into different layers, represented by different geometries. For example, Census tracts might be represented as polygons; customers as points; and roads as linestrings. Separating out these components has significant utility for the geospatial analyst, however. By using spatial analytic tools, a researcher could answer questions like "How many customers live within a given Census tract?" or "Which roads intersect a given Census tract?".
 
@@ -51,7 +52,7 @@ A Census data analyst in the United States will often need to know which Census 
 
 Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri. We'll first use **tigris** to acquire Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area.
 
-```{r kc-metro}
+```{r kc-metro, fig.cap = "The Kansas City CBSA relative to Kansas and Missouri"}
 library(tigris)
 library(tidyverse)
 library(sf)
@@ -81,7 +82,7 @@ We can see visually from the plot which Census tracts are *within* the Kansas Ci
 
 Spatial subsetting uses the extent of one spatial dataset to extract features from another spatial dataset based on co-location, defined by a *spatial predicate*. Spatial subsets can be expressed through base R indexing notation:
 
-```{r kc-tracts-intersect}
+```{r kc-tracts-intersect, fig.cap = "Census tracts that intersect the Kansas City CBSA"}
 kc_tracts <- ks_mo_tracts[kc_metro, ]
 
 ggplot() + 
@@ -94,7 +95,7 @@ The spatial subsetting operation returns all the Census tracts that *intersect* 
 
 Generally, Census analysts will want to use the `st_within()` spatial predicate to return tracts within a given metropolitan area. As long as objects within the core Census hierarchy are obtained for the same year from **tigris**, the `st_within()` spatial predicate will cleanly return geographies that fall within the larger geography when requested. The example below illustrates the same process using the `st_filter()` function in **sf**, which allows spatial subsetting to be used cleanly within a tidyverse-style pipeline. The key difference between these two approaches to spatial subsetting is the argument name for the spatial predicate (`op` vs. `.predicate`).
 
-```{r kc-tracts-within}
+```{r kc-tracts-within, fig.cap = "Census tracts that are within the Kansas City CBSA"}
 kc_tracts_within <- ks_mo_tracts %>%
   st_filter(kc_metro, .predicate = st_within)
 
@@ -173,7 +174,7 @@ style_data(hispanic_by_metro, caption = "Census tracts after spatial join operat
 
 We see that the output dataset has been reduced from 5,265 Census tracts to 3,201. Notably, the output dataset now includes information, for each Census tract, about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas, such as a faceted plot:
 
-```{r plot-hispanic-by-metro}
+```{r plot-hispanic-by-metro, fig.cap = "Faceted density plot of tract Hispanic populations by CBSA in Texas"}
 hispanic_by_metro %>%
   mutate(NAME_metro = str_replace(NAME_metro, ", TX Metro Area", "")) %>%
   ggplot() + 
@@ -201,7 +202,7 @@ style_data(median_by_metro, caption = "Summarized median Hispanic population by 
 
 The grouping column (`NAME_metro`) and the output of `summarize()` (`median_hispanic`) are returned as expected. However, the `group_by() %>% summarize()` operations also return the dataset as a simple features object with geometry, but in this case with only 4 rows. Let's take a look at the output geometry:
 
-```{r plot-metro-geometry}
+```{r plot-metro-geometry, fig.cap = "Dissolved geometry of Census tracts identified within the Austin CBSA"}
 plot(median_by_metro[1,]$geometry)
 ```
 
@@ -232,7 +233,7 @@ names(trauma)
 
 To determine accessibility of Iowa Census tracts to Level I or II trauma centers, we need to identify not only those hospitals that are located in Iowa, but also those in other states near to the Iowa border, such as in Omaha, Nebraska and Rock Island, Illinois. We can accomplish this by applying a distance threshold in `st_filter()`. In this example, we use the spatial predicate `st_is_within_distance`, and set a 100km distance threshold with the `dist = 100000` argument (specified in meters, the base measurement unit of our coordinate system used).
 
-```{r identify-iowa-hospitals}
+```{r identify-iowa-hospitals, fig.cap = "Level I or II trauma centers within 100km of Iowa"}
 ia_trauma <- trauma %>%
   st_filter(ia_tracts, 
             .predicate = st_is_within_distance,
@@ -258,7 +259,7 @@ dist[1:5, 1:5]
 
 A glimpse at the matrix shows distances (in meters) between the first five Census tracts in the dataset and the first five hospitals. When considering *accessibility*, we may be interested in the distance to the *nearest* hospital to each Census tract. The code below extracts the minimum distance from the matrix for each row, converts to a vector, and divides each value by 1000 to convert values to kilometers. A quick histogram visualizes the distribution of minimum distances.
 
-```{r get-min-dist}
+```{r get-min-dist, fig.cap = "Base R histogram of minimum distances to trauma centers"}
 min_dist <- dist %>%
   apply(1, min) %>%
   as.vector() %>%
@@ -291,7 +292,7 @@ times[1:5, 1:5]
 
 A glimpse at the travel-time matrix shows a similar format to the distance matrix, but with travel times in minutes used instead of meters. As with the distance-based example, we can determine the minimum travel time from each tract to a Level I or Level II trauma center. In this instance, we will visualize the result on a map.
 
-```{r show-min-times}
+```{r show-min-times, fig.cap = "Map of travel-times to trauma centers by Census tract in Iowa"}
 min_time <- apply(times, 1, min)
 
 ia_tracts$time <- min_time
@@ -310,7 +311,7 @@ ggplot(ia_tracts, aes(fill = time)) +
 The map illustrates considerable accessibility gaps to trauma centers across the state. Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.
 
 ```{block2, note-text, type='rmdtip'}
-An advantage to using a package like {mapboxapi} for routing and travel times is that users can connect directly to a hosted routing engine using an API.  Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale.  There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks.  These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.  
+An advantage to using a package like mapboxapi for routing and travel times is that users can connect directly to a hosted routing engine using an API.  Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale.  There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks.  These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.  
 
 ```
 
@@ -337,7 +338,7 @@ iso10min <- mb_isochrone(iowa_methodist, time = 10)
 
 We can visualize the comparative extents of these two methods in Des Moines. Run the code on your own computer to get a synced interactive map showing the two methods.
 
-```{r sync, eval = FALSE}
+```{r sync, eval = FALSE, fig.cap = "Side-by-side comparison of buffer and isochrone methods for catchment areas in Des Moines, Iowa"}
 library(leaflet)
 library(leafsync)
 
@@ -361,7 +362,9 @@ map2 <- leaflet() %>%
 sync(map1, map2)
 ```
 
-![](images/paste-79D3055A.png){width="100%"}
+```{r synced-map, echo = FALSE, fig.cap = "Synced map showing buffer and isochrone-based catchment areas in Des Moines"}
+knitr::include_graphics("img/screenshots/synced-map.png")
+```
 
 The comparative maps illustrate the differences between the two methods quite clearly. Many areas of equal distance to the hospital do not have the same level of access; this is particularly true of areas to the south of the Raccoon/Des Moines River. Conversely, due to the location of highways, there are some areas outside the 5km buffer area that can reach the hospital within 10 minutes.
 
@@ -410,13 +413,15 @@ print(glue("Poverty (5km buffer method): {round(buffer_pov$pct_poverty, 1)}%"))
 print(glue("Poverty (10min isochrone method): {round(iso_pov$pct_poverty, 1)}%"))
 ```
 
+Following up on Section \@ref(understanding-yearly-differences-in-tigerline-files), areal interpolation is also a common method used to adjust population data aggregated to inconsistent Census boundaries over time. However, it can introduce inaccuracies in sparsely populated areas, which can be improved with a population-weighted interpolation approach. While this approach is not covered here, \@schroeder2013 provide a good discussion of the method.
+
 ## Better cartography with spatial overlay
 
 As discussed in Section \@ref(using-geometry-in-tidycensus), one of the major benefits of working with the **tidycensus** package to get Census data in R is its ability to retrieve pre-joined feature geometry for Census geographies with the argument `geometry = TRUE`. tidycensus uses the **tigris** package to fetch these geometries, which default to the Census Bureau's [cartographic boundary shapefiles](https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html). Cartographic boundary shapefiles are preferred to the core [TIGER/Line shapefiles](https://www.census.gov/geo/maps-data/data/tiger-line.html) in **tidycensus** as their smaller size speeds up processing and because they are pre-clipped to the US coastline.
 
 However, there may be circumstances in which your mapping requires more detail. A good example of this would be maps of New York City, in which even the cartographic boundary shapefiles include water area. For example, take this example of median household income by Census tract in Manhattan (New York County), NY:
 
-```{r manhattan}
+```{r manhattan, fig.cap = "Map of Manhattan with default CB geometries"}
 library(tidycensus)
 library(tidyverse)
 options(tigris_use_cache = TRUE)
@@ -442,7 +447,7 @@ As illustrated in the graphic, the boundaries of Manhattan include water boundar
 
 ### "Erasing" areas from Census polygons
 
-tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`. This argument will be familiar to users of the tigris package, as it is used by tigris to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.
+tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`. This argument will be familiar to users of the **tigris** package, as it is used by **tigris** to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.
 
 ```{r get-tiger-manhattan}
 
@@ -461,7 +466,7 @@ ny2 <- get_acs(
 
 Next, tools in the **tigris** and **sf** package can be used to remove the water area from Manhattan's Census tracts. **sf** allows users to "erase" one geometry from another, [akin to tools available in desktop GIS software](http://pro.arcgis.com/en/pro-app/tool-reference/analysis/erase.htm). The `st_erase()` function defined below is not exported by the package, but is defined in the documentation for `st_difference()`.
 
-The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in tigris, making sure to choose the option `class = "sf"`.
+The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in **tigris**.
 
 ```{r erase-nyc}
 library(sf)
@@ -480,7 +485,7 @@ ny_erase <- st_erase(ny2, ny_water)
 
 After performing this operation, we can map the result:
 
-```{r plot-erase-manhattan}
+```{r plot-erase-manhattan, fig.cap = "Map of Manhattan with water areas erased"}
 ggplot(ny_erase) + 
   geom_sf(aes(fill = estimate)) + 
   scale_fill_viridis_c(labels = scales::dollar) + 
@@ -496,7 +501,7 @@ The spatial capabilities of **tidycensus** also allow for exploratory spatial da
 
 To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on median age by Census tract in the Dallas-Fort Worth, TX metropolitan area. Census tracts in the metro area will be identified using methods introduced earlier in this chapter.
 
-```{r, get-dfw-tract-ch7}
+```{r get-dfw-tract-ch7}
 library(tidycensus)
 library(tidyverse)
 library(tigris)
@@ -547,7 +552,7 @@ On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.
 
 Neighborhood relationships can be visualized using plotting functionality in **spdep**:
 
-```{r plot-neighbors}
+```{r plot-neighbors, fig.cap = "Visualization of queens-case neighborhood relationships"}
 dfw_coords <- dfw_tracts %>%
   st_centroid() %>%
   st_coordinates()
@@ -606,7 +611,7 @@ dfw_tracts$lag_estimate <- lag.listw(weights, dfw_tracts$estimate)
 
 The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the mean percentage of bachelor's degree holders for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area. Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.
 
-```{r visualize-lag}
+```{r visualize-lag, fig.cap = "Scatterplot of median age relative to its spatial lag"}
 ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) + 
   geom_point(alpha = 0.3) + 
   geom_abline(color = "red") + 
@@ -639,12 +644,14 @@ The Moran's $I$ statistic of 0.359 is positive, and the small *p*-value suggests
 We can explore this further with *local spatial autocorrelation analysis*. Local measures of spatial autocorrelation disaggregate global results to identify "hot spots" of similar values within a given spatial dataset. One such example is the Getis-Ord local G statistic [@getis2010], which is computed as follows:
 
 $$
-G_{i}(d) = \dfrac{\sum\limits_{j}w_{ij}(d)x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
+G_{i} = \dfrac{\sum\limits_{j}w_{ij}x_j}{\sum\limits_{j=1}^{n}x_j} \text{ for all }i \neq j
 $$
 
-In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. A variant of the local G statistic, $G_i*$, includes the focal feature in its neighborhood calculation. Results are returned as z-scores, and implemented in the `localG()` function in **spdep**.
+In summary, the equation computes a ratio of the weighted average of the neighborhood values to the total sum of values for the dataset. While the default version of the local G (represented in the equation above) omits the location $i$ from its calculation, a variant of the local G statistic, $G_i*$, includes this location. Results are returned as z-scores, and implemented in the `localG()` function in **spdep**.
 
-```{r dfw-local-g}
+The code below calculates the local G variant $G_i*$ by re-generating the weights matrix with `include.self()`, then passing this weights matrix to the `localG()` function.
+
+```{r dfw-local-g, fig.cap = "Map of local Gi* scores"}
 # For Gi*, re-compute the weights with `include.self()`
 localg_weights <- nb2listw(include.self(neighbors))
 
@@ -659,7 +666,7 @@ ggplot(dfw_tracts) +
 
 Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic and plot them accordingly.
 
-```{r local-g-z-scores}
+```{r local-g-z-scores, fig.cap = "Map of local Gi* scores with significant clusters highlighted"}
 dfw_tracts$hotspot <- ifelse(dfw_tracts$localG >= 2.56, "High cluster",
                              ifelse(dfw_tracts$localG <= -2.56, "Low cluster",
                              "Not significant"))
@@ -672,11 +679,13 @@ ggplot(dfw_tracts) +
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
-An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's $I$ [@anselin2010]. Mathematically, LISA is computed as follows:
+An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's $I$ [@anselin2010]. As an extension of the Global Moran's $I$ statistic, LISA is computed as follows:
 
 $$
-I_i = \frac{(x_i-\bar{x})}{{\sum\limits_{k=1}^{n}(x_k-\bar{x})^2}/(n-1)}{\sum\limits_{j=1}^{n}w_{ij}(x_j-\bar{x})}
+I_i = z_i \sum_j w_{ij} z_j,
 $$
+
+where $z_i$ and $z_j$ are expressed as deviations from the mean.
 
 LISA is a popular method for exploratory spatial data analysis in the spatial social sciences implemented in a variety of software packages. ArcGIS implements LISA in its [Cluster and Outlier Analysis geoprocessing tool](https://pro.arcgis.com/en/pro-app/latest/tool-reference/spatial-statistics/cluster-and-outlier-analysis-anselin-local-moran-s.htm); Anselin's open-source [GeoDa](https://geodacenter.github.io/) software has a graphical interface for calculating LISA statistics; and [Python users can compute LISA using the PySAL library](https://pysal.org/esda/generated/esda.Moran_Local.html).
 
@@ -713,7 +722,7 @@ The above code uses the following steps:
 
 Our result appears as follows:
 
-```{r show-dfw-lisa-df}
+```{r show-dfw-lisa-df, echo = FALSE}
 style_data(dfw_lisa_df, n_rows = 5, caption = "Local Moran's I results")
 ```
 
@@ -732,7 +741,7 @@ dfw_lisa_clusters <- dfw_lisa_df %>%
 
 The LISA quadrant plot then appears as follow:
 
-```{r dfw-quadrant-plot}
+```{r dfw-quadrant-plot, fig.cap = "LISA quadrant scatterplot"}
 color_values <- c(`High-high` = "red", 
                   `High-low` = "pink", 
                   `Low-low` = "blue", 
@@ -752,11 +761,11 @@ ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
 
 ```
 
-Observations falling in the top-right quadrant represent "high-high" clusters, where older Census tracts are also surrounded by older tracts in their spatial neighborhoods. Statistically significant clusters - those with a p-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes younger tracts that are also surrounded by younger tracts. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
+Observations falling in the top-right quadrant represent "high-high" clusters, where older Census tracts are also surrounded by older tracts in their spatial neighborhoods. Statistically significant clusters - those with a *p*-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes younger tracts that are also surrounded by younger tracts. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
 
 GeoDa also implements a "cluster map" where observations are visualized in relationship to their cluster membership and statistical significance. The code below reproduces the GeoDa cluster map using **ggplot2** and `geom_sf()`.
 
-```{r dfw-lisa-map}
+```{r dfw-lisa-map, fig.cap = "LISA cluster map"}
 ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
   geom_sf(size = 0.1) + 
   theme_void() + 
@@ -766,13 +775,13 @@ ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
 
 The map illustrates distinctive patterns of spatial clustering by age in the Dallas-Fort Worth region. Older clusters are colored red; this includes areas like the wealthy Highland Park community north of downtown Dallas. Younger clusters are colored dark blue, and found in areas like east Fort Worth, east Dallas, and Arlington in the center of the metropolitan area. Spatial outliers appear scattered throughout the map as well; in the Dallas area, low-high clusters are Census tracts with large quantities of multifamily housing that are adjacent to predominantly single-family neighborhoods.
 
-One very useful feature of GeoDa for exploratory spatial data analysis is the ability to perform linked brushing between the LISA quadrant plot and cluster map. This allows users to click and drag on either plot and highlight the corresponding observations on the other plot. Building on the chart linking example using ggiraph introduced in Section \@ref(linking-maps-and-charts), a linked brushing approach similar to GeoDa can be implemented in Shiny, and is shown below. Click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel.
+One very useful feature of GeoDa for exploratory spatial data analysis is the ability to perform linked brushing between the LISA quadrant plot and cluster map. This allows users to click and drag on either plot and highlight the corresponding observations on the other plot. Building on the chart linking example using ggiraph introduced in Section \@ref(linking-maps-and-charts), a linked brushing approach similar to GeoDa can be implemented in Shiny, and is represented in the image below and available at <https://walkerke.shinyapps.io/linked-brushing/>.
 
-```{r linked-brushing-app}
-knitr::include_app("https://walkerke.shinyapps.io/linked-brushing/", height = "400px")
+```{r linked-brushing, echo = FALSE, fig.cap = "View of LISA Shiny app with linked brushing enabled"}
+knitr::include_graphics("img/screenshots/linked-brushing.png")
 ```
 
-Code to reproduce this Shiny app is available from this link.
+Using the lasso select tool, you can click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel. Code to reproduce this Shiny app is available in `scripts/linked_brushing` in the book's repository.
 
 ## Exercises
 

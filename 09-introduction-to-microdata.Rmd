@@ -1,7 +1,7 @@
 # Introduction to Census microdata
 
 ```{r setup-ch9, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+source("R/book-functions.R")
 ```
 
 The previous two sections of this book cover aggregate-level analysis of US Census Bureau data. However, such analyses are limited to the pre-tabulated estimates provided by the Census Bureau. While these estimates are voluminous, they may not include the level of detail required by researchers, and they are limited to analyses appropriate for aggregate-level data. In turn, many researchers turn to Census *microdata*, which are anonymized individual-level Census records, to help answer demographic questions. In 2020, tidycensus added support for American Community Survey microdata along with a series of tools to assist with analysis of these datasets. The next two chapters provide an overview of this functionality in tidycensus and help users get started analyzing and modeling ACS microdata appropriately.
@@ -18,21 +18,25 @@ The Census Bureau also operates a network of [Federal Statistical Research Data 
 
 One of the most popular and comprehensive repositories for research microdata is the [University of Minnesota's IPUMS project](https://www.ipums.org/) [@ruggles2020]. IPUMS includes Decennial US Census and ACS microdata (IPUMS USA), microdata from the Current Population Survey (IPUMS CPS), and over 100 countries around the world (IPUMS International).
 
-![](images/paste-E6172E23.png){style="width: 100%;"}
+```{r ipums-home, echo = FALSE, fig.cap = "IPUMS home page"}
+knitr::include_graphics("img/screenshots/ipums-home.png")
+```
 
-IPUMS releases microdata that are *harmonized,* which means that changing variable definitions over time are aligned by the IPUMS team to allow for coherent longitudinal analysis. Using IPUMS requires signing up for an account and making a request through their web interface, then downloading a data extract; [an API is under development](https://developer.ipums.org/docs/apiprogram/). IPUMS data products will be covered in more detail in Chapter \@ref(11), which will also introduce the ipumsr R package [@ellis_and_burk2020] for working with IPUMS data in R.
+IPUMS releases microdata that are *harmonized,* which means that changing variable definitions over time are aligned by the IPUMS team to allow for coherent longitudinal analysis. Using IPUMS requires signing up for an account and making a request through their web interface, then downloading a data extract; [an API is under development](https://developer.ipums.org/docs/apiprogram/). IPUMS data products will be covered in more detail in Chapter \@ref(other-census-and-government-data-resources), which will also introduce the **ipumsr** R package [@ellis_and_burk2020] for working with IPUMS data in R.
 
 ### Microdata and the Census API
 
 The migration of US Census data from American FactFinder to the data.census.gov tool integrated the Census Bureau's data download interface with its API. The Census Bureau's MDAT tool allows for flat file downloads of microdata along with API queries for microdata, marking the first time that microdata are available via the API.
 
-![](images/paste-4D7F60A0.png){width="100%"}
+```{r mdat-tool, echo = FALSE, fig.cap = "MDAT tool from data.census.gov"}
+knitr::include_graphics("img/screenshots/mdat-tool.png")
+```
 
-This means that microdata can be accessed with `httr::GET()` requests in R, but also made ACS microdata accessible to tidycensus. In 2020, tidycensus released a range of features to support ACS microdata for R users; this functionality is covered in the remainder of this chapter.
+This means that microdata can be accessed with `httr::GET()` requests in R, but also made ACS microdata accessible to **tidycensus**. In 2020, tidycensus released a range of features to support ACS microdata for R users; this functionality is covered in the remainder of this chapter.
 
 ## Using microdata in tidycensus
 
-American Community Survey microdata are available in tidycensus by using the `get_pums()` function, which communicates with the Census API much like other tidycensus functions and returns PUMS data. Given the unique properties of Census microdata and the different structure of individual-level records as opposed to aggregate data, the data returned by `get_pums()` differs from other tidycensus functions. This section covers the basics of requesting microdata extracts with tidycensus.
+American Community Survey microdata are available in **tidycensus** by using the `get_pums()` function, which communicates with the Census API much like other tidycensus functions and returns PUMS data. Given the unique properties of Census microdata and the different structure of individual-level records as opposed to aggregate data, the data returned by `get_pums()` differs from other tidycensus functions. This section covers the basics of requesting microdata extracts with **tidycensus**.
 
 ### Basic usage of `get_pums()`
 
@@ -51,8 +55,8 @@ wy_pums <- get_pums(
 )
 ```
 
-```{r show-first-call}
-wy_pums
+```{r show-first-call, echo = FALSE}
+style_data(wy_pums, caption = "1-year ACS PUMS data for Wyoming")
 ```
 
 The function returns just under 6,000 rows of data with our requested variables in the columns. However, a few other variables are also returned that we did not request; these default variables are covered below.
@@ -112,7 +116,7 @@ While the ACS PUMS dataset does not include tens of thousands of variables choic
 
 As with the data dictionaries for the decennial Census and aggregate ACS obtained with `load_variables()`, it is advisable to browse the PUMS data dictionary, `pums_variables`, with the `View()` function in RStudio.
 
-```{r view, eval = FALSE}
+```{r view-pums-variables, eval = FALSE}
 View(pums_variables)
 ```
 
@@ -126,9 +130,9 @@ View(pums_variables)
 
 ### Recoding PUMS variables
 
-A typical tidycensus workflow covered earlier in this book involves browsing the appropriate data dictionary, choosing variable IDs, and using those IDs in your scripts and workflows. Analysts will likely follow this same process with `get_pums()`, but can also use the argument `recode = TRUE` to return additional contextual information with the requested data. `recode = TRUE` instructs `get_pums()` to append recoded columns to your returned dataset based on information available in `pums_variables`. Let's take a look at the Wyoming example with `recode = TRUE`.
+A typical **tidycensus** workflow covered earlier in this book involves browsing the appropriate data dictionary, choosing variable IDs, and using those IDs in your scripts and workflows. Analysts will likely follow this same process with `get_pums()`, but can also use the argument `recode = TRUE` to return additional contextual information with the requested data. `recode = TRUE` instructs `get_pums()` to append recoded columns to your returned dataset based on information available in `pums_variables`. Let's take a look at the Wyoming example with `recode = TRUE`.
 
-```{r recode, results = 'hide'}
+```{r recode-pums-variables, results = 'hide'}
 wy_pums_recoded <- get_pums(
   variables = c("SEX", "AGEP", "HHT"),
   state = "WY",
@@ -138,8 +142,8 @@ wy_pums_recoded <- get_pums(
 )
 ```
 
-```{r show-recode}
-wy_pums_recoded
+```{r show-recode, echo = FALSE}
+style_data(wy_pums_recoded, caption = "Recoded PUMS data for Wyoming")
 ```
 
 Note that the dataset returns three new columns: `ST_label`, `HHT_label`, and `SEX_label` which include longer and more informative descriptions of the value labels. These columns are returned as ordered factors that preserve the original ordering of the columns independent of their alphabetical order. Numeric columns like `AGEP` are not recoded as the data values reflect numbers, not a categorical label.
@@ -152,7 +156,7 @@ The `variables_filter` argument should be supplied as a named list where variabl
 
 In the example below, the Wyoming request is modified with `variables_filter` to return only women (`SEX = 2`) between the ages of 30 and 49, but this time from the 5-year ACS PUMS.
 
-```{r filter, results = 'hide'}
+```{r filter-pums, results = 'hide'}
 wy_pums_filtered <- get_pums(
   variables = c("SEX", "AGEP", "HHT"),
   state = "WY",
@@ -165,8 +169,8 @@ wy_pums_filtered <- get_pums(
 )
 ```
 
-```{r show-filter}
-wy_pums_filtered
+```{r show-filter, echo = FALSE}
+style_data(wy_pums_filtered, caption = "Filtered extract of Wyoming PUMS data")
 ```
 
 The returned dataset reflects the filter request, with data values in the `AGEP` column only ranging between 30 and 49 and the `SEX` column only including 2, for female.
@@ -179,9 +183,9 @@ One of the steps the Census Bureau takes to preserve anonymity in the PUMS datas
 
 Public Use Microdata Areas (PUMAs) are the smallest available geographies at which records are identifiable in the PUMS datasets. PUMAs are redrawn with each decennial US Census, and typically are home to between 100,000 - 200,000 people when drawn, although some may be much larger by the end of a Census cycle. In large cities, a PUMA will represent a collection of nearby neighborhoods; in rural areas, it might represent several counties across a large area of a state.
 
-PUMA geographies can be obtained and reviewed with the `pumas()` function in the tigris package. Let's take a look at PUMA geographies for the state of Wyoming:
+PUMA geographies can be obtained and reviewed with the `pumas()` function in the **tigris** package. Let's take a look at PUMA geographies for the state of Wyoming:
 
-```{r plot-pumas}
+```{r plot-pumas, fig.cap = "Basic map of PUMAs in Wyoming"}
 library(tigris)
 options(tigris_use_cache = TRUE)
 
@@ -200,7 +204,7 @@ wy_pumas$NAME10
 
 In a denser urban area, PUMAs will reflect subsections of major cities and are drawn in attempts to reflect meaningful local areas. In New York City, for example, PUMAs are drawn to align with recognized community districts in the city.
 
-```{r nyc-pumas}
+```{r nyc-pumas, fig.cap = "Map of PUMAs in New York City"}
 nyc_pumas <- pumas(state = "NY", cb = TRUE) %>%
   filter(str_detect(NAME10, "NYC"))
 
@@ -209,7 +213,7 @@ ggplot(nyc_pumas) +
   theme_void()
 ```
 
-The names of NYC's PUMAs themselves reflect the community districts in the geographic data returned by tigris.
+The names of NYC's PUMAs themselves reflect the community districts in the geographic data returned by **tigris**.
 
 ```{r nyc-puma-names}
 nyc_pumas$NAME10[1:5]
@@ -227,8 +231,8 @@ wy_age_by_puma <- get_pums(
 )
 ```
 
-```{r show-pumas}
-wy_age_by_puma
+```{r show-pumas, echo = FALSE}
+style_data(wy_age_by_puma, caption = "Wyoming microdata with PUMA and age information")
 ```
 
 PUMA IDs are replicated across states, so the `PUMA` column should be combined with the `ST` column to uniquely identify PUMAs when performing multi-state analyses.
@@ -244,8 +248,8 @@ wy_puma_subset <- get_pums(
 )
 ```
 
-```{r show-subset-puma}
-wy_puma_subset
+```{r show-subset-puma, echo = FALSE}
+style_data(wy_puma_subset, caption = "Microdata for PUMA 00500 in Wyoming")
 ```
 
 For multi-state geographical queries, the `puma` argument must be adapted slightly due to the aforementioned possibility that PUMA IDs will be replicated across states. To perform a multi-state query by PUMA, specify `state = "multiple"` and pass a named vector of state/PUMA pairs to the `puma` parameter.
@@ -261,7 +265,7 @@ twostate_puma_subset <- get_pums(
 ```
 
 ```{r show-multistate-pumas}
-twostate_puma_subset
+style_data(twostate_puma_subset, caption = "Data for PUMA 00500 in Wyoming and PUMA 05001 in Utah")
 ```
 
 The returned data include neighboring areas in Wyoming and Utah.

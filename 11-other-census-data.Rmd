@@ -1,7 +1,6 @@
 # Other Census and government data resources
 
 ```{r setup-ch11, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(blscrapeR)
 library(sf)
@@ -11,21 +10,23 @@ options(tigris_use_cache = TRUE)
 source("R/book-functions.R")
 ```
 
-Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with tidycensus and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated [ipumsr](http://tech.popdata.org/ipumsr/) R package to help analysts integrate these datasets into R-based workflows.
+Most of the examples covered in the book to this point use data from recent US Census Bureau datasets such as the Decennial Census since 2000 and the American Community Survey. These datasets are available through the US Census Bureau's APIs and in turn accessible with **tidycensus** and related tools. However, analysts and historians may be interested in accessing data from much earlier - perhaps all the way back to 1790, the first US Census! Fortunately, these historical datasets are available to analysts through the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center's](https://pop.umn.edu/) [IPUMS project](https://ipums.org/). While both of these data repositories have typically attracted researchers using commercial software such as ArcGIS (for NHGIS) and Stata/SAS (for IPUMS), the Minnesota Population Center has developed an associated **ipumsr** R package to help analysts integrate these datasets into R-based workflows.
 
-Additionally, the US Census Bureau publishes many other surveys and datasets besides the decennial US Census and American Community Survey. While tidycensus focuses on these core datasets, other R packages provide support for the wide range of datasets available from the Census Bureau and other government agencies.
+Additionally, the US Census Bureau publishes many other surveys and datasets besides the decennial US Census and American Community Survey. While **tidycensus** focuses on these core datasets, other R packages provide support for the wide range of datasets available from the Census Bureau and other government agencies.
 
-The first part of this chapter provides an overview of how to access and use historical US Census datasets in R with NHGIS, IPUMS, and the ipumsr package. Due to the size of the datasets involved, these datasets are not provided with the sample data available in the book's data repository. To reproduce, readers should follow the steps provided to sign up for an IPUMS account and download the data themselves. The second part of this chapter covers R workflows for Census data resources outside the decennial US Census and American Community Survey. It highlights packages such as censusapi, which allows for programmatic access to all US Census Bureau APIs, and lehdr, which grants access to the LEHD LODES dataset for analyzing commuting flows and jobs distributions. Other government data resources are also addressed at the end of the chapter.
+The first part of this chapter provides an overview of how to access and use historical US Census datasets in R with NHGIS, IPUMS, and the **ipumsr** package. Due to the size of the datasets involved, these datasets are not provided with the sample data available in the book's data repository. To reproduce, readers should follow the steps provided to sign up for an IPUMS account and download the data themselves. The second part of this chapter covers R workflows for Census data resources outside the decennial US Census and American Community Survey. It highlights packages such as **censusapi**, which allows for programmatic access to all US Census Bureau APIs, and **lehdr**, which grants access to the LEHD LODES dataset for analyzing commuting flows and jobs distributions. Other government data resources are also addressed at the end of the chapter.
 
 ## Mapping historical geographies of New York City with NHGIS
 
-The National Historical Geographic Information System (NHGIS) project [@manson2021] is a tremendous resource for both contemporary and historical US Census data. While some datasets (e.g. the 2000 and 2010 decennial US Censuses, the ACS) can be accessed with both tidycensus and NHGIS, NHGIS is an excellent option for users who prefer browsing data menus to request data and/or who require historical information earlier than 2000. The example in this section will illustrate an applied workflow using NHGIS and its companion R package, ipumsr [@ellis_and_burk2020] to map geographies of immigration in New York City from the 1910 Census.
+The National Historical Geographic Information System (NHGIS) project [@manson2021] is a tremendous resource for both contemporary and historical US Census data. While some datasets (e.g. the 2000 and 2010 decennial US Censuses, the ACS) can be accessed with both **tidycensus** and NHGIS, NHGIS is an excellent option for users who prefer browsing data menus to request data and/or who require historical information earlier than 2000. The example in this section will illustrate an applied workflow using NHGIS and its companion R package, **ipumsr** [@ellis_and_burk2020] to map geographies of immigration in New York City from the 1910 Census.
 
 ### Getting started with NHGIS
 
 To get started with NHGIS, visit [the NHGIS website](https://www.nhgis.org/) and click the "REGISTER" link at the top of the screen to register for an account. NHGIS asks for some basic information about your work and how you plan to use the data, and you'll agree to the NHGIS usage license agreement. Once registered, return to the NHGIS home page and click the "Get Data" button to visit the NHGIS data browser interface.
 
-![](images/paste-197498A3.png){width="100%"}
+```{r nhgis-img-1, echo = FALSE, fig.cap = "NHGIS data browser interface"}
+knitr::include_graphics("img/screenshots/nhgis-1.png")
+```
 
 A series of options on the left-hand side of your screen. These options include:
 
@@ -39,7 +40,9 @@ A series of options on the left-hand side of your screen. These options include:
 
 The **Select Data** menu shows which Census tables are available given your filter selections. Usefully, the menu includes embedded links that give additional information about the available data choices, along with a "popularity" bar graph showing the most-downloaded tables for that particular dataset.
 
-![](images/paste-7E1A2E13.png){width="100%"}
+```{r nhgis-select-data, echo = FALSE, fig.cap = "NHGIS Select Data screen"}
+knitr::include_graphics("img/screenshots/nhgis-select-data.png")
+```
 
 For this example, choose the tables "NT26: Ancestry" and "NT45: Race/Ethnicity" by clicking the green plus signs next to the two to select them. Then, click the **GIS FILES** tab. This tab allows you to select companion shapefiles that can be merged to the demographic extracts for mapping in a desktop GIS or in software like R. Choose either of the Census Tract options then click "CONTINUE" to review your selection. On the "REVIEW AND SUBMIT" screen, keep the "Comma delimited" file structure selected and give your extract a description if you would like.
 
@@ -47,13 +50,13 @@ When finished, click SUBMIT. You'll be taken to the "EXTRACTS HISTORY" screen wh
 
 ### Working with NHGIS data in R
 
-Once acquired, NHGIS spatial and attribute data can be integrated seamlessly into R-based data analysis workflows thanks to the ipumsr package. ipumsr includes a series of NHGIS-specific functions: `read_nhgis()`, which reads in the tabular aggregate data; `read_nhgis_sf()`, which reads in the spatial data as a simple features object; and `read_nhgis_sp()`, which reads in the spatial data in legacy sp format.
+Once acquired, NHGIS spatial and attribute data can be integrated seamlessly into R-based data analysis workflows thanks to the **ipumsr** package. **ipumsr** includes a series of NHGIS-specific functions: `read_nhgis()`, which reads in the tabular aggregate data; `read_nhgis_sf()`, which reads in the spatial data as a simple features object; and `read_nhgis_sp()`, which reads in the spatial data in legacy sp format.
 
 `read_nhgis_sf()` has built-in features to make working with spatial and demographic data simpler for R users. If the `data_file` argument is pointed to the CSV file with the demographic data, and the `shape_file` argument is pointed to the shapefile, `read_nhgis_sf()` will read in both files simultaneously and join them correctly based on a common `GISJOIN` column found in both files. An additional perk is that `read_nhgis_sf()` can handle the zipped folders, removing an additional step from the analyst's data preparation workflow.
 
 The example below uses `read_nhgis_sf()` to read in spatial and demographic data on immigrants in New York City in 1910. As the 1910 shapefile folder includes both NYC Census tracts and a separate dataset with US counties, the top-level folder should be unzipped, `shape_file` pointed to the second-level zipped folder, and the `shape_layer` argument used to exclusively read in the tracts. The `filter()` call will drop Census tracts that do not have corresponding data (so, outside NYC).
 
-```{r read_nhgis, message = TRUE}
+```{r read-nhgis, message = TRUE}
 library(ipumsr)
 library(tidyverse)
 
@@ -69,11 +72,13 @@ nyc_1910 <- read_nhgis_sf(
 
 The best way to review the variables and their labels is the `View()` command in RStudio, which is most efficient on sf objects when the geometry is first dropped with `sf::st_drop_geometry()`.
 
-```{r view_nhgis, eval = FALSE}
+```{r view-nhgis, eval = FALSE}
 View(sf::st_drop_geometry(nyc_1910))
 ```
 
-![](images/paste-6FF3702F.png){width="100%"}
+```{r nhgis-data-view, echo = FALSE, fig.cap = "NHGIS data in the RStudio Viewer"}
+knitr::include_graphics("img/screenshots/nhgis-data-view.png")
+```
 
 As shown in the graphic above, the variable labels are particularly useful when using `View()` to understand what the different variables mean without having to reference the codebook.
 
@@ -81,11 +86,11 @@ As shown in the graphic above, the variable labels are particularly useful when 
 
 The message displayed when reading in the NHGIS shapefile above indicates that the Census tract data are in a projected coordinate reference system, `USA_Contiguous_Albers_Equal_Area_Conic`. The spatial data can be displayed with `plot()`:
 
-```{r plot-nyc-tracts}
+```{r plot-nyc-tracts, fig.cap = "Plot of NYC Census tracts in 1910 using an Albers Equal Area CRS"}
 plot(nyc_1910$geometry)
 ```
 
-The data reflect Census tracts for New York City, but appear rotated counter-clockwise. This is because the coordinate reference system used, `ESRI:100023`, is appropriate for the entire United States (in fact, it is the base CRS used for `tigris::shift_geometry()`), but will not be appropriate for any specific small area. As covered in Chapter 5, the crsuggest package helps identify more appropriate projected coordinate reference system options.
+The data reflect Census tracts for New York City, but appear rotated counter-clockwise. This is because the coordinate reference system used, `ESRI:100023`, is appropriate for the entire United States (in fact, it is the base CRS used for `tigris::shift_geometry()`), but will not be appropriate for any specific small area. As covered in Chapter 5, the **crsuggest** package helps identify more appropriate projected coordinate reference system options.
 
 ```{r suggest-nyc-crs, eval = FALSE}
 library(crsuggest)
@@ -101,13 +106,13 @@ suggest_crs(nyc_1910) %>%
 
 Based on these suggestions, we'll select the CRS "NAD83(2011) / New York Long Island" which has an EPSG code of 6538.
 
-```{r transform-nyc-crs}
+```{r transform-nyc-crs, fig.cap = "NYC Census tracts with an area-appropriate CRS"}
 nyc_1910_proj <- st_transform(nyc_1910, 6538)
 
 plot(nyc_1910_proj$geometry)
 ```
 
-Given the information in the two tables downloaded from NHGIS, there are multiple ways to visualize the demographics of New York City in 1910. The first example is a choropleth map of the percentage of the total population born outside the United States. As there is no "total population" column in the dataset, the code below uses some newer tidyverse syntax to perform row-wise calculations and sum across the columns `A60001` through `A60007` to calculate this. The `transmute()` function then works like a combination of `mutate()` and `select()`: it calculates two new columns, then selects only those columns in the output dataset `nyc_pctfb`.
+Given the information in the two tables downloaded from NHGIS, there are multiple ways to visualize the demographics of New York City in 1910. The first example is a choropleth map of the percentage of the total population born outside the United States. As there is no "total population" column in the dataset, the code below uses **dplyr**'s `rowwise()` and `c_across()` functions to perform row-wise calculations and sum across the columns `A60001` through `A60007`. The `transmute()` function then works like a combination of `mutate()` and `select()`: it calculates two new columns, then selects only those columns in the output dataset `nyc_pctfb`.
 
 ```{r calculate-nyc-fb}
 nyc_pctfb <- nyc_1910_proj %>%
@@ -122,7 +127,7 @@ nyc_pctfb <- nyc_1910_proj %>%
 
 The result can be visualized with any of the mapping packages covered in Chapter \@ref(mapping-census-data-with-r), such as ggplot2 and `geom_sf()`.
 
-```{r map-nyc-fb}
+```{r map-nyc-fb, fig.cap = "Percent foreign-born by Census tract in NYC in 1910, mapped with ggplot2"}
 ggplot(nyc_pctfb, aes(fill = pct_fb)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c(option = "magma", labels = scales::percent) + 
@@ -155,7 +160,7 @@ nyc_base <- nyc_1910_proj %>%
 
 In Section \@ref(dot-density-maps), we used `tmap::tm_dots()` to create a dot-density map. ggplot2 and `geom_sf()` also work well for dot-density mapping; cartographers can either use `geom_sf()` with a very small `size` argument, or set `shape = "."` where each data point will be represented by a single pixel on the screen.
 
-```{r visualize-italy-dots}
+```{r visualize-italy-dots, fig.cap = "Dot-density map of the Italy-born population in NYC in 1910, mapped with ggplot2"}
 ggplot() + 
   geom_sf(data = nyc_base, size = 0.1) + 
   geom_sf(data = italy_dots, shape = ".", color = "darkgreen") + 
@@ -169,7 +174,7 @@ The resulting map highlights areas with large concentrations of Italian immigran
 
 ## Analyzing complete-count historical microdata with IPUMS and R
 
-Chapters 9 and 10 covered the process of acquiring and analyzing microdata from the American Community Survey with tidycensus. As noted, these workflows are only available for recent demographics, reflecting the recent availability of the ACS. Historical researchers will need data that goes further back, and will likely turn to [IPUMS-USA](https://usa.ipums.org/usa/) for these datasets. IPUMS-USA makes available microdata samples all the way back to 1790, enabling historical demographic research not possible elsewhere.
+Chapters 9 and 10 covered the process of acquiring and analyzing microdata from the American Community Survey with **tidycensus**. As noted, these workflows are only available for recent demographics, reflecting the recent availability of the ACS. Historical researchers will need data that goes further back, and will likely turn to [IPUMS-USA](https://usa.ipums.org/usa/) for these datasets. IPUMS-USA makes available microdata samples all the way back to 1790, enabling historical demographic research not possible elsewhere.
 
 A core focus of Chapter 10 was the use of sampling weights to appropriately analyze and model microdata. Historical Census datasets, however, are subject to the ["72-year rule"](https://www.census.gov/history/www/genealogy/decennial_census_records/the_72_year_rule_1.html), which states:
 
@@ -183,7 +188,9 @@ The availability of complete-count Census records offers a tremendous analytic o
 
 To get started, visit the IPUMS-USA website at <https://usa.ipums.org/usa/>. If you already signed up for an IPUMS account in Section \@ref(getting-started-with-nhgis), log in with your user name and password; otherwise follow those instructions to register for an account, which you can use for all of the IPUMS resources including NHGIS. Once you are logged in, click the "Get Data" button to visit the data selection menu.
 
-![](images/paste-2E6F0E66.png){width="100%"}
+```{r ipums-get-data, echo = FALSE, fig.cap = "IPUMS data browser"}
+knitr::include_graphics("img/screenshots/ipums-get-data.png")
+```
 
 You'll use the various options displayed in the image above to define your extract. These options include:
 
@@ -195,13 +202,17 @@ You'll use the various options displayed in the image above to define your extra
 
 When finished, click the "VIEW CART" link to go to your data cart. You'll see the variables that will be returned with your extract.
 
-![](images/paste-535E2182.png){width="83%"}
+```{r ipums-data-cart, echo = FALSE, fig.cap = "IPUMS data cart"}
+knitr::include_graphics("img/screenshots/ipums-data-cart.png")
+```
 
-Notice that there will be more variables in your output extract than you selected; this is because a number of technical variables are *pre-selected,* which is similar to the approach taken by `get_pums()` in tidycensus. When you are ready to create the extract, click the **CREATE DATA EXTRACT** button to get a summary of your extract before submitting.
+Notice that there will be more variables in your output extract than you selected; this is because a number of technical variables are *pre-selected,* which is similar to the approach taken by `get_pums()` in **tidycensus**. When you are ready to create the extract, click the **CREATE DATA EXTRACT** button to get a summary of your extract before submitting.
 
-![](images/paste-E170D6EE.png)
+```{r ipums-extract-request, echo = FALSE, fig.cap = "IPUMS extract request screen"}
+knitr::include_graphics("img/screenshots/ipums-extract-request.png")
+```
 
-Note that the example shown reflects changing the output data format to CSV, which will be used to load the IPUMS data into a database. If using R directly for a smaller extract and the ipumsr R package, the default fixed-width text file with the extension `.dat` can be selected and the data can be read into R with `ipumsr::read_ipums_micro()`. To replicate the workflow below, however, the output data format should be changed to CSV.
+Note that the example shown reflects changing the output data format to CSV, which will be used to load the IPUMS data into a database. If using R directly for a smaller extract and the **ipumsr** R package, the default fixed-width text file with the extension `.dat` can be selected and the data can be read into R with `ipumsr::read_ipums_micro()`. To replicate the workflow below, however, the output data format should be changed to CSV.
 
 Click **SUBMIT EXTRACT** to submit your extract request to the IPUMS system. You'll need to agree to some special usage terms for the 100% data, then wait patiently for your extract to process. You'll get an email notification when your extract is ready; when you do, return to IPUMS and download your data extract to your computer. The output format will be a gzipped CSV with a prefix unique to your download ID, e.g. `usa_00032.csv.gz`. Use an appropriate utility to unzip the CSV file.
 
@@ -215,7 +226,9 @@ If PostgreSQL is not already installed on your computer, visit <https://www.post
 
 Once the default database has been set up, visit <https://dbeaver.io/download/> and download/install the appropriate DBeaver Community Edition for your operating system. Launch DBeaver, and look for the "New Database Connection" icon. Click there to launch a connection to your PostgreSQL database. Choose "PostgreSQL" from the menu of database options and fill out your connection settings appropriately.
 
-![](images/paste-E200E7FD.png){width="100%"}
+```{r dbeaver-connect, echo = FALSE, fig.cap = "DBeaver connection screen"}
+knitr::include_graphics("img/screenshots/dbeaver-connect.png")
+```
 
 For most defaults, the host should be `localhost` running on port `5432` with the database name `postgres` and the username `postgres` as well. Enter the password you selected when setting up PostgreSQL and click **Finish**. You'll notice your database connection appear in the "Database Navigator" pane of DBeaver.
 
@@ -223,13 +236,15 @@ Within the database, you can create **schemas** to organize sets of related tabl
 
 On the final menu, click the **Start** button to import your data. Given the size of the dataset, this will likely take some time; it took around 2 hours to prepare the example on my machine. Once the data has imported successfully to the new database table in DBeaver, you'll be able to inspect your dataset using the DBeaver interface.
 
-![](images/paste-F69A6B0B.png){width="100%"}
+```{r dbeaver-data-view, echo = FALSE, fig.cap = "DBeaver data view"}
+knitr::include_graphics("img/screenshots/dbeaver-data-view.png")
+```
 
 ### Accessing your microdata database with R
 
 In a typical R workflow with flat files, an analyst will read in a dataset (such as a CSV file) entirely in-memory into R then use their preferred toolset to interact with the data. The alternative discussed in this section involves connecting to the 1910 Census database from R then using R's database interface toolkit through the tidyverse to analyze the data. A major benefit to this workflow is that it allows an analyst to perform tidyverse operations on datasets *in the database*. This means that tidyverse functions are translated to Structured Query Language (SQL) queries and passed to the database, with outputs displayed in R, allowing the analyst to interact with data without having to read it into memory.
 
-The first step requires making a database connection from R. [The DBI infrastructure for R](https://www.r-dbi.org/) allows users to make connections to a wide range of databases using a consistent interface [@dbi2021]. The PostgreSQL interface is handled with the [RPostgres package](https://rpostgres.r-dbi.org/) [@wickham2021_rpostgres].
+The first step requires making a database connection from R. [The DBI infrastructure for R](https://www.r-dbi.org/) allows users to make connections to a wide range of databases using a consistent interface [@dbi2021]. The PostgreSQL interface is handled with the **RPostgres** package [@wickham2021_rpostgres].
 
 The `dbConnect()` function is used to make a database connection, which will be assigned to the object `conn`. Arguments include the database driver `Postgres()` and the username, password, database name, host, and port, which are all familiar from the database setup process.
 
@@ -248,7 +263,7 @@ conn <- dbConnect(
 )
 ```
 
-Once connected to the database, the database extension to dplyr, dbplyr, facilitates interaction with database tables [@wickham2021_dbplyr]. `tbl()` links to the connection object `conn` to retrieve data from the database; the `in_schema()` function points `tbl()` to the `census1910` table in the `ipums` schema.
+Once connected to the database, the database extension to **dplyr**, **dbplyr**, facilitates interaction with database tables [@wickham2021_dbplyr]. `tbl()` links to the connection object `conn` to retrieve data from the database; the `in_schema()` function points `tbl()` to the `census1910` table in the `ipums` schema.
 
 Printing the new object `census1910` shows the general structure of the 1910 Census microdata:
 
@@ -258,13 +273,13 @@ census1910 <- tbl(conn, in_schema("ipums", "census1910"))
 census1910
 ```
 
-Our data have 13 columns and an unknown number of rows; the database table is so large that dbplyr won't calculate this automatically. However, the connection to the database allows for interaction with the 1910 Census microdata using familiar tidyverse workflows, which are addressed in the next section.
+Our data have 13 columns and an unknown number of rows; the database table is so large that **dbplyr** won't calculate this automatically. However, the connection to the database allows for interaction with the 1910 Census microdata using familiar tidyverse workflows, which are addressed in the next section.
 
 ### Analyzing big Census microdata in R
 
 While the default printing of the microdata shown above does not reveal the number of rows in the dataset, tidyverse tools can be used to request this information from the database. For example, the `summarize()` function will generate summary tabulations as shown earlier in this book; without a companion `group_by()`, it will do so over the whole dataset.
 
-```{r calculate_rows}
+```{r calculate-rows}
 census1910 %>% summarize(n())
 ```
 
@@ -297,7 +312,7 @@ census1910 %>%
   show_query()
 ```
 
-If an analyst wants the result of a database operation to be brought into R as an R object rather than as a database view, the `collect()` function can be used at the end of a pipeline to load data directly. A companion function from ipumsr, `ipums_collect()`, will add variable and value labels to the collected data based on an IPUMS codebook.
+If an analyst wants the result of a database operation to be brought into R as an R object rather than as a database view, the `collect()` function can be used at the end of a pipeline to load data directly. A companion function from **ipumsr**, `ipums_collect()`, will add variable and value labels to the collected data based on an IPUMS codebook.
 
 The aforementioned toolsets can now be used for robust analyses of historical microdata based on complete-count Census data. The example below illustrates how to extend the literacy by sex example above to visualize literacy gaps by sex by state in 1910.
 
@@ -320,7 +335,7 @@ state_names <- tigris::fips_codes %>%
 literacy_props_with_name <- literacy_props %>%
   mutate(statefip = str_pad(statefip, 2, "left", "0")) %>%
   left_join(state_names, by = c("statefip" = "state_code")) %>%
-  mutate(sex = ifelse(sex == 1, "Male", "Female")) %>%
+  mutate(sex = ifelse(sex == 1, "Male", "Female")) 
 
 ggplot(literacy_props_with_name, aes(x = prop, y = reorder(state_name, prop), 
                            color = sex)) + 
@@ -334,7 +349,9 @@ ggplot(literacy_props_with_name, aes(x = prop, y = reorder(state_name, prop),
        y = "")
 ```
 
-![](images/paste-9BA1B795.png){width="100%"}
+```{r literacy-1910, echo = FALSE, fig.cap = "Literacy gaps by sex and state in 1910"}
+knitr::include_graphics("img/screenshots/literacy-1910.png")
+```
 
 ## Other US government datasets
 
@@ -342,11 +359,11 @@ To this point, this book has focused on a smaller number of US Census Bureau dat
 
 ### Accessing Census data resources with censusapi
 
-censusapi [@recht2021] is an R package designed to give R users access to *all* of the US Census Bureau's API endpoints. Unlike tidycensus, which only focuses on a select number of datasets, censusapi's `getCensus()` function can be widely applied to the hundreds of possible datasets the Census Bureau makes available. censusapi requires some knowledge of how to structure Census Bureau API requests to work; however this makes the package more flexible than tidycensus and may be preferable for users who want to submit highly customized queries to the decennial Census or ACS APIs.
+**censusapi** [@recht2021] is an R package designed to give R users access to *all* of the US Census Bureau's API endpoints. Unlike **tidycensus**, which only focuses on a select number of datasets, **censusapi**'s `getCensus()` function can be widely applied to the hundreds of possible datasets the Census Bureau makes available. **censusapi** requires some knowledge of how to structure Census Bureau API requests to work; however this makes the package more flexible than **tidycensus** and may be preferable for users who want to submit highly customized queries to the decennial Census or ACS APIs.
 
-censusapi uses the same Census API key as tidycensus, though references it with the R environment variable `CENSUS_KEY`. If this environment variable is set in a user's `.Renviron` file, functions in censusapi will pick up the key without having to supply it directly.
+censusapi uses the same Census API key as **tidycensus**, though references it with the R environment variable `CENSUS_KEY`. If this environment variable is set in a user's `.Renviron` file, functions in **censusapi** will pick up the key without having to supply it directly.
 
-The usethis package [@wickham_and_bryan2021] is the most user-friendly way to work with the `.Renviron` file in R with its function `edit_r_environ()`. Calling this function will bring up the `.Renviron` file in a text editor, allowing users to set environment variables that will be made available to R when R starts up.
+The **usethis** package [@wickham_and_bryan2021] is the most user-friendly way to work with the `.Renviron` file in R with its function `edit_r_environ()`. Calling this function will bring up the `.Renviron` file in a text editor, allowing users to set environment variables that will be made available to R when R starts up.
 
 ```{r set-census-key, eval = FALSE}
 library(usethis)
@@ -356,7 +373,7 @@ edit_r_environ()
 
 Add the line `CENSUS_KEY='YOUR KEY HERE'` to your `.Renviron` file, replacing the `YOUR KEY HERE` text with your API key.
 
-censusapi's core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](https://www.hrecht.com/censusapi/articles/example-masterlist.html) or the function `listCensusApis()` helps you understand how to format this.
+**censusapi**'s core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](https://www.hrecht.com/censusapi/articles/example-masterlist.html) or the function `listCensusApis()` helps you understand how to format this.
 
 The example below makes a request to the [Economic Census API](https://www.census.gov/programs-surveys/economic-census/data/api.html), getting data on employment and payroll for NAICS code 72 (accommodation and food services businesses) in counties in Texas in 2017.
 
@@ -371,13 +388,15 @@ tx_econ17 <- getCensus(
   regionin = "state:48",
   NAICS2017 = 72
 )
-
-head(tx_econ17)
 ```
 
-censusapi can also be used in combination with other packages covered in this book such as tigris for mapping. The example below uses the [Small Area Health Insurance Estimates API](https://www.census.gov/programs-surveys/sahie/data/api.html), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using censusapi and tigris, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from tigris with shifted geometry, then mapped with ggplot2.
+```{r censusapi-show, echo = FALSE}
+style_data(tx_econ17, caption = "Data from the 2017 Economic Census acquired with the censusapi package")
+```
 
-```{r map-sahie}
+**censusapi** can also be used in combination with other packages covered in this book such as **tigris** for mapping. The example below uses the [Small Area Health Insurance Estimates API](https://www.census.gov/programs-surveys/sahie/data/api.html), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using **censusapi** and **tigris**, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from **tigris** with shifted geometry, then mapped with ggplot2.
+
+```{r map-sahie, fig.cap = "Map of youth without health insurance using censusapi and tigris"}
 library(tigris)
 library(tidyverse)
 
@@ -407,9 +426,9 @@ As these are *modeled* estimates, state-level influences on the county-level est
 
 ### Analyzing labor markets with lehdr
 
-Another very useful package for working with Census Bureau data is the lehdr R package [@green2021], which access the Longitudinal and Employer-Household Dynamics (LEHD) Origin-Destination Employment Statistics (LODES) data. LODES is not available from the Census API, meriting an alternative package and approach. LODES includes synthetic estimates of residential, workplace, and residential-workplace links at the Census block level, allowing for highly detailed geographic analysis of jobs and commuter patterns over time.
+Another very useful package for working with Census Bureau data is the **lehdr** R package [@green2021], which access the Longitudinal and Employer-Household Dynamics (LEHD) Origin-Destination Employment Statistics (LODES) data. LODES is not available from the Census API, meriting an alternative package and approach. LODES includes synthetic estimates of residential, workplace, and residential-workplace links at the Census block level, allowing for highly detailed geographic analysis of jobs and commuter patterns over time.
 
-The core function implemented in lehdr is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state.
+The core function implemented in **lehdr** is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state.
 
 ```{r lehdr}
 library(lehdr)
@@ -429,9 +448,7 @@ wa_lodes_od <- grab_lodes(
 The result is a dataset that shows tract-to-tract commute flows (`S000`) and broken down by a variety of characteristics, [referenced in the LODES documentation](https://lehd.ces.census.gov/data/lodes/LODES7/LODESTechDoc7.5.pdf).
 
 ```{r show-wa-lodes, echo = FALSE}
-wa_lodes_od[1:10,] %>%
-  knitr::kable() %>%
-  kableExtra::kable_styling()
+style_data(wa_lodes_od, caption = "Origin-destination data acquired with the lehdr package")
 ```
 
 lehdr can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with tidycensus for Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in tidycensus) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
@@ -456,7 +473,7 @@ ms_commuters <- seattle_adults %>%
 
 The result can be visualized on a map with ggplot2, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r).
 
-```{r}
+```{r ms-commuters-map, fig.cap = "Map of commuter origins to the Microsoft Campus area, Seattle-area counties"}
 ggplot(ms_commuters, aes(fill = ms_per_1000)) + 
   geom_sf(color = NA) + 
   theme_void() + 
@@ -468,7 +485,7 @@ ggplot(ms_commuters, aes(fill = ms_per_1000)) +
 
 ### Bureau of Labor Statistics data with blscrapeR
 
-Another essential resource for data on US labor market characteristics is the [Bureau of Labor Statistics](https://www.bls.gov/), which makes their data available to users via an API. BLS data can be accessed from R with the blscrapeR package [@eberwein2021]. Like other government APIs, the BLS API requires an API key, obtained from <https://data.bls.gov/registrationEngine/>. Sign up with an email address then validate the key using the link sent to your email, then return to R to get started with blscrapeR.
+Another essential resource for data on US labor market characteristics is the [Bureau of Labor Statistics](https://www.bls.gov/), which makes their data available to users via an API. BLS data can be accessed from R with the **blscrapeR** package [@eberwein2021]. Like other government APIs, the BLS API requires an API key, obtained from <https://data.bls.gov/registrationEngine/>. Sign up with an email address then validate the key using the link sent to your email, then return to R to get started with blscrapeR.
 
 ```{r blscraper, eval = FALSE}
 library(blscrapeR)
@@ -476,24 +493,24 @@ library(blscrapeR)
 set_bls_key("YOUR KEY HERE")
 ```
 
-blscrapeR includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for the latest month available without any arguments.
+blscrapeR includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for a given month.
 
 ```{r get-bls-county}
 latest_employment <- get_bls_county("May 2021")
 ```
 
 ```{r show-bls-county, echo = FALSE}
-style_data(latest_employment, caption = "latest_employment")
+style_data(latest_employment, caption = "May 2021 employment data from the BLS")
 ```
 
 More complex queries are also possible with the `bls_api()` function; however, this requires knowing the BLS *series ID*. Series IDs are composite strings made up of several alphanumeric codes that can represent different datasets, geographies, and industries, among others. blscrapeR includes an internal dataset, `series_ids`, to help users view some of the most commonly requested IDs.
 
-```{r series_ids, eval = FALSE}
+```{r series-ids, eval = FALSE}
 head(series_ids)
 ```
 
-```{r show-series_ids, echo = FALSE}
-style_data(series_ids, n_rows = 6, caption = "series_ids")
+```{r show-series-ids, echo = FALSE}
+style_data(series_ids, n_rows = 6, caption = "Series IDs for use in blscrapeR")
 ```
 
 `series_ids` only contains indicators from the Current Population Survey and Local Area Unemployment Statistics databases. Other data series can be constructed by following the instructions on [\<https://www.bls.gov/help/hlpforma.htm\>](https://www.bls.gov/help/hlpforma.htm){.uri}. The example below illustrates this for data on the [Current Employment Statistics](https://www.bls.gov/ces/), for which the series ID [is formatted as follows](https://www.bls.gov/help/hlpforma.htm#SA):
@@ -510,7 +527,7 @@ style_data(series_ids, n_rows = 6, caption = "series_ids")
 
 -   Positions 19-20: The [data type code](https://download.bls.gov/pub/time.series/sm/sm.data_type)
 
-We'll use this information to get unadjusted data on accommodation workers in Maui, Hawaii since the beginning of 2018, and make a chart with the data. Note that the specific codes detailed above will vary from indicator to indicator, and that not all industries will be available for all geographies.
+We'll use this information to get unadjusted data on accommodation workers in Maui, Hawaii since the beginning of 2018. Note that the specific codes detailed above will vary from indicator to indicator, and that not all industries will be available for all geographies.
 
 ```{r get-maui-bls}
 maui_accom <- bls_api(seriesid = "SMU15279807072100001", 
@@ -519,10 +536,12 @@ maui_accom <- bls_api(seriesid = "SMU15279807072100001",
 ```
 
 ```{r show-maui, echo = FALSE}
-style_data(maui_accom, 6, "maui_hotel")
+style_data(maui_accom, 6, "Accommodations employment in Maui, Hawaii")
 ```
 
-```{r plot-maui}
+This time series can be visualized with **ggplot2**:
+
+```{r plot-maui, fig.cap = "Time-series of accommodations employment in Maui, Hawaii"}
 maui_accom %>%
   mutate(period_order = rev(1:nrow(.))) %>%
   ggplot(aes(x = period_order, y = value, group = 1)) + 
@@ -541,7 +560,7 @@ The data suggest a stable accommodations sector prior to the onset of the COVID-
 
 ### Working with agricultural data with tidyUSDA
 
-Agriculture can be a difficult sector on which to collect market statistics, as it is not available in many data sources such as LODES or the BLS Current Employment Statistics. Dedicated statistics on US agriculture can be acquired with the tidyUSDA R package [@lindblad2021], which interacts with USDA data resources using tidyverse-centric workflows. Get an API key at <https://quickstats.nass.usda.gov/api> and use that to request data from the USDA QuickStats API. In this example, the API key is stored as a `"USDA_KEY"` environment variable.
+Agriculture can be a difficult sector on which to collect market statistics, as it is not available in many data sources such as LODES or the BLS Current Employment Statistics. Dedicated statistics on US agriculture can be acquired with the **tidyUSDA** R package [@lindblad2021], which interacts with USDA data resources using tidyverse-centric workflows. Get an API key at <https://quickstats.nass.usda.gov/api> and use that to request data from the USDA QuickStats API. In this example, the API key is stored as a `"USDA_KEY"` environment variable.
 
 ```{r tidyusda}
 library(tidyUSDA)
@@ -579,7 +598,7 @@ cucumbers %>%
 cucumbers %>%
   select(state_name, county_name, Value) %>%
   arrange(desc(Value)) %>%
-  style_data(8, "cucumbers")
+  style_data(8, "Top cucumber-growing counties in the United States")
 ```
 
 ## Getting government data without R packages
@@ -588,7 +607,7 @@ The breath of R's developer ecosystem means that in many cases if you have a nee
 
 ### Making requests to APIs with httr
 
-Most data API packages in R will rely on the httr R package [@wickham_httr], which provides R functions for common HTTP requests such as `GET`, `POST`, and `PUT`, among others. In this example, we'll use the `httr::GET()` function to make a request to the new [Department of Housing and Urban Development Comprehensive Affordable Housing Strategy (CHAS) API](https://www.huduser.gov/portal/dataset/chas-api.html). This will require getting a HUD API token and storing it as an environment variable as described earlier in this chapter.
+Most data API packages in R will rely on the **httr** R package [@wickham_httr], which provides R functions for common HTTP requests such as `GET`, `POST`, and `PUT`, among others. In this example, we'll use the `httr::GET()` function to make a request to the new [Department of Housing and Urban Development Comprehensive Affordable Housing Strategy (CHAS) API](https://www.huduser.gov/portal/dataset/chas-api.html). This will require getting a HUD API token and storing it as an environment variable as described earlier in this chapter.
 
 Every API will be structured differently with respect to how it accepts queries and authenticates with API tokens. In this example, the documentation instructs users to pass the API token in the HTTP request with the `Authentication: Bearer` header. The example URL in the documentation, [`https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59`](https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59), is passed to `GET()`, and the `add_headers()` function in httr is used to assemble an appropriate string to send to the API.
 
@@ -613,7 +632,7 @@ As we got back the HTTP status code 200, we know that our request to the API suc
 content(hud_chas_request, as = "text")
 ```
 
-The data were returned as [JavaScript Object Notation, or JSON](https://www.json.org/json-en.html), a very common data format for returning data from APIs. While the data shown above is moderately interpretable, it will require some additional translation for use in R. The jsonlite package [@ooms2014] includes a poewrful set of tools for working with JSON objects in R; here, we'll use the `fromJSON()` function to convert JSON to a data frame.
+The data were returned as [JavaScript Object Notation, or JSON](https://www.json.org/json-en.html), a very common data format for returning data from APIs. While the data shown above is moderately interpretable, it will require some additional translation for use in R. The **jsonlite** package [@ooms2014] includes a poewrful set of tools for working with JSON objects in R; here, we'll use the `fromJSON()` function to convert JSON to a data frame.
 
 ```{r hud-from-json, eval = FALSE}
 hud_chas_request %>%
@@ -626,7 +645,7 @@ hud_chas_request %>%
 hud_chas_request %>%
   content(as = "text") %>%
   fromJSON() %>%
-  style_data(n_rows = 1, caption = "hud_chas_request")
+  style_data(n_rows = 1, caption = "CHAS API request as a data frame")
 ```
 
 The data are now formatted as an R data frame which can be embedded in your R-based workflows.
@@ -635,7 +654,7 @@ The data are now formatted as an R data frame which can be embedded in your R-ba
 
 If you plan to use a particular API endpoint frequently, or for different areas and times, it is a good idea to write a data access function. API functions should ideally identify the components of the API request that can vary, and allow users to make modifications in ways that correspond to those components.
 
-The URL used in the example above can be separated into two componets: the *API endpoint* [`https://www.huduser.gov/hudapi/public/chas`](https://www.huduser.gov/hudapi/public/chas), which will be common to all API requests, and the *query* `?type=3&year=2012-2016&stateId=51&entityId=59`, which shows components of the request that can vary. The query will generally follow a question mark sign and be composed of key-value pairs, e.g. `type=3`, which in this example means county according to the HUD API documentation. These queries can be passed as a list to the `query` parameter of `GET()` and formatted appropriately in the HTTP request by httr.
+The URL used in the example above can be separated into two components: the *API endpoint* [`https://www.huduser.gov/hudapi/public/chas`](https://www.huduser.gov/hudapi/public/chas), which will be common to all API requests, and the *query* `?type=3&year=2012-2016&stateId=51&entityId=59`, which shows components of the request that can vary. The query will generally follow a question mark sign and be composed of key-value pairs, e.g. `type=3`, which in this example means county according to the HUD API documentation. These queries can be passed as a list to the `query` parameter of `GET()` and formatted appropriately in the HTTP request by **httr**.
 
 The function below is an example you can use to get started writing your own API data request functions. The general components of the function are as follows:
 
@@ -647,7 +666,7 @@ The function below is an example you can use to get started writing your own API
 
 -   If the request has failed, the function returns the error message from the API to help inform the user about what went wrong.
 
--   If the request succeeds, the function converts the result to text, then the JSON to a data frame which will be pivoted to long form using tidyr's `pivot_longer()` function. Finally, the result is returned. I use the `return()` function here, which isn't strictly necessary but I use it because it is helpful for me to see where the function exits in my code.
+-   If the request succeeds, the function converts the result to text, then the JSON to a data frame which will be pivoted to long form using **tidyr**'s `pivot_longer()` function. Finally, the result is returned. I use the `return()` function here, which isn't strictly necessary but I use it because it is helpful for me to see where the function exits in my code.
 
 -   You may notice a couple new notational differences from code used elsewhere in this book. Functions are referenced with the `packagename::function()` notation, and the new base R pipe `|>` is used instead of the magrittr pipe `%>%`. This allows the function to run without loading any external libraries with `library()`, which is generally a good idea when writing functions to avoid namespace conflicts.
 
@@ -709,9 +728,9 @@ Now, let's try out the function for a different locality in Virginia:
 get_hud_chas(type = 3, state_id = 51, entity_id = 510)
 ```
 
-```{r show-use-function}
+```{r show-use-function, echo = FALSE}
 get_hud_chas(type = 3, state_id = 51, entity_id = 510) %>%
-  style_data()
+  style_data(caption = "Affordable housing data for Alexandria, Virginia using a custom-built API function")
 ```
 
 The function returns affordable data for Alexandria, Virginia in a format that is more suitable for use with tidyverse tools.

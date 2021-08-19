@@ -12,3 +12,6 @@ style_data <- function(dat, n_rows = NULL, caption = NULL) {
     knitr::kable(caption = caption) |>
     kableExtra::kable_styling()
 }
+
+# Set the knitr options
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, out.width = "100%")

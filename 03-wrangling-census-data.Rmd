@@ -1,7 +1,6 @@
 # Wrangling Census data with tidyverse tools
 
 ```{r setup-ch3, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 source("R/book-functions.R")
 ```
 
@@ -23,7 +22,7 @@ One of the most popular frameworks for data analysis in R is the **tidyverse**, 
 
 The core data structure used in the tidyverse is the *tibble*, which is an R data frame with some small enhancements to improve the user experience. **tidycensus** returns tibbles by default.
 
-A full treatment of the tidyverse and its functionality is beyond the scope of this book; however, the examples in this chapter will introduce you to several key tidyverse features using US Census Bureau data. For a more general and broader treatment of the tidyverse, I recommend the [*R for Data Science*](https://r4ds.had.co.nz/index.html)book [@r4ds].
+A full treatment of the tidyverse and its functionality is beyond the scope of this book; however, the examples in this chapter will introduce you to several key tidyverse features using US Census Bureau data. For a more general and broader treatment of the tidyverse, I recommend the *R for Data Science* book [@r4ds].
 
 ## Exploring Census data with tidyverse tools
 
@@ -65,7 +64,7 @@ arrange(median_age, estimate) %>%
   style_data(caption = "The youngest counties in the US by median age")
 ```
 
-Per the 2015-2019 ACS, the two youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University. The youngest *county* then by median age is Madison County Idaho.
+Per the 2015-2019 ACS, the two youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University. The youngest *county* then by median age is Madison County, Idaho.
 
 To retrieve the *oldest* counties in the United States by median age, an analyst can use the `desc()` function available in **dplyr** to sort the `estimate` column in descending order.
 
@@ -126,7 +125,7 @@ In **tidycensus**, this can be accomplished by supplying a variable ID to the `s
 
 With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2015-2019 ACS.
 
-```{r az_race}
+```{r az-race}
 race_vars <- c(
   White = "B03002_003",
   Black = "B03002_004",
@@ -144,19 +143,19 @@ az_race <- get_acs(
 ) 
 ```
 
-```{r az_race_show, echo = FALSE}
+```{r az-race-show, echo = FALSE}
 style_data(az_race, caption = "Race and ethnicity in Arizona")
 ```
 
 By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2015-2019. The `select()` function, also in dplyr, retains only those columns that we need to view.
 
-```{r az_race_percent}
+```{r az-race-percent}
 az_race_percent <- az_race %>%
   mutate(percent = 100 * (estimate / summary_est)) %>%
   select(NAME, variable, percent)
 ```
 
-```{r az_race_percent_show, echo = FALSE}
+```{r az-race-percent-show, echo = FALSE}
 style_data(az_race_percent, caption = "Race and ethnicity in Arizona as percentages")
 ```
 
@@ -272,9 +271,55 @@ Our data now reflect the new estimates by group by county.
 
 A common task when working with Census data is to examine demographic change over time. Data from the Census API - and consequently **tidycensus** - only go back to the 2000 Decennial Census. For historical analysts who want to go even further back, decennial Census data are available since 1790 from the [National Historical Geographic Information System](https://www.nhgis.org/), or NHGIS, which will be covered in detail in Chapter \@ref(other-census-and-government-data-resources).
 
-### A warning: inconsistent variable IDs over time for the ACS Data Profile
+### Time-series analysis: some cautions
 
-One advantage to working with ACS data is that it includes a rich yearly time series going back to 2005 for the 1-year ACS and 2005-2009 for the 5-year ACS. This allows analysts to examine recent demographic shifts in a relatively consistent way. However, **it is important to take care when performing time series analysis**. For example, the ACS Data Profile is commonly used for pre-computed normalized ACS estimates. Let's say that we are interested in analyzing the percentage of residents age 25 and up with a 4-year college degree for counties in Colorado from the 2019 1-year ACS. We'd first look up the appropriate variable ID with `load_variables(2019, "acs1/profile")` then use `get_acs()`:
+Before engaging in any sort of time series analysis of Census data, analysts need to account for potential problems that can emerge when using Census data longitudinally. One major issue that can emerge is *geography changes* over time. For example, let's say we are interested in analyzing data on Oglala Lakota County, South Dakota. We can get recent data from the ACS using tools learned in Chapter \@ref(an-introduction-to-tidycensus):
+
+```{r oglala-lakota-pop}
+oglala_lakota_age <- get_acs(
+  geography = "county",
+  state = "SD",
+  county = "Oglala Lakota",
+  table = "B01001",
+  year = 2019
+)
+```
+
+```{r oglala-lakota-show, echo = FALSE}
+style_data(oglala_lakota_age, caption = "2015-2019 age table for Oglala Lakota County, SD")
+```
+
+To understand how the age composition of the county has changed over the past 10 years, we may want to look at the 2005-2009 ACS for the county. Normally, we would just change the year argument to `2009`:
+
+```{r oglala-lakota-2009, error = TRUE}
+oglala_lakota_age_09 <- get_acs(
+  geography = "county",
+  state = "SD",
+  county = "Oglala Lakota",
+  table = "B01001",
+  year = 2009
+)
+```
+
+The request errors, and we don't get an informative error message back from the API as was discussed in Section \@ref(debugging-tidycensus-errors). The problem here is that Oglala Lakota County had a different name in 2009, Shannon County, meaning that the `county = "Oglala Lakota"` argument will not return any data. In turn, the equivalent code for the 2005-2009 ACS would use `county = "Shannon"`.
+
+```{r shannon-county-age}
+oglala_lakota_age_09 <- get_acs(
+  geography = "county",
+  state = "SD",
+  county = "Shannon",
+  table = "B01001",
+  year = 2009
+)
+```
+
+```{r shannon-county-age-show, echo = FALSE}
+style_data(oglala_lakota_age_09, caption = "2005-2009 age table for Oglala Lakota County, SD (then named Shannon County)")
+```
+
+Note the differences in the `GEOID` column between the two tables of data. When a county or geographic entity changes its name, the Census Bureau assigns it a new `GEOID`, meaning that analysts need to take care when dealing with those changes. A full listing of geography changes [is available on the Census website for each year](https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes.2019.html).
+
+In addition to changes in geographic identifiers, variable IDs can change over time as well. For example, the ACS Data Profile is commonly used for pre-computed normalized ACS estimates. Let's say that we are interested in analyzing the percentage of residents age 25 and up with a 4-year college degree for counties in Colorado from the 2019 1-year ACS. We'd first look up the appropriate variable ID with `load_variables(2019, "acs1/profile")` then use `get_acs()`:
 
 ```{r co-college-19}
 co_college19 <- get_acs(
@@ -287,7 +332,7 @@ co_college19 <- get_acs(
 ```
 
 ```{r co-college-19-show, echo = FALSE}
-style_data(co_college19, n_rows = 5, caption = "Variable DP02_0068P in 2019")
+style_data(co_college19, n_rows = 5, caption = "ACS Data Profile data in 2019")
 ```
 
 We get back data for counties of population 65,000 and greater as these are the geographies available in the 1-year ACS. The data make sense: Boulder County, home to the University of Colorado, has a very high percentage of its population with a 4-year degree or higher. However, when we run the exact same query for the 2018 1-year ACS:
@@ -303,7 +348,7 @@ co_college18 <- get_acs(
 ```
 
 ```{r co-college-18-show, echo = FALSE}
-style_data(co_college18, n_rows = 5, caption = "Variable DP02_0068P in 2018")
+style_data(co_college18, n_rows = 5, caption = "ACS Data Profile data in 2018")
 ```
 
 The values are completely different, and clearly not percentages! This is because variable IDs for the Data Profile **are unique to each year** and in turn should not be used for time-series analysis. The returned results above represent the civilian population age 18 and up, and have nothing to do with educational attainment.
@@ -314,7 +359,7 @@ A safer way to perform time-series analysis of the ACS, then, is to use the Deta
 
 Let's re-engineer the analysis above on educational attainment in Colorado counties, which below will be computed for a time series from 2010 to 2019. Information on "bachelor's degree or higher" is split by sex and across different tiers of educational attainment in the detailed tables, found in ACS table 15002. Given that we only need a few variables (representing estimates of populations age 25+ who have finished a 4-year degree or graduate degrees, by sex), we'll request those variables directly rather than the entire B15002 table.
 
-```{r}
+```{r college-vars}
 college_vars <- c("B15002_015",
                   "B15002_016",
                   "B15002_017",
@@ -347,7 +392,7 @@ college_by_year <- map_dfr(years, ~{
 
 For users newer to R, iteration and purrr syntax can feel complex, so it is worth stepping through how the above code sample works.
 
--   First, a numeric vector of years is defined with the syntax `2010:2019`. This will create a vector of years at 1-year intervals. These values are set as the names of the vector as well, as `map_dfr()` has additional functionality for working with named objects.\
+-   First, a numeric vector of years is defined with the syntax `2010:2019`. This will create a vector of years at 1-year intervals. These values are set as the names of the vector as well, as `map_dfr()` has additional functionality for working with named objects.
 
 -   `map_dfr()` then takes three arguments above.
 

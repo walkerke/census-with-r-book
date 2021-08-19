@@ -1,7 +1,6 @@
 # Analyzing Census microdata
 
 ```{r setup-ch10, include = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(tidycensus)
 library(survey)
@@ -13,7 +12,7 @@ A major benefit of using the individual-level microdata returned by `get_pums()`
 
 Analysts must pay careful attention to the structure of the PUMS datasets in order to produce accurate estimates and handle errors appropriately. PUMS datasets are *weighted* samples, in which each person or household is not considered unique or individual, but rather representative of multiple other persons or households. In turn, analyses and tabulations using PUMS data must use appropriate tools for handling weighting variables to accurately produce estimates. Fortunately, tidyverse tools like dplyr, covered elsewhere in this book, are excellent for producing these tabulations and handling survey weights
 
-As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error. This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific. Fortunately, the US Census Bureau provides *replicate weights* to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample. While working with replicate weights has traditionally been cumbersome for analysts, tidycensus with help from the [survey](https://cran.r-project.org/web/packages/survey/survey.pdf) and [srvyr](https://github.com/gergness/srvyr) R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.
+As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error. This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific. Fortunately, the US Census Bureau provides *replicate weights* to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample. While working with replicate weights has traditionally been cumbersome for analysts, tidycensus with help from the **survey** [@lumley2010] and **srvyr** [@ellis2021] R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.
 
 ## PUMS data and the tidyverse
 
@@ -38,11 +37,11 @@ ms_pums <- get_pums(
 
 Let's take a quick look at our data:
 
-```{r glimpse_ms_pums}
-glimpse(ms_pums)
+```{r glimpse-ms-pums, echo = FALSE}
+style_data(ms_pums, caption = "PUMS data for Mississippi")
 ```
 
-As we learned in Chapter 9, the number of people in Mississippi can be tabulated by summing over the person-weight column:
+As we learned in Chapter \@ref(analyzing-census-microdata), the number of people in Mississippi can be tabulated by summing over the person-weight column:
 
 ```{r ms-sum}
 sum(ms_pums$PWGTP)
@@ -63,7 +62,7 @@ ms_pums %>%
 
 We can also perform more custom analyses, such as tabulating the number of people over age 65 by sex in Mississippi. This involves specifying a filter condition to retain rows for records with an age of 65 and up, then tabulating by sex.
 
-```{r}
+```{r ms-age-count-with-filter}
 ms_pums %>%
   filter(AGEP >= 65) %>%
   count(SEX, wt = PWGTP)
@@ -71,15 +70,15 @@ ms_pums %>%
 
 We can then use `get_acs()` to check our answer:
 
-```{r}
+```{r check-answer-get-acs}
 get_acs(geography = "state",
         state = "MS",
         variables = c("DP05_0030", "DP05_0031"))
 ```
 
-We notice that our tabulations are very close to the ACS estimates available in `get_acs()`, and well within the margin of error. When we are doing tabulations with microdata, it is important to remember that we are tabulating data based on a smaller subsample of information than is available to the aggregate ACS estimates. In turn, as the US Census Bureau reminds us:
+We notice that our tabulations are very close to the ACS estimates available in `get_acs()`, and well within the margin of error. When we are doing tabulations with microdata, it is important to remember that we are tabulating data based on a smaller subsample of information than is available to the aggregate ACS estimates. In turn, as the US Census Bureau reminds us [@pums_readme]:
 
-> Because PUMS data consist of a subset of the full ACS sample, tabulations from the ACS PUMS will not match those from published tables of ACS data (US Census Bureau 2021).
+> Because PUMS data consist of a subset of the full ACS sample, tabulations from the ACS PUMS will not match those from published tables of ACS data.
 
 Analysts will often want to use PUMS data and the tabulated aggregate ACS data in tandem as appropriate, as each data type offers complimentary strengths. As the aggregate ACS data are based on a larger sample, its data aggregations will be preferable to those produced with PUMS data. However, PUMS data offer the ability to compute detailed cross-tabulations not available in aggregate ACS tables and to fit models of demographic relationships at the individual level. Examples of each follow in this chapter.
 
@@ -107,10 +106,10 @@ ms_hh_data <- get_pums(
 We can take a quick look at our data:
 
 ```{r style-ms-hh, echo = FALSE}
-style_data(ms_hh_data, n_rows = 5)
+style_data(ms_hh_data, n_rows = 5, caption = "Household microdata for Mississippi")
 ```
 
-To analyze rent burdens with respect to the marital status and race/ethnicity of the householder, it will be useful to do some additional recoding using dplyr's `case_when()` function. A new `race_ethnicity` column will identify householders by general categories, and a `married` column will identify whether or not the household is a married-couple household.
+To analyze rent burdens with respect to the marital status and race/ethnicity of the householder, it will be useful to do some additional recoding using **dplyr**'s `case_when()` function. A new `race_ethnicity` column will identify householders by general categories, and a `married` column will identify whether or not the household is a married-couple household.
 
 ```{r wrangle-pums}
 ms_hh_recoded <- ms_hh_data %>%
@@ -130,7 +129,7 @@ ms_hh_recoded <- ms_hh_data %>%
 
 This information can then be summarized with respect to the household weight variable `WGTP` and the rent burden variable `GRPIP` within a `group_by() %>% summarize()` workflow. The dataset is filtered to only non-Hispanic white, non-Hispanic Black, and Hispanic householders to focus on those groups, then grouped by race/ethnicity and marital status. Within the `summarize()` call, the percentage of each subgroup paying 40 percent or more of their household incomes in rent is calculated by summing over the household weight column `WGTP`, but filtering for households with rent burdens of 40 percent or more in the numerator.
 
-```{r}
+```{r ms-hh-summary}
 ms_hh_summary <- ms_hh_recoded %>%
   filter(race_ethnicity != "Other") %>%
   group_by(race_ethnicity, married) %>%
@@ -141,17 +140,17 @@ ms_hh_summary <- ms_hh_recoded %>%
 
 We can now check our result:
 
-```{r, echo = FALSE}
-style_data(ms_hh_summary)
+```{r ms-hh-summary-show, echo = FALSE}
+style_data(ms_hh_summary, caption = "Tabulated PUMS data for Mississippi")
 ```
 
 The demographic group in this example with the largest rent burden is Black, Not married; nearly 42 percent of households in this group pay over 40 percent of their incomes in gross rent. The least rent-burdened group is White, Married, with a value under 14 percent. For each of the three racial/ethnic groups, there is a distinctive financial advantage for married-couple households over non-married households; this is particularly pronounced for Black householders.
 
 ## Mapping PUMS data
 
-In the previous example, we see that rent burdens for Black, unmarried households are particularly acute in Mississippi. A follow-up question may involve an examination of how this trend varies geographically. As discussed in the previous chapter, the most granular geography available in the PUMS data is the PUMA, which generally includes 100,000-200,000 people. PUMA geographies are available in the tigris package with the function `pumas()`.
+In the previous example, we see that rent burdens for Black, unmarried households are particularly acute in Mississippi. A follow-up question may involve an examination of how this trend varies geographically. As discussed in the previous chapter, the most granular geography available in the PUMS data is the PUMA, which generally includes 100,000-200,000 people. PUMA geographies are available in the **tigris** package with the function `pumas()`.
 
-```{r join-ms-data}
+```{r join-ms-data, fig.cap = "Basic plot of PUMAs in Mississippi"}
 library(tigris)
 library(tmap)
 options(tigris_use_cache = TRUE)
@@ -163,7 +162,7 @@ plot(ms_pumas$geometry)
 
 A geographical visualization of rent burdens in Mississippi requires a slight adaptation of the above code. Instead of returning a comparative table, the dataset should also be grouped by the `PUMA` column then filtered for the combination of variables that represent the group the analyst wants to visualize. In this case, the focus is on unmarried Black households by PUMA.
 
-```{r}
+```{r prepare-ms-data-for-map}
 ms_data_for_map <- ms_hh_recoded %>%
   group_by(race_ethnicity, married, PUMA) %>%
   summarize(
@@ -175,7 +174,7 @@ ms_data_for_map <- ms_hh_recoded %>%
 
 The output dataset has one row per PUMA and is suitable for joining to the spatial dataset for visualization.
 
-```{r ms-pums-map}
+```{r ms-pums-map, fig.cap = "Map of rent-burdened unmarried Black household share by PUMA in Mississippi"}
 library(tmap)
 
 joined_pumas <- ms_pumas %>%
@@ -193,11 +192,11 @@ The map illustrates geographic variations in our indicator of interest. In parti
 
 ## Survey design and the ACS PUMS
 
-As earlier chapters have addressed, the American Community Survey is based on a *sample* of the US population and in turn subject to sampling error. This becomes particularly acute when dealing with small sub-populations like those explored at the PUMA level in the previous section. Given that PUMS data are individual-level records and not aggregates, standard errors and in turn margins of error must be computed by the analyst. Doing so correctly requires accounting for the complex sample design of the ACS. Fortunately, tidycensus with help from the survey/srvyr packages includes tools to assist with these tasks.
+As earlier chapters have addressed, the American Community Survey is based on a *sample* of the US population and in turn subject to sampling error. This becomes particularly acute when dealing with small sub-populations like those explored at the PUMA level in the previous section. Given that PUMS data are individual-level records and not aggregates, standard errors and in turn margins of error must be computed by the analyst. Doing so correctly requires accounting for the complex sample design of the ACS. Fortunately, **tidycensus** with help from the **survey** and **srvyr** packages includes tools to assist with these tasks.
 
 ### Getting replicate weights
 
-The Census Bureau recommends using the *Successive Difference Replication* method to compute standard errors around derived estimates from PUMS data. To calculate standard errors, the Census Bureau publishes 80 "replicate weights" for each observation, representing either person (PWGTP1 through PWGTP80) or household (WGTP1 through WGTP80) weights [@pums_readme]. The formula for computing the standard error $SE$ for a derived PUMS estimate $X$ is as follows:
+The Census Bureau recommends using the *Successive Difference Replication* method to compute standard errors around derived estimates from PUMS data. To calculate standard errors, the Census Bureau publishes 80 "replicate weights" for each observation, representing either person (PWGTP1 through PWGTP80) or household (WGTP1 through WGTP80) weights [@pums_readme]. The formula for computing the standard error $SE$ for a derived PUMS estimate $x$ is as follows:
 
 $$
 SE(x) = \sqrt{\frac{4}{80}\sum\limits_{r=1}^{80}(x_r-x)^2 }
@@ -237,7 +236,7 @@ All 80 household replicate weights are included in the dataset. A key distinctio
 
 ### Creating a survey object
 
-With replicate weights in hand, analysts can turn to a suite of tools in R for handling complex survey samples. The **survey** package [@lumley2010] is the standard for handling these types of datasets in R. The more recent **srvyr** package [@ellis2021] wraps **survey** to allow the use of tidyverse functions on survey objects. Both packages return a `survey` class object that intelligently calculates standard errors when data are tabulated with appropriate functions. tidycensus includes a function, `to_survey()`, to convert ACS microdata to survey/srvyr objects in a way that incorporates the recommended formula for SDR standard error calculation with replicate weights.
+With replicate weights in hand, analysts can turn to a suite of tools in R for handling complex survey samples. The **survey** package [@lumley2010] is the standard for handling these types of datasets in R. The more recent **srvyr** package [@ellis2021] wraps **survey** to allow the use of tidyverse functions on survey objects. Both packages return a `survey` class object that intelligently calculates standard errors when data are tabulated with appropriate functions. **tidycensus** includes a function, `to_survey()`, to convert ACS microdata to **survey** or **srvyr** objects in a way that incorporates the recommended formula for SDR standard error calculation with replicate weights.
 
 ```{r svy-object}
 library(survey)
@@ -269,10 +268,10 @@ ms_hh_svy %>%
 ```{r ms-svy-show, echo = FALSE}
 ms_hh_svy %>% 
   survey_count(PUMA, HHT_label) %>%
-  style_data(n_rows = 5)
+  style_data(n_rows = 5, caption = "Tabulated PUMS data for household types in Mississippi by PUMA with standard errors")
 ```
 
-The `survey_count()` function returns tabulations for each household type by PUMA in Mississippi along with the estimate's standard error. The srvyr package can also accommodate more complex workflows. Below is an adaptation of the rent burden analysis computed above, but using the srvyr function `survey_mean()`.
+The `survey_count()` function returns tabulations for each household type by PUMA in Mississippi along with the estimate's standard error. The **srvyr** package can also accommodate more complex workflows. Below is an adaptation of the rent burden analysis computed above, but using the srvyr function `survey_mean()`.
 
 ```{r svy-summary}
 ms_svy_summary <- ms_hh_svy %>%
@@ -297,10 +296,10 @@ ms_svy_summary <- ms_hh_svy %>%
 ```
 
 ```{r svy-summary-show, echo = FALSE}
-style_data(ms_svy_summary)
+style_data(ms_svy_summary, caption = "Derived estimates for PUMS data with standard errors")
 ```
 
-The derived estimates are the same as before, but the srvyr workflow also returns standard errors.
+The derived estimates are the same as before, but the **srvyr** workflow also returns standard errors.
 
 ### Converting standard errors to margins of error
 
@@ -314,7 +313,7 @@ To convert standard errors to *margins of error* around the derived PUMS estimat
 
 Computing margins of error around derived ACS estimates from PUMS data allows for familiar visualization of uncertainty in the ACS as shown earlier in this book. The example below calculates margins of error at a 90 percent confidence level for the rent burden estimates for Mississippi, then draws a margin of error plot as illustrated in Section \@ref(visualizing-margins-of-error).
 
-```{r svy-plot}
+```{r svy-plot, fig.cap = "Margin of error plot for derived PUMS estimates"}
 ms_svy_summary_moe <- ms_svy_summary %>%
   mutate(prop_above_40_moe = prop_above_40_se * 1.645,
          label = paste(race_ethnicity, married, sep = ", ")) 
