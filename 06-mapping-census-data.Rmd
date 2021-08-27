@@ -326,7 +326,7 @@ This section covers two such workflows. The first reproduces the popular red/blu
 
 ### National election mapping with tigris shapes
 
-While enumeration units like Census tracts and block groups will generally be used to map Census data, Census shapes representing legal entities are useful for a variety of cartographic purposes. A popular example is the political map, which shows the winner or poll results from an election in a region. We'll use data from the [Cook Political Report](https://cookpolitical.com/2020-national-popular-vote-tracker) to generate a basic red state/blue state map of the 2020 US Presidential election results. This dataset was downloaded on June 5, 2020 and is available at `"data/us_vote_2020.csv"` in the book GitHub repository.
+While enumeration units like Census tracts and block groups will generally be used to map Census data, Census shapes representing legal entities are useful for a variety of cartographic purposes. A popular example is the political map, which shows the winner or poll results from an election in a region. We'll use data from the [Cook Political Report](https://cookpolitical.com/2020-national-popular-vote-tracker) to generate a basic red state/blue state map of the 2020 US Presidential election results. This dataset was downloaded on June 5, 2021 and is available at `"data/us_vote_2020.csv"` in the book GitHub repository.
 
 ```{r get-election-data}
 library(tidyverse)
