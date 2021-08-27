@@ -50,7 +50,7 @@ One example of the utility of spatial overlay for the Census data analyst is the
 
 A Census data analyst in the United States will often need to know which Census geographies, such as Census tracts or block groups, fall within a given metropolitan area. However, these geographies are only organized by state and county, and don't have metropolitan area identification included by default. Given that Census spatial datasets are designed to align with one another, spatial overlay can be used to identify geographic features that fall within a given metropolitan area and extract those features.
 
-Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri. We'll first use **tigris** to acquire Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area.
+Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri. We'll first use **tigris** to acquire 2020 Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area.
 
 ```{r kc-metro, fig.cap = "The Kansas City CBSA relative to Kansas and Missouri"}
 library(tigris)
@@ -61,11 +61,11 @@ options(tigris_use_cache = TRUE)
 # CRS used: NAD83(2011) Kansas Regional Coordinate System 
 # Zone 11 (for Kansas City)
 ks_mo_tracts <- map_dfr(c("KS", "MO"), ~{
-  tracts(.x, cb = TRUE)
+  tracts(.x, cb = TRUE, year = 2020)
 }) %>%
   st_transform(8528)  
 
-kc_metro <- core_based_statistical_areas(cb = TRUE) %>%
+kc_metro <- core_based_statistical_areas(cb = TRUE, year = 2020) %>%
   filter(str_detect(NAME, "Kansas City")) %>%
   st_transform(8528)
 
@@ -172,7 +172,7 @@ hispanic_by_metro <- st_join(
 style_data(hispanic_by_metro, caption = "Census tracts after spatial join operation")
 ```
 
-We see that the output dataset has been reduced from 5,265 Census tracts to 3,201. Notably, the output dataset now includes information, for each Census tract, about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas, such as a faceted plot:
+The output dataset has been reduced from 5,265 Census tracts to 3,201 as a result of the inner spatial join. Notably, the output dataset now includes information for each Census tract about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas such as a faceted plot:
 
 ```{r plot-hispanic-by-metro, fig.cap = "Faceted density plot of tract Hispanic populations by CBSA in Texas"}
 hispanic_by_metro %>%
@@ -188,7 +188,7 @@ hispanic_by_metro %>%
        x = "Percent Hispanic/Latino in Census tract")
 ```
 
-Output from a spatial join operation can also be "rolled up" to a larger geography through group-wise data analysis. For example, let's say we want to know the median value of the four distributions visualized in the plot above. As explained in Chapter 3, we can accomplish this by grouping our dataset by metro area then summarizing using the `median()` function.
+Output from a spatial join operation can also be "rolled up" to a larger geography through group-wise data analysis. For example, let's say we want to know the median value of the four distributions visualized in the plot above. As explained in Section \@ref(group-wise-census-data-analysis), we can accomplish this by grouping our dataset by metro area then summarizing using the `median()` function.
 
 ```{r calculate-median-by-metro}
 median_by_metro <- hispanic_by_metro %>%
@@ -210,7 +210,7 @@ The returned geometry represents the extent of the given metropolitan area (in t
 
 ## Distance and proximity analysis
 
-A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. Census tract boundaries are acquired from **tigris**, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
+A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. 2019 Census tract boundaries are acquired from **tigris**, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
 
 ```{r read-hospital-data}
 library(tigris)
@@ -219,7 +219,7 @@ library(tidyverse)
 options(tigris_use_cache = TRUE)
 
 # CRS: NAD83 / Iowa North
-ia_tracts <- tracts("IA", cb = TRUE) %>%
+ia_tracts <- tracts("IA", cb = TRUE, year = 2019) %>%
   st_transform(26975)
 
 trauma <- st_read("data/Hospitals.shp") %>%
@@ -310,10 +310,9 @@ ggplot(ia_tracts, aes(fill = time)) +
 
 The map illustrates considerable accessibility gaps to trauma centers across the state. Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.
 
-```{block2, note-text, type='rmdtip'}
-An advantage to using a package like mapboxapi for routing and travel times is that users can connect directly to a hosted routing engine using an API.  Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale.  There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks.  These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.  
-
-```
+::: {.rmdnote}
+An advantage to using a package like **mapboxapi** for routing and travel times is that users can connect directly to a hosted routing engine using an API. Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale. There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks. These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.
+:::
 
 ### Catchment areas with buffers and isochrones
 
@@ -413,7 +412,7 @@ print(glue("Poverty (5km buffer method): {round(buffer_pov$pct_poverty, 1)}%"))
 print(glue("Poverty (10min isochrone method): {round(iso_pov$pct_poverty, 1)}%"))
 ```
 
-Following up on Section \@ref(understanding-yearly-differences-in-tigerline-files), areal interpolation is also a common method used to adjust population data aggregated to inconsistent Census boundaries over time. However, it can introduce inaccuracies in sparsely populated areas, which can be improved with a population-weighted interpolation approach. While this approach is not covered here, \@schroeder2013 provide a good discussion of the method.
+Following up on Section \@ref(understanding-yearly-differences-in-tigerline-files), areal interpolation is also a common method used to adjust population data aggregated to inconsistent Census boundaries over time. However, it can introduce inaccuracies in sparsely populated areas, which can be improved with a population-weighted interpolation approach. While this approach is not covered here, @schroeder2013 provide a good discussion of the method.
 
 ## Better cartography with spatial overlay
 
@@ -534,7 +533,7 @@ ggplot(dfw_tracts) +
 
 ### Understanding spatial neighborhoods
 
-Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a conceptualization of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is **spdep**, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, **spdep** supports a variety of neighborhood definitions. These definitions include:
+Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a representation of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is **spdep**, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, **spdep** supports a variety of neighborhood definitions. These definitions include:
 
 -   *Proximity-based neighbors*, where neighboring features are identified based on some measure of distance. Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as *k*-nearest neighbors (e.g. the nearest eight features to a given feature).
 -   *Graph-based neighbors*, where neighbors are defined through network relationships (e.g. along a street network).
@@ -548,7 +547,7 @@ neighbors <- poly2nb(dfw_tracts, queen = TRUE)
 summary(neighbors)
 ```
 
-On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 2 (there are six such tracts), and the maximum number of neighbors is 16 (the tract at row index 924). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis may be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
+On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 2 (there are six such tracts), and the maximum number of neighbors is 16 (the tract at row index 924). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis will be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
 
 Neighborhood relationships can be visualized using plotting functionality in **spdep**:
 
@@ -664,12 +663,15 @@ ggplot(dfw_tracts) +
   labs(fill = "Local Gi* statistic")
 ```
 
-Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic and plot them accordingly.
+Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic, calculate them with `case_when()`, then plot them accordingly.
 
 ```{r local-g-z-scores, fig.cap = "Map of local Gi* scores with significant clusters highlighted"}
-dfw_tracts$hotspot <- ifelse(dfw_tracts$localG >= 2.56, "High cluster",
-                             ifelse(dfw_tracts$localG <= -2.56, "Low cluster",
-                             "Not significant"))
+dfw_tracts <- dfw_tracts %>%
+  mutate(hotspot = case_when(
+    localG >= 2.56 ~ "High cluster",
+    localG <= -2.56 ~ "Low cluster",
+    TRUE ~ "Not significant"
+  ))
 
 ggplot(dfw_tracts) + 
   geom_sf(aes(fill = hotspot), color = "grey90", size = 0.1) + 
@@ -679,7 +681,7 @@ ggplot(dfw_tracts) +
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
-An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's $I$ [@anselin2010]. As an extension of the Global Moran's $I$ statistic, LISA is computed as follows:
+An alternative method for the calculation of local spatial autocorrelation is the local indicators of spatial association statistic, commonly referred to as LISA or the local form of Moran's $I$ [@anselin2010]. As an extension of the Global Moran's $I$ statistic, the local statistic $I_i$ for a given local feature $i$ with neighbors $j$ is computed as follows:
 
 $$
 I_i = z_i \sum_j w_{ij} z_j,
@@ -726,7 +728,7 @@ Our result appears as follows:
 style_data(dfw_lisa_df, n_rows = 5, caption = "Local Moran's I results")
 ```
 
-The information returned by `localmoran_perm()` can be used to compute both a GeoDa-style LISA quadrant plot as well as a cluster map. The LISA quadrant plot is similar to a Moran scatterplot, but also identifies "quadrants" of observations with respect to the spatial relationships identified by LISA. The code below uses `case_when()` to recode the data into appropriate categories for the LISA quadrant plot, using a significance level of p = 0.05.
+The information returned by `localmoran_perm()` can be used to compute both a GeoDa-style LISA quadrant plot as well as a cluster map. The LISA quadrant plot is similar to a Moran scatterplot, but also identifies "quadrants" of observations with respect to the spatial relationships identified by LISA. The code below uses `case_when()` to recode the data into appropriate categories for the LISA quadrant plot, using a significance level of *p* = 0.05.
 
 ```{r dfw-lisa-clusters}
 dfw_lisa_clusters <- dfw_lisa_df %>%
@@ -748,7 +750,8 @@ color_values <- c(`High-high` = "red",
                   `Low-high` = "lightblue", 
                   `Not significant` = "white")
 
-ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
+ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, 
+                              y = lagged_estimate,
                               fill = lisa_cluster)) + 
   geom_point(color = "black", shape = 21, size = 2) + 
   theme_minimal() + 
@@ -781,7 +784,7 @@ One very useful feature of GeoDa for exploratory spatial data analysis is the ab
 knitr::include_graphics("img/screenshots/linked-brushing.png")
 ```
 
-Using the lasso select tool, you can click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel. Code to reproduce this Shiny app is available in `scripts/linked_brushing` in the book's repository.
+Using the lasso select tool, you can click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel. Code to reproduce this Shiny app is available in `scripts/linked_brushing` in the book's GitHub repository.
 
 ## Exercises
 

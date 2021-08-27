@@ -7,15 +7,15 @@ library(tidycensus)
 source("R/book-functions.R")
 ```
 
-The core visualization package within the **tidyverse** suite of packages is **ggplot2** [@wickham2016]. Originally developed by RStudio chief scientist Hadley Wickham, ggplot2 is a widely-used visualization framework by R developers, accounting for 70,000 downloads per day in June 2021 from the RStudio CRAN mirror. ggplot2 allows R users to visualize data using a *layered grammar of graphics* approach, in which plot objects are initialized upon which the R user layers plot elements.
+The core visualization package within the **tidyverse** suite of packages is **ggplot2** [@wickham2016]. Originally developed by RStudio chief scientist Hadley Wickham, **ggplot2** is a widely-used visualization framework by R developers, accounting for 70,000 downloads per day in June 2021 from the RStudio CRAN mirror. **ggplot2** allows R users to visualize data using a *layered grammar of graphics* approach, in which plot objects are initialized upon which the R user layers plot elements.
 
-ggplot2 is an ideal package for visualization of US Census data, especially when obtained in tidy format by the **tidycensus** package. It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps (which will be covered in the next chapter).
+**ggplot2** is an ideal package for visualization of US Census data, especially when obtained in tidy format by the **tidycensus** package. It has powerful capacity for basic charts, group-wise comparisons, and advanced chart types such as maps.
 
 This chapter includes several examples of how R users can visualize data from the US Census Bureau using **ggplot2**. Chart types explored in this chapter include basic chart types; faceted, or "small multiples" plots; population pyramids; margin of error plots for ACS data; and advanced visualizations using extensions to **ggplot2**. Finally, the chapter introduces the **plotly** package for interactive visualization, which can be used to convert **ggplot2** objects to interactive web graphics.
 
 ## Basic Census visualization with ggplot2
 
-In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States. The data come from the 2019 1-year American Community Survey, variable `DP03_0021P`. To determine this information, we can use **tidyverse** tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population.
+In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States. The data come from the 2019 1-year American Community Survey Data Profile, variable `DP03_0021P`. To determine this information, we can use **tidyverse** tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population using the `slice_max()` function.
 
 ```{r get-metro-data}
 library(tidycensus)
@@ -35,7 +35,7 @@ metros <-  get_acs(
 style_data(metros, n_rows = 5, caption = "Large metro areas by public transit commuting share")
 ```
 
-The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `filter()` command. While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization. The tidy format returned by `get_acs()` is well-suited for visualization with **ggplot2**.
+The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `slice_max()` command. While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization. The tidy format returned by `get_acs()` is well-suited for visualization with **ggplot2**.
 
 ### Getting started with ggplot2
 
@@ -141,7 +141,7 @@ style_data(maine, n_rows = 16, caption = "Population sizes of counties in Maine"
 
 There are sixteen counties in Maine, ranging in population from a maximum of 292,307 to a minimum of 16,836. In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.
 
-Comparing median household incomes of these sixteen counties illustrates this point. Let's first obtain this data with **tidycensus**.
+Comparing median household incomes of these sixteen counties illustrates this point. Let's first obtain this data with **tidycensus** then clean up the `NAME` column with `str_remove()` to remove redundant information.
 
 ```{r maine-income-data}
 maine_income <- get_acs(
@@ -166,11 +166,11 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
   scale_x_continuous(labels = scales::dollar)
 ```
 
-The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis). However, the data used to generate this chart is significantly different from the metropolitan area data used in the previous example. In our first example, ACS estimates covered the top 20 US metros by population - areas that all have populations exceeding 2.8 million. For these areas, margins of error are small enough that they do not meaningfully change the interpretation of the estimates given the large sample sizes used to generate them. However, as discussed in Chapter 3, smaller geographies may have large margins of error that characterize their ACS estimates that are important to take into account.
+The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis). However, the data used to generate this chart is significantly different from the metropolitan area data used in the previous example. In our first example, ACS estimates covered the top 20 US metros by population - areas that all have populations exceeding 2.8 million. For these areas, margins of error are small enough that they do not meaningfully change the interpretation of the estimates given the large sample sizes used to generate them. However, as discussed in Section \@ref(handling-margins-of-error-in-the-american-community-survey-with-tidycensus), smaller geographies may have much larger margins of error relative to their ACS estimates.
 
 ### Using error bars for margins of error
 
-On our chart, county estimates are quite close, which may mean that the ranking of counties is misleading given the margin of error around those estimates. We can explore this by looking directly at the data.
+Several county estimates on the chart are quite close to one another, which may mean that the ranking of counties is misleading given the margin of error around those estimates. We can explore this by looking directly at the data.
 
 ```{r show-maine, eval = FALSE}
 maine_income %>% 
@@ -203,7 +203,7 @@ Adding the horizontal error bars around each point gives us critical information
 
 ## Visualizing ACS estimates over time
 
-Chapter 3 covered how to obtain a time series of ACS estimates to explore temporal demographic shifts. While the output table usefully represented the time series of educational attainment in Colorado counties, data visualization is also commonly used to illustrate change over time. Arguably the most common chart type chosen for time-series visualization is the line chart, which **ggplot2** handles capably with the `geom_line()` function.
+Section \@ref(preparing-time-series-acs-estimates) covered how to obtain a time series of ACS estimates to explore temporal demographic shifts. While the output table usefully represented the time series of educational attainment in Colorado counties, data visualization is also commonly used to illustrate change over time. Arguably the most common chart type chosen for time-series visualization is the line chart, which **ggplot2** handles capably with the `geom_line()` function.
 
 For an illustrative example, we'll obtain 1-year ACS data back to 2005 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005.
 
@@ -221,9 +221,10 @@ deschutes_value <- map_dfr(years, ~{
     survey = "acs1"
   )
 }, .id = "year")
+```
 
-deschutes_value
-
+```{r get-deschutes-value-show, echo = FALSE}
+style_data(deschutes_value, caption = "Time series of median home values in Deschutes County, OR")
 ```
 
 This information can be visualized with familiar **ggplot2** syntax. `deschutes_value` is specified as the input dataset, with `year` mapped to the X-axis and `estimate` mapped to the y-axis. The argument `group = 1` is used to help **ggplot2** understand how to connect the yearly data points with lines given that only one county is being visualized. `geom_line()` then draws the lines, and we layer points on top of the lines as well to highlight the actual ACS estimates.

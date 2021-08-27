@@ -10,7 +10,7 @@ source("R/book-functions.R")
 
 A major benefit of using the individual-level microdata returned by `get_pums()` is the ability to create detailed, granular estimates of ACS data. While the aggregate ACS data available with `get_acs()` includes tens of thousands of indicators to choose from, researchers and analysts still may be interested in cross-tabulations not available in the aggregate files. Additionally, microdata helps researchers design statistical models to assess demographic relationships at the individual level in a way not possible with aggregate data.
 
-Analysts must pay careful attention to the structure of the PUMS datasets in order to produce accurate estimates and handle errors appropriately. PUMS datasets are *weighted* samples, in which each person or household is not considered unique or individual, but rather representative of multiple other persons or households. In turn, analyses and tabulations using PUMS data must use appropriate tools for handling weighting variables to accurately produce estimates. Fortunately, tidyverse tools like dplyr, covered elsewhere in this book, are excellent for producing these tabulations and handling survey weights
+Analysts must pay careful attention to the structure of the PUMS datasets in order to produce accurate estimates and handle errors appropriately. PUMS datasets are *weighted* samples, in which each person or household is not considered unique or individual, but rather representative of multiple other persons or households. In turn, analyses and tabulations using PUMS data must use appropriate tools for handling weighting variables to accurately produce estimates. Fortunately, tidyverse tools like **dplyr**, covered elsewhere in this book, are excellent for producing these tabulations and handling survey weights
 
 As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error. This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific. Fortunately, the US Census Bureau provides *replicate weights* to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample. While working with replicate weights has traditionally been cumbersome for analysts, tidycensus with help from the **survey** [@lumley2010] and **srvyr** [@ellis2021] R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.
 
@@ -53,7 +53,7 @@ We can perform similar calculations with tidyverse tools. The `count()` function
 ms_pums %>% count(wt = PWGTP)
 ```
 
-`count()` has the additional benefit, however, of allowing for the specification of one our more columns that will be grouped and tabulated. For example, we could tabulate data by unique values of age and sex in Mississippi:
+`count()` has the additional benefit of allowing for the specification of one our more columns that will be grouped and tabulated. For example, we could tabulate data by unique values of age and sex in Mississippi:
 
 ```{r ms-age-count}
 ms_pums %>%
@@ -271,7 +271,7 @@ ms_hh_svy %>%
   style_data(n_rows = 5, caption = "Tabulated PUMS data for household types in Mississippi by PUMA with standard errors")
 ```
 
-The `survey_count()` function returns tabulations for each household type by PUMA in Mississippi along with the estimate's standard error. The **srvyr** package can also accommodate more complex workflows. Below is an adaptation of the rent burden analysis computed above, but using the srvyr function `survey_mean()`.
+The `survey_count()` function returns tabulations for each household type by PUMA in Mississippi along with the estimate's standard error. The **srvyr** package can also accommodate more complex workflows. Below is an adaptation of the rent burden analysis computed above, but using the **srvyr** function `survey_mean()`.
 
 ```{r svy-summary}
 ms_svy_summary <- ms_hh_svy %>%
@@ -336,7 +336,7 @@ The plot effectively represents the uncertainty associated with estimates for th
 
 ## Modeling with PUMS data
 
-The rich complexity of demographic data available in the PUMS samples allow for the estimation of statistical models to study a wide range of social processes. Like the tabulation of summary statistics with PUMS data, however, statistical models that use complex survey samples require special methods. Fortunately, these methods are incorporated into the srvyr and survey packages.
+The rich complexity of demographic data available in the PUMS samples allow for the estimation of statistical models to study a wide range of social processes. Like the tabulation of summary statistics with PUMS data, however, statistical models that use complex survey samples require special methods. Fortunately, these methods are incorporated into the **srvyr** and **survey** packages.
 
 Before estimating the model, data should be acquired with `get_pums()` along with appropriate replicate weights. The example below will model whether or not an individual in the labor force aged between 25 and 49 changed residences in the past year as a function of educational attainment, wages, age, class of worker, and family status in Rhode Island.
 

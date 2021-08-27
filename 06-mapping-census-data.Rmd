@@ -46,7 +46,7 @@ As shown in the example call, the structure of the object returned by tidycensus
 
 ### Basic mapping of sf objects with `plot()`
 
-Such geographic information is very difficult to parse, however, without visualization. As the returned object is a simple features spatial object as represented by the **sf** package, it can be plotted using **sf**'s `plot()` function. Key here is specifying the name of the column to be plotted - `"estimate"` in this case - inside of brackets.
+Such geographic information can be difficult to understand without visualization. As the returned object is a simple features object, both geometry and attributes can be visualized with `plot()`. Key here is specifying the name of the column to be plotted inside of brackets, which in this case is `"estimate"`.
 
 ```{r plot-dc-income-1, fig.cap = "Base R plot of median household income by tract in DC"}
 plot(dc_income["estimate"])
@@ -58,7 +58,7 @@ The remainder of this chapter, however, will focus on map-making with additional
 
 ## Map-making with ggplot2 and geom_sf
 
-As illustrated in Chapter 5, `geom_sf()` in **ggplot2** can be used for quick plotting of sf objects using familiar **ggplot2** syntax. `geom_sf()` goes far beyond simple cartographic display. The full power of **ggplot2** is available to create highly customized maps and geographic data visualizations.
+As illustrated in Section \@ref(plotting-geographic-data), `geom_sf()` in **ggplot2** can be used for quick plotting of sf objects using familiar **ggplot2** syntax. `geom_sf()` goes far beyond simple cartographic display. The full power of **ggplot2** is available to create highly customized maps and geographic data visualizations.
 
 ### Choropleth mapping
 
@@ -110,7 +110,7 @@ ggplot(data = us_median_age, aes(fill = estimate)) +
 
 ## Map-making with tmap
 
-For **ggplot2** users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, ggplot2 is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
+For **ggplot2** users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, **ggplot2** is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
 
 To get started, let's grab some ACS data on race and ethnicity from the American Community Survey. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
@@ -177,7 +177,7 @@ tm_shape(hennepin_black,
             legend.outside = TRUE)
 ```
 
-Switching from the default classification scheme to quantiles reveals additional neighborhood-level heterogeneity in Hennepin County's Black population in suburban areas. However, it does mask some heterogeneity in Minneapolis as the top class now includes values ranging from 22 percent to 71 percent. A "compromise" solution commonly used in GIS cartography applications is the Jenks natural-breaks method, which uses an algorithm to identify meaningful breaks in the data for bin boundaries. To assist with understanding how the different classification methods work, the `legend.hist` argument in `tm_polygons()` can be set to TRUE, adding a histogram to the map with bars colored by the values used on the map.
+Switching from the default classification scheme to quantiles reveals additional neighborhood-level heterogeneity in Hennepin County's Black population in suburban areas. However, it does mask some heterogeneity in Minneapolis as the top class now includes values ranging from 22 percent to 71 percent. A "compromise" solution commonly used in GIS cartography applications is the Jenks natural-breaks method, which uses an algorithm to identify meaningful breaks in the data for bin boundaries [@jenks1967]. To assist with understanding how the different classification methods work, the `legend.hist` argument in `tm_polygons()` can be set to TRUE, adding a histogram to the map with bars colored by the values used on the map.
 
 ```{r jenks, fig.cap = "Styled tmap choropleth"}
 tm_shape(hennepin_black, 
@@ -307,15 +307,16 @@ The map itself is created with the `tm_dots()` function, which in this example i
 
 ```{r make-dot-map, eval = FALSE}
 tm_shape(hennepin_dots) +
-  tm_dots(col = "group", palette = "Set1",
-          size = 0.005)
+  tm_dots(col = "group", 
+          palette = "Set1",
+          size = 0.005) 
 ```
 
 ```{r show-hennepin-dots, echo = FALSE, fig.cap = "Dot-density map of race and ethnicity in Hennepin County, Minnesota", out.width="75%"}
 knitr::include_graphics("img/hennepin_dots.png")
 ```
 
-Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, as dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be inhabited then runs the dot-generation algorithm over those modified areas.
+Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, the use of Census tract polygons to generate the dots can cause visual issues. As dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). Dot distributions will also follow tract boundaries, which can create an artificial impression of abrupt changes in population distributions along polygon boundaries (as seen on the example map). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be uninhabited then runs the dot-generation algorithm over those modified areas.
 
 ## Cartographic workflows with non-Census data
 
@@ -374,7 +375,7 @@ ggplot(us_states_joined, aes(fill = called)) +
 
 ### Understanding and working with ZCTAs
 
-For example, the most granular geography at which many agencies release data is at the zip code level. This is not an ideal geography for visualization, given that zip codes represent collections of US Postal Service routes (or sometimes even a single building, or Post Office box) that are not guaranteed to form coherent geographies. The US Census Bureau allows for an approximation of zip code mapping with Zip Code Tabulation Areas, or ZCTAs. ZCTAs are shapes built from Census blocks in which the most common zip code for addresses in each block determines how blocks are allocated to corresponding ZCTAs. While ZCTAs are not recommended for spatial analysis due to these irregularities, they can be useful for visualizing data distributions when no other granular geographies are available.
+The most granular geography at which many agencies release data is at the zip code level. This is not an ideal geography for visualization, given that zip codes represent collections of US Postal Service routes (or sometimes even a single building, or Post Office box) that are not guaranteed to form coherent geographies. The US Census Bureau allows for an approximation of zip code mapping with Zip Code Tabulation Areas, or ZCTAs. ZCTAs are shapes built from Census blocks in which the most common zip code for addresses in each block determines how blocks are allocated to corresponding ZCTAs. While ZCTAs are not recommended for spatial analysis due to these irregularities, they can be useful for visualizing data distributions when no other granular geographies are available.
 
 An example of this is the [Internal Revenue Service's Statistics of Income (SOI) data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-2018-zip-code-data-soi), which includes a wide range of indicators derived from tax returns. The most detailed geography available is the zip code level in this dataset, meaning that within-county visualizations require using ZCTAs. Let's read in the data for 2018 from the IRS website:
 
@@ -414,7 +415,11 @@ mapview(boston_zctas)
 ```
 
 ```{r show-boston-zctas, echo = FALSE, fig.cap = "ZCTAs in the Boston, MA area"}
-knitr::include_url(url = "img/leaflet/boston_zctas.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url(url = "img/leaflet/boston_zctas.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/boston_zctas.png")
+}
 ```
 
 The ZCTA prefixes `021`, `022`, and `024` cover much of the Boston metropolitan area; "holes" in the region represent areas like Boston Common which are not covered by ZCTAs. Let's take a quick look at its attributes:
@@ -440,7 +445,9 @@ There are a variety of ways to visualize this information. One such method is a 
 
 ```{r boston-zcta-choropleth, fig.cap = "Simple choropleth of self-employment in Boston"}
 tm_shape(boston_se_data, projection = 26918) + 
-  tm_fill(col = "pct_self_emp", palette = "Purples")
+  tm_fill(col = "pct_self_emp", 
+          palette = "Purples", 
+          title = "% self-employed,\n2018 IRS SOI data")
 ```
 
 The choropleth map shows that self-employment filings are more common in suburban Boston ZCTAs than nearer to the urban core, generally speaking. However, we might also be interested in understanding where most self-employment income filings are located rather than their share relative to the total number of returns filed. This requires visualizing the `self_emp` column directly. As discussed earlier in this chapter, a graduated symbol map with `tm_bubbles()` is preferable to a choropleth map for this purpose.
@@ -448,8 +455,10 @@ The choropleth map shows that self-employment filings are more common in suburba
 ```{r zcta-bubble-map, fig.cap = "Graduated symbol map of self-employment by ZCTA in Boston"}
 tm_shape(boston_se_data) + 
   tm_polygons() + 
-  tm_bubbles(size = "self_emp", alpha = 0.5, 
-             col = "navy")
+  tm_bubbles(size = "self_emp", 
+             alpha = 0.5, 
+             col = "navy",
+             title.size = "Self-employed filers,\n2018 IRS SOI data")
 ```
 
 ## Interactive mapping
@@ -481,7 +490,12 @@ mapview(dallas_bachelors, zcol = "estimate")
 ```
 
 ```{r dallas-mapview-map, echo = FALSE, fig.cap = "Interactive mapview choropleth"}
-knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/dallas_mapview.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/dallas_mapview.png")
+}
+
 ```
 
 Conversion of **tmap** maps to interactive Leaflet maps is also straightforward with the command `tmap_mode("view")`. After entering this command, all subsequent tmap maps in your R session will be rendered as interactive Leaflet maps using the same tmap syntax you'd use to make static maps.
@@ -496,7 +510,11 @@ tm_shape(dallas_bachelors) +
 ```
 
 ```{r dallas-tmap-map, echo = FALSE, fig.cap = "Interactive map with tmap in view mode"}
-knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/dallas_tmap.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/dallas_tmap.png")
+}
 ```
 
 To switch back to static plotting mode, run the command `tmap_mode("plot")`.
@@ -543,7 +561,11 @@ leaflet() %>%
 ```
 
 ```{r dallas-leaflet-map, echo = FALSE, fig.cap = "Interactive leaflet map"}
-knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/dallas_leaflet.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/dallas_leaflet.png")
+}
 ```
 
 This example only scratches the surface of what the **leaflet** R package can accomplish; I'd encourage you to [review the documentation for more examples](https://rstudio.github.io/leaflet/).
@@ -592,7 +614,11 @@ leaflet() %>%
 ```
 
 ```{r us-leaflet-map, echo = FALSE, fig.cap = "Interactive US map using Web Mercator"}
-knitr::include_url("img/leaflet/us_leaflet.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/us_leaflet.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/us_leaflet.png")
+}
 ```
 
 The disadvantages of Web Mercator - as well as this general approach to mapping the United States - are on full display. Alaska's area is grossly distorted relative to the rest of the United States. It is also difficult on this map to compare Alaska and Hawaii to the continental US - which is particularly important in this example as Hawaii's median home value is the highest in the entire country. The solution proposed elsewhere in this book is to use `tigris::shift_geometry()` which adopts appropriate coordinate reference systems for Alaska, Hawaii, and the continental US and arranges them in a better comparative fashion on the map. However, this approach risks losing the interactivity of a Leaflet map.
@@ -731,7 +757,11 @@ Advanced Census cartographers may want to take these examples a step further and
 An example Shiny visualization app that extends the race/ethnicity example from this chapter is shown below. It includes a drop-down menu that allows users to select a racial or ethnic group in the Twin Cities and visualizes the distribution of that group on an interactive choropleth map that uses Leaflet and the viridis color palette.
 
 ```{r include-app, echo = FALSE, fig.cap = "Interactive mapping app with Shiny"}
-knitr::include_app("https://walkerke.shinyapps.io/msp-shiny-example/", height = "800px")
+if (knitr::is_html_output()) {
+  knitr::include_app("https://walkerke.shinyapps.io/msp-shiny-example/", height = "800px")
+} else {
+  knitr::include_graphics("img/leaflet/msp_shiny.png")
+}
 ```
 
 The code used to create the app is found below; copy-paste this code into your own R script, set your Census API key, and run it! To learn more, I encourage you to review [Hadley Wickham's *Mastering Shiny* book](https://mastering-shiny.org/index.html) and the [Leaflet package's documentation on Shiny integration](https://rstudio.github.io/leaflet/shiny.html).

@@ -12,7 +12,7 @@ options(tigris_use_cache = TRUE)
 source("R/book-functions.R")
 ```
 
-As discussed in Chapters 1 and 3, Census and ACS data are associated with *geographies*, which are units at which the data are aggregated. These defined geographies are represented in the [US Census Bureau's TIGER/Line database](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2019/TGRSHP2019_TechDoc.pdf), where the acronym **TIGER** stands for *Topologically Integrated Geographic Encoding and Referencing*. This database includes a high-quality series of geographic datasets suitable for both spatial analysis and cartographic visualization . Spatial datasets are made available as *shapefiles*, a common format for encoding geographic data.
+As discussed in previous chapters of this book, Census and ACS data are associated with *geographies*, which are units at which the data are aggregated. These defined geographies are represented in the [US Census Bureau's TIGER/Line database](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2019/TGRSHP2019_TechDoc.pdf), where the acronym **TIGER** stands for *Topologically Integrated Geographic Encoding and Referencing*. This database includes a high-quality series of geographic datasets suitable for both spatial analysis and cartographic visualization . Spatial datasets are made available as *shapefiles*, a common format for encoding geographic data.
 
 The TIGER/Line shapefiles include three general types of data:
 
@@ -84,11 +84,9 @@ plot(la_water$geometry)
 
 Data returned by the **tigris** package are examples of *vector spatial data*, a spatial data model that represents geographic features as points, lines, and polygons. The vector spatial data model is represented in R with the [**sf** package](https://r-spatial.github.io/sf/), an implementation of simple features in the R language. The **sf** package is an R interface to C libraries that power much of the broader geographic data ecosystem: [GDAL](https://gdal.org/) for reading & writing spatial data, [GEOS](https://trac.osgeo.org/geos/) for modeling spatial relationships, and [PROJ](https://proj.org/) for representing coordinate reference systems. These topics will be outlined in more detail in this chapter and the remainder of this section.
 
-As mentioned earlier, **sf** represents vector spatial data much like a regular R data frame, but with a special column, `geometry`, that represents the shape of each feature.
+As mentioned earlier, **sf** represents vector spatial data much like a regular R data frame, but with a special column, `geometry`, that represents the shape of each feature. When a simple features object is printed, the information above the data frame gives some additional geographic context to the coordinates in the `geometry` column. This includes a *geometry type*, a *bounding box,* and a *coordinate reference system (CRS)* definition. These spatial concepts help define how R represents the data geographically, and will be explored further later in this chapter.
 
-The information above the data frame gives some additional geographic context to the coordinates in the `geometry` column. The returned data is of geometry type `MULTIPOLYGON`, and is characterized by a bounding box and geographic coordinate reference system (CRS) of `NAD83`. These spatial concepts help define how R represents the data geographically, and will be explored further later in this chapter.
-
-Vector data are typically represented as either *points, lines*, or *polygons*, and tigris gives access to all three types.
+Vector data are typically represented as either *points, lines*, or *polygons*, and **tigris** gives access to all three types.
 
 #### Points
 
@@ -129,85 +127,49 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 
 ### Data availability in tigris
 
-The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the table below.
+The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | Function                                | Datasets available                             | Years available       |
-+=========================================+================================================+=======================+
-| `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2019             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
-| `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2019             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
-| `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2019             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
+|-----------------------------------------|------------------------------------------------|-----------------------|
+| `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2020             |
+| `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
+| `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
 | `states()`                              | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 1990, 2000, 2010-2020 |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `counties()`                            | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 1990, 2000, 2010-2020 |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `tracts()`                              | TIGER/Line; cartographic (1:500k)              | 1990, 2000, 2010-2020 |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `block_groups()`                        | TIGER/Line; cartographic (1:500k)              | 1990, 2000, 2010-2020 |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `blocks()`                              | TIGER/Line                                     | 2000, 2010-2020       |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `places()`                              | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `pumas()`                               | TIGER/Line; cartographic (1:500k)              | 2012-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `school_districts()`                    | TIGER/Line; cartographic                       | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `zctas()`                               | TIGER/Line; cartographic (1:500k)              | 2000, 2010, 2012-2020 |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `congressional_districts()`             | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `state_legislative_districts()`         | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `voting_districts()`                    | TIGER/Line                                     | 2012                  |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `area_water()`                          | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `linear_water()`                        | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `coastline()`                           | TIGER/Line()                                   | 2013-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `core_based_statistical_areas()`        | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `combined_statistical_areas()`          | TIGER/Line; cartographic (1:500k; 1:5m; 1:20m) | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `metro_divisions()`                     | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `new_england()`                         | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `county_subdivisions()`                 | TIGER/Line; cartographic (1:500k)              | 2010-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `urban_areas()`                         | TIGER/Line; cartographic (1:500k)              | 2012-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `primary_roads()`                       | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `primary_secondary_roads()`             | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `roads()`                               | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `rails()`                               | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `native_areas()`                        | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `alaska_native_regional_corporations()` | TIGER/Line; cartographic (1:500k)              | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_block_groups()`                 | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_census_tracts()`                | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `tribal_subdivisions_national()`        | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `landmarks()`                           | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 | `military()`                            | TIGER/Line                                     | 2011-2020             |
-+-----------------------------------------+------------------------------------------------+-----------------------+
 
-Note from the table that many datasets are available as both **TIGER/Line** and **cartographic boundary** objects, and available for multiple years; these distinctions are covered in the "tigris workflows" subsection below.
+Note from the guide that many datasets are available as both **TIGER/Line** and **cartographic boundary** versions, and can be downloaded for multiple years; these distinctions are covered in Section \@ref(tigris-workflows) below.
 
-## Plotting data
+## Plottng geographic data
 
 Geographic information science is an inherently visual discipline. For analysts coming to R from a desktop GIS background (e.g. ArcGIS, QGIS), they will be used to having a visual display of their geographic data as central to their interactions with it. This may make the transition to R unfamiliar for geospatial analysts as geographic data will be first and foremost represented as a tabular data frame.
 
@@ -254,11 +216,11 @@ gg2 <- ggplot(la_block_groups) +
 gg1 + gg2
 ```
 
-Alternatively, **patchwork** allows R users to stack plots on top of one another using the `/` operator.
+Alternatively, **patchwork** allows R users to arrange plots vertically using the `/` operator.
 
 ### Interactive viewing with mapview
 
-A major hesitation for geospatial analysts considering a switch from desktop GIS software to R is the strengths of desktop GIS for interactive visualization. Both ArcGIS and QGIS allow analysts to quickly load a geographic dataset and interactively pan and zoom to explore geographic trends. Prior to the development of the htmlwidgets framework (discussed in the previous chapter), R had no equivalent capabilities. Frankly, this was the major reason I hesitated to fully transition my work from desktop GIS software to R for spatial analysis.
+A major hesitation for geospatial analysts considering a switch from desktop GIS software to R is the strengths of desktop GIS for interactive visual exploration. Both ArcGIS and QGIS allow analysts to quickly load a geographic dataset and interactively pan and zoom to explore geographic trends. Prior to the development of the htmlwidgets framework (discussed in the previous chapter), R had no equivalent capabilities. Frankly, this was the major reason I hesitated to fully transition my work from desktop GIS software to R for spatial analysis.
 
 The **mapview** R package [@appelhans2020] fills this crucial gap. With a single call to its function `mapview()`, **mapview** visualizes geographic data on an interactive, zoomable map. Let's try it here with our Census tracts in Los Alamos County.
 
@@ -268,8 +230,13 @@ library(mapview)
 mapview(la_tracts)
 ```
 
-```{r la_tracts_mapview, echo = FALSE, fig.cap = "Interactive view of Los Alamos, NM"}
-knitr::include_url("img/leaflet/la_tracts.html", height = "500px")
+```{r la-tracts-mapview, echo = FALSE, fig.cap = "Interactive view of Los Alamos, NM"}
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/la_tracts.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/la_tracts.png")
+}
+
 ```
 
 Clicking on a Census tract shape reveals a pop-up with attribute information found in the dataset. Additionally, users can change the underlying basemap to understand the geographic context surrounding their data. **mapview** also includes significant functionality for interactive mapping and data display beyond this basic example; some of these features are covered in the next chapter.
@@ -282,7 +249,7 @@ As covered in the previous sections, tigris is a useful package for getting TIGE
 
 In addition to the core TIGER/Line shapefiles, after which the **tigris** package is named, the Census Bureau also makes available *cartographic boundary shapefiles*. These files are derived from the TIGER/Line shapefiles but are generalized in the interior and clipped to the shoreline of the United States, making them a better choice in many cases than the TIGER/Line shapefiles for thematic mapping. Most polygon datasets in **tigris** are available as cartographic boundary files, accessible with the argument `cb = TRUE`.
 
-Over the years I have been developing **tigris**, I have gotten multiple inquires akin to "why does this area look so strange when I download it?" Michigan, with its extensive shoreline along the Great Lakes, commonly comes up. The TIGER/Line shapefiles include water area for geographic features, connecting the Upper Peninsula of Michigan with the southern part of the state and giving an unfamiliar representation of Michigan's land area. Using the cartographic boundary alternative resolves this. Let's use **patchwork** to compare the TIGER/Line and cartographic boundary shapefiles for counties in Michigan to illustrate this.
+Over the years I have been developing **tigris**, I have gotten multiple inquires akin to "why does this area look so strange when I download it?" Michigan, with its extensive shoreline along the Great Lakes, commonly comes up. The TIGER/Line shapefiles include water area for geographic features, connecting the Upper Peninsula of Michigan with the southern part of the state and giving an unfamiliar representation of Michigan's land area. Using the cartographic boundary alternative resolves this. Let's use **patchwork** to compare the TIGER/Line and cartographic boundary shapefiles for counties in Michigan as an illustration.
 
 ```{r compare-cb, fig.cap = "Comparison of TIGER/Line and cartographic boundary files for Michigan counties"}
 
@@ -302,7 +269,7 @@ mi_cb_gg <- ggplot(mi_counties_cb) +
 mi_tiger_gg + mi_cb_gg
 ```
 
-While the TIGER/Line shapefiles may represent "official" areas of counties - which include water area - they look very unfamiliar to viewers expecting a usual representation of land area in Michigan. Alternatively, the cartographic boundary file shows islands and a distinct coastline, and is the better alternative for thematic mapping. When using the `cb = TRUE` argument, users can also specify one of three resolutions with the `resolution` argument: `"500k"` (the default), `"5m"`, or `"20m"`, with higher values representing more generalized boundaries and smaller file sizes.
+While the TIGER/Line shapefiles may represent "official" areas of counties - which include water area - they look very unfamiliar to viewers expecting a usual representation of land area in Michigan. As the cartographic boundary file shows islands and a distinct coastline, it will be the better option for most thematic mapping projects. When using the `cb = TRUE` argument with counties and larger geographies, users can also specify one of three resolutions with the `resolution` argument: `"500k"` (the default), `"5m"`, or `"20m"`, with higher values representing more generalized boundaries and smaller file sizes.
 
 ### Caching tigris data
 
@@ -354,28 +321,37 @@ Once the plots are generated, we can use **patchwork** to facet the plots as we 
 
 Tarrant County added 180 new Census tracts between 1990 and 2020. As the plot shows, many of these tracts are found in fast-growing parts of the county in the northeast and southeast. Notably, these changes in Census tract geography have downstream implications as well for time-series analysis, as covered in Section \@ref(time-series-analysis-some-cautions). Data at the Census tract level in 2010, for example, will be tabulated differently than in 2020 because the tract geographies are different. One common method for adjusting demographic data between disparate zonal configurations is *areal interpolation*, a topic covered in Section \@ref(computing-demographic-estimates-for-zones-with-areal-interpolation).
 
+The default year of shapefiles in **tigris** aligns with the most recently-released 5-year American Community Survey data. At the time of this writing, the default year is 2019. This will be changed to 2020 pending full data availability of the TIGER/Line shapefiles for that year and upon release of the 2016-2020 5-year ACS estimates in December 2021. If users need the 2020 boundaries in their projects and do not want to type `year = 2020` for each dataset, the command `options(tigris_year = 2020)` can be used. This will direct **tigris** to download the 2020 shapefiles when available without having to specify the year explicitly.
+
 ### Combining tigris datasets
 
 For smaller geographies like Census tracts, block groups, and blocks, the Census Bureau stores shapefiles by state and does not provide a national file. For some geographic features, datasets are further subdivided by county. In these instances, **tigris** users must specify a state and/or county to appropriately make a request to the Census Bureau website for data.
 
-That said, a common request from **tigris** users is to obtain *all shapes* for the United States. For example, a national demographic study may require all 220,000 block groups in the United States. While this option is not directly available in tigris, national datasets are straightforward to create with **tidyverse** tools. As covered in several examples in this book to this point, the `purrr::map()` family of functions iterate over a sequence of values and combine function results as directed by a user. For tigris users, the `map_dfr()` function will prove especially useful as it row-binds datasets to create its output. The built-in `state.abb` vector in R gives us postal codes of all 50 US states; if Washington, DC or Puerto Rico are required in your analysis, add these to the vector with `c()` as shown below.
+That said, a common request from **tigris** users is to obtain *all shapes* for the United States. For example, a national demographic study may require all 241,900 block groups in the United States. While this option is not directly available in **tigris**, national datasets are straightforward to create with **tidyverse** tools. As covered in several examples thus far in this book, the `purrr::map()` family of functions iterate over a sequence of values and combine function results as directed by a user. For tigris users, the `map_dfr()` function will prove especially useful as it row-binds datasets to create its output. The built-in `state.abb` vector in R gives us postal codes of all 50 US states; if Washington, DC or Puerto Rico are required in your analysis, add these to the vector with `c()` as shown below.
 
-Once the vector of state codes is prepared, a user can iterate over those codes in a single line of code and produce a national block group dataset.
+Once the vector of state codes is prepared, a user can iterate over those codes with `map_dfr()` and produce a national block group dataset, shown for 2020 below.
 
 ```{r all-block-groups}
 
 state_codes <- c(state.abb, "DC", "PR")
 
-us_bgs <- map_dfr(state_codes, ~block_groups(state = .x, cb = TRUE))
+us_bgs <- map_dfr(
+  state_codes, 
+  ~block_groups(
+    state = .x, 
+    cb = TRUE, 
+    year = 2020
+  )
+)
 
 nrow(us_bgs)
 ```
 
-If you are not using shapefile caching, this process may take a while; however, if you have a local cache of block group shapefiles as illustrated in this section, loading and combining all 220,000 block groups for use in your analysis should only take a few seconds.
+If you are not using shapefile caching, this process will be slowed by the time it takes to download each block group shapefile from the Census Bureau website. However, if you have a local cache of block group shapefiles as illustrated in this section, loading and combining all 241,900 block groups for use in your analysis should only take a few seconds.
 
 ## Coordinate reference systems
 
-For geographic data to appropriately represent locations in mapping and spatial analysis, they must be *referenced* to some model of the Earth's surface correctly. In simpler terms - a data model of the state of Florida should represent where Florida is actually located relative to other locations! This is accomplished with *coordinate reference systems*, or CRSs, which define not only how data coordinates should be mapped to a model of the Earth's surface, but also how measurements should be computed using a given dataset. A more complete discussion of CRSs is found in [@lovelace_geocomputation_2019]; an overview of how to work with coordinate systems in relationship to **tigris** is covered below.
+For geographic data to appropriately represent locations in mapping and spatial analysis, they must be *referenced* to some model of the Earth's surface correctly. In simpler terms - a data model of the state of Florida should represent where Florida is actually located relative to other locations! This is defined with a *coordinate reference system* (CRS), which specifies not only how data coordinates should be mapped to a model of the Earth's surface but also how measurements should be computed using a given dataset. A more complete discussion of coordinate reference systems is found in [@lovelace_geocomputation_2019]; an overview of how to work with coordinate systems in relationship to **tigris** is covered below.
 
 By default, datasets returned by tigris are stored in a *geographic coordinate system*, in which coordinates are represented as longitude and latitude relative to a three-dimensional model of the earth. The `st_crs()` function in the sf package helps us check the CRS of our data; let's do this for counties in Florida.
 
@@ -403,11 +379,11 @@ library(crsuggest)
 fl_crs <- suggest_crs(fl_counties)
 ```
 
-```{r crsuggest-show}
+```{r crsuggest-show, echo = FALSE}
 style_data(fl_crs, caption = "Suggested coordinate reference systems for Florida")
 ```
 
-The "best choice" is the CRS "Florida GDL Albers" coordinate reference system, which is available with four different variations on the NAD1983 datum. "Florida GDL" refers to the Florida Geographic Data Library which distributes all of its data in this [state-wide equal-area coordinate reference system](https://www.fgdl.org/metadataexplorer/fgdlfaq.html#3.1). Other large states with large or irregular extents like Florida (Texas is one such example) maintain statewide coordinate reference systems like this suitable for statewide mapping and analysis. Let's choose the third entry, "NAD83 (HARN) / Florida GDL Albers", which is recommended on the Florida GDL website.
+The "best choice" is the CRS "Florida GDL Albers" coordinate reference system, which is available with four different variations on the NAD1983 datum. "Florida GDL" refers to the Florida Geographic Data Library which distributes all of its data in this [state-wide equal-area coordinate reference system](https://www.fgdl.org/metadataexplorer/fgdlfaq.html#3.1). Other large states with large or irregular extents like Florida (Texas is one such example) maintain statewide coordinate reference systems like this suitable for statewide mapping and analysis. Let's choose the third entry, "NAD83 (HARN) / Florida GDL Albers", which is recommended on the Florida GDL website. Coordinate reference system transformations in **sf** are implemented in the `st_transform()` function, used below.
 
 ```{r transform-crs}
 fl_projected <- st_transform(fl_counties, crs = 3087)
@@ -423,7 +399,7 @@ st_crs(fl_projected)
 
 ```
 
-There is a lot more information in the CRS's well-known text than for the NAD83 geographic CRS. Information about the base geographic CRS is provided along with parameters for a "false origin." Whereas coordinates for geographic coordinate systems will be represented generally as longitude/latitude relative to the Prime Meridian and Equator, projected coordinate reference systems will be relative to a "false origin" that is specified relative to the area where the CRS is used (noting the `USAGE` section at the bottom). This "false origin" is located at -84 degrees longitude, 24 degrees latitude (SW of the Florida Keys and north of western Cuba) with a false X value of 400,000 and a false Y value of 0. In turn, X and Y values in the projected data are expressed in meters relative to this origin, which is set so all X and Y values in Florida will be positive numbers. This makes planar geometric calculations like distance, perimeter, and area straightforward.
+There is a lot more information in the CRS's well-known text than for the NAD83 geographic CRS. Information about the base geographic CRS is provided along with parameters for a "false origin." Whereas coordinates for geographic coordinate systems will generally be represented as longitude/latitude relative to the Prime Meridian and Equator, projected coordinate reference systems will be relative to a "false origin" that is specified relative to the area where the CRS is used (noting the `USAGE` section at the bottom). This "false origin" is located at -84 degrees longitude, 24 degrees latitude (SW of the Florida Keys and north of western Cuba) with a false X value of 400,000 and a false Y value of 0. In turn, X and Y values in the projected data are expressed in meters relative to this origin, which is set so all X and Y values in Florida will be positive numbers. This makes planar geometric calculations like distance, perimeter, and area straightforward.
 
 ### Plotting with `coord_sf()`
 
@@ -474,9 +450,9 @@ ggplot(us_states) +
   theme_void()
 ```
 
-While this representation puts all territories in their appropriate locations, it is clearly not appropriate for Alaska, Hawaii, and Puerto Rico which appear distorted. Additionally, any comparative mapping of the United States using this coordinate reference system would suffer from substantial whitespace (covered in more detail in the next chapter).
+While this representation puts all territories in their appropriate locations, it is clearly not appropriate for Alaska, Hawaii, and Puerto Rico which appear distorted. This coordinate reference system is also not ideal for comparative mapping of states given the large amount of blank space between the states on the map.
 
-tigris offers a solution to this problem with the `shift_geometry()` function. `shift_geometry()` takes an opinionated approach to the shifting and rescaling of Alaska, Hawaii, and Puerto Rico geometries to offer four options for an alternative view of the US. The function works by projecting geometries in Alaska, Hawaii, and Puerto Rico to appropriate coordinate reference systems for those areas, then re-sizing the geometries (if requested) and moving them to an alternative layout in relationship to the rest of the US using the Albers Equal Area CRS.
+**tigris** offers a solution to this problem with the `shift_geometry()` function. `shift_geometry()` takes an opinionated approach to the shifting and rescaling of Alaska, Hawaii, and Puerto Rico geometries to offer four options for an alternative view of the US. The function works by projecting geometries in Alaska, Hawaii, and Puerto Rico to appropriate coordinate reference systems for those areas, then re-sizing the geometries (if requested) and moving them to an alternative layout in relationship to the rest of the US using the Albers Equal Area CRS.
 
 ```{r shift-geometry-1, fig.cap = "US states with shifted and rescaled geometry"}
 us_states_shifted <- shift_geometry(us_states)
@@ -552,7 +528,13 @@ mapview(lee)
 ```
 
 ```{r lee-mapview-show, echo = FALSE, fig.cap = "Lee County, Florida"}
-knitr::include_url("img/leaflet/lee_county.html", height = "500px")
+
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/lee_county.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/lee_county.png")
+}
+
 ```
 
 The Lee County polygon has four distinct parts as displayed on the map: the mainland area that contains the cities of Cape Coral and Fort Myers, and three disjoint island areas. Other islands can be further extracted using techniques covered in Chapter 7. Understandably, these four areas are interpreted by R as a single feature:
@@ -569,7 +551,7 @@ lee_singlepart <- st_cast(lee, "POLYGON")
 lee_singlepart
 ```
 
-The resulting spatial object now has four rows. Using row indexing, we can extract any of these rows as an individual object, such as the area representing Sanibel Island:
+The resulting spatial object now has four rows. Using row indexing, we can extract any of these rows as an individual object, such as the area representing Sanibel Island.
 
 ```{r sanibel, eval = FALSE}
 sanibel <- lee_singlepart[2,]
@@ -578,13 +560,18 @@ mapview(sanibel)
 ```
 
 ```{r show-sanibel, echo = FALSE, fig.cap = "Sanibel Island, Florida"}
-knitr::include_url("img/leaflet/sanibel.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/sanibel.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/sanibel.png")
+}
+
 ```
 
 ## Exercises
 
--   Give tigris a try for yourselves! Go through the available geographies in tigris and fetch data for a state and/or county of your choosing.
+-   Give **tigris** a try for yourselves! Go through the available geographies in **tigris** and fetch data for a state and/or county of your choosing.
 
 -   Using your data, try some of the plotting options covered in this chapter. Plot the data with `plot()`, `geom_sf()`, and with `mapview()`.
 
--   Use `suggest_crs()` from the crsuggest package to identify an appropriate projected coordinate reference system for your data. Then, use `st_transform()` from the sf package to apply a CRS transformation to your data.
+-   Use `suggest_crs()` from the **crsuggest** package to identify an appropriate projected coordinate reference system for your data. Then, use `st_transform()` from the sf package to apply a CRS transformation to your data.

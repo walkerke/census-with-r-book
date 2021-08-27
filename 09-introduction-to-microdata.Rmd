@@ -10,13 +10,13 @@ The previous two sections of this book cover aggregate-level analysis of US Cens
 
 **Microdata** refer to individual-level data made available to researchers. In many cases, microdata reflect responses to surveys that are de-identified and anonymized, then prepared in datasets that include rich detail about survey responses. US Census microdata are available for both the decennial Census and the American Community Survey; these datasets, named [the Public Use Microdata Series (PUMS)](https://www.census.gov/programs-surveys/acs/microdata.html), allow for detailed cross-tabulations not available in aggregated data.
 
-The ACS PUMS is available, like the aggregate data, in both 1-year and 5-year versions. The 1-year PUMS covers about 1 percent of the US population, whereas the 5-year PUMS covers about 5 percent; this means that microdata represent a smaller subset of the US population than the regular ACS. Public use microdata downloads available [in bulk from the Census FTP server](https://www2.census.gov/programs-surveys/acs/data/pums/2019/5-Year/) or [from data.census.gov's MDAT tool](https://data.census.gov/mdat/#/search?ds=ACSPUMS5Y2019). F
+The ACS PUMS is available, like the aggregate data, in both 1-year and 5-year versions. The 1-year PUMS covers about 1 percent of the US population, whereas the 5-year PUMS covers about 5 percent; this means that microdata represent a smaller subset of the US population than the regular ACS. Public use microdata downloads available [in bulk from the Census FTP server](https://www2.census.gov/programs-surveys/acs/data/pums/2019/5-Year/) or [from data.census.gov's MDAT tool](https://data.census.gov/mdat/#/search?ds=ACSPUMS5Y2019).
 
 The Census Bureau also operates a network of [Federal Statistical Research Data Centers](https://www.census.gov/about/adrm/fsrdc.html) (FSRDCs) around the country that grant access to microdata with larger sample sizes and greater demographic detail. To work at one of these centers, researchers must get special government clearance and have an approved proposal with the US Census Bureau. This and the following chapter focus on the public use microdata product, which is much more accessible to researchers and analysts.
 
 ### Microdata resources: IPUMS
 
-One of the most popular and comprehensive repositories for research microdata is the [University of Minnesota's IPUMS project](https://www.ipums.org/) [@ruggles2020]. IPUMS includes Decennial US Census and ACS microdata (IPUMS USA), microdata from the Current Population Survey (IPUMS CPS), and over 100 countries around the world (IPUMS International).
+One of the most popular and comprehensive repositories for research microdata is the University of Minnesota's IPUMS project [@ruggles2020]. IPUMS includes Decennial US Census and ACS microdata (IPUMS USA), microdata from the Current Population Survey (IPUMS CPS), and over 100 countries around the world (IPUMS International).
 
 ```{r ipums-home, echo = FALSE, fig.cap = "IPUMS home page"}
 knitr::include_graphics("img/screenshots/ipums-home.png")
@@ -182,6 +182,10 @@ One of the steps the Census Bureau takes to preserve anonymity in the PUMS datas
 ### What is a PUMA?
 
 Public Use Microdata Areas (PUMAs) are the smallest available geographies at which records are identifiable in the PUMS datasets. PUMAs are redrawn with each decennial US Census, and typically are home to between 100,000 - 200,000 people when drawn, although some may be much larger by the end of a Census cycle. In large cities, a PUMA will represent a collection of nearby neighborhoods; in rural areas, it might represent several counties across a large area of a state.
+
+::: {.rmdtip}
+At the time of this writing, PUMA geographies correspond to the 2010 Census definitions, even. While PUMAs are redrawn with each decennial US Census, their release lags the decennial Census by a couple of years. To determine appropriate PUMA geographies, the Census Bureau consults with State Data Centers (SDCs) and incorporates their suggested revisions to these geographies. For 2020 PUMAs, this process takes place through the 2021 calendar year. This means that the updated PUMA geographies, and their incorporation into PUMS datasets, are planned for public release in the summer of 2022. For more information, visit <https://www.census.gov/programs-surveys/geography/guidance/geo-areas/pumas/2020pumas.html>.
+:::
 
 PUMA geographies can be obtained and reviewed with the `pumas()` function in the **tigris** package. Let's take a look at PUMA geographies for the state of Wyoming:
 

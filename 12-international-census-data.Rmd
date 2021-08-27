@@ -207,10 +207,14 @@ mx_pyramid_data <- get_idb(
 ) %>%
   mutate(pop = ifelse(sex == "Male", pop * -1, pop))
 
-mx_animation <- ggplot(mx_pyramid_data, aes(x = pop, y = as.factor(age), fill = sex)) + 
+mx_animation <- ggplot(mx_pyramid_data, 
+                       aes(x = pop, 
+                           y = as.factor(age), 
+                           fill = sex)) + 
   geom_col(width = 1) + 
   theme_minimal(base_size = 16) + 
-  scale_x_continuous(labels = function(x) paste0(abs(x / 1000000), "m")) + 
+  scale_x_continuous(labels = function(x) paste0(abs(x / 1000000), 
+                                                 "m")) + 
   scale_y_discrete(breaks = scales::pretty_breaks(n = 10)) + 
   scale_fill_manual(values = c("darkred", "darkgreen")) + 
   transition_states(year) + 
@@ -224,7 +228,12 @@ animate(mx_animation, height = 500, width = 800)
 ```
 
 ```{r animated-pyramid-show, echo = FALSE, fig.cap = "Animated time-series population pyramid of Mexico"}
-knitr::include_graphics("img/mexico_animation.gif")
+if (knitr::is_html_output()) {
+  knitr::include_graphics("img/mexico_animation.gif")
+} else {
+  knitr::include_graphics("img/mexico_pyramid.png")
+}
+
 ```
 
 The animation illustrates the aging of Mexico's population, both observed and projected, during the specified time period.
@@ -309,7 +318,12 @@ tm_shape(montreal_pct) +
 ```
 
 ```{r show-montreal-english, echo = FALSE, fig.cap = "Interactive map of the percentage English language speakers at home in the Montreal area"}
-knitr::include_url("img/leaflet/montreal_english.html", height = "500px")
+if (knitr::is_html_output()) {
+  knitr::include_url("img/leaflet/montreal_english.html", height = "500px")
+} else {
+  knitr::include_graphics("img/leaflet/montreal_english.png")
+}
+
 ```
 
 Exploring the data interactively reveals distinctive patterns of English language speaking in Montreal. While English is the most common language spoken at home in some central Census tracts and the southwestern portion of the Island of Montreal, percentages are much lower in suburban areas and the outer portions of the metropolitan region.
@@ -392,7 +406,7 @@ Like other APIs introduced in this book, the INEGI API requires an API token. [T
 
 The **mxmaps** package is based on the **choroplethr** R package [@lamstein2020], which offers a convenient interface for visualizing data from the US ACS. **mxmaps** wraps **inegiR**'s data access functions in the `choropleth_inegi()` function, which can request data for [indicators from INEGI's data bank](https://en.www.inegi.org.mx/app/indicadores/) and visualize them. The map below shows the percentage of residents by state born in Mexico but outside their current state of residence using indicator code `304003001`. For full functionality, the **inegiR** and **mxmaps** packages must both be installed from GitHub with `remotes::install_github()`.
 
-```{r mxmaps, fig.cap = "Choropleth map of internal migration in Mexico by state"}
+```{r mxmaps, message = FALSE, fig.cap = "Choropleth map of internal migration in Mexico by state"}
 # remotes::install_github("Eflores89/inegiR")
 # remotes::install_github("diegovalle/mxmaps")
 library(mxmaps)
@@ -504,7 +518,7 @@ basico <- read_csv2("brazil/brasilia_data/CSV/Basico_DF.csv",
 ```
 
 ```{r see-brazil-data, echo = FALSE}
-style_data(basico, caption = "Data from the 2010 Brazilian Census")
+style_data(basico, n_rows = 5, caption = "Data from the 2010 Brazilian Census")
 ```
 
 The file includes a series of ID codes then a series of variables associated with each Census tract. The meaning of the variables in the dataset can be looked up from a PDF data dictionary [available for download from the IBGE website](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_do_Universo/Agregados_por_Setores_Censitarios/Documentacao_Agregado_dos_Setores_20180416.zip). We'll focus here on variable `V007`, which represents the average monthly income in each Census tract for income-earning households.
@@ -514,8 +528,12 @@ brasilia_income <- basico %>%
   mutate(code_tract = as.character(Cod_setor)) %>%
   select(code_tract, monthly_income = V007)
 
-ggplot(brasilia_income, aes(x = monthly_income)) + 
-  geom_histogram(bins = 100, alpha = 0.5, color = "navy", fill = "navy") + 
+ggplot(brasilia_income, 
+       aes(x = monthly_income)) + 
+  geom_histogram(bins = 100, 
+                 alpha = 0.5, 
+                 color = "navy", 
+                 fill = "navy") + 
   theme_minimal()
 ```
 
@@ -584,7 +602,8 @@ brasilia_lisa <- localmoran_perm(brasilia_input$scaled_income,
   as_tibble() %>%
   set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
 
-# Add the LISA columns to the spatial dataset and recode them into cluster values
+# Add the LISA columns to the spatial dataset 
+# and recode them into cluster values
 brasilia_lisa_clusters <- brasilia_input %>%
   select(code_tract, scaled_income) %>%
   bind_cols(brasilia_lisa) %>%

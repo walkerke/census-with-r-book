@@ -14,7 +14,7 @@ The previous chapter included a range of examples illustrating methods for analy
 
 ## Indices of segregation and diversity
 
-A large body of research in the social sciences is concerned with neighborhood *segregation* and *diversity*. Segregation as addressed here generally refers to the measurement of the extent to which two or more groups live apart from each other; diversity as a companion metric measures neighborhood heterogeneity among groups. A wide range of indices have been developed by social scientists to measure segregation and diversity, and in many cases are inherently linked with spatial Census data which are often the best way to measure these concepts. Segregation and diversity indices are implemented in a variety of different R packages; the package recommended by this book is the segregation package [@elbers2021], which includes R functions for a variety of regional and local indices.
+A large body of research in the social sciences is concerned with neighborhood *segregation* and *diversity*. Segregation as addressed here generally refers to the measurement of the extent to which two or more groups live apart from each other; diversity as a companion metric measures neighborhood heterogeneity among groups. A wide range of indices have been developed by social scientists to measure segregation and diversity, and in many cases are inherently linked with spatial Census data which are often the best way to measure these concepts. Segregation and diversity indices are implemented in a variety of different R packages; the package recommended by this book is the **segregation** package [@elbers2021], which includes R functions for a variety of regional and local indices.
 
 ### Data setup with spatial analysis
 
@@ -41,8 +41,8 @@ ca_acs_data <- get_acs(
   year = 2019
 ) 
 
-# Use tidycensus to get urbanized areas by population with geometry, then filter for
-# those that have populations of 750,000 or more
+# Use tidycensus to get urbanized areas by population with geometry, 
+# then filter for those that have populations of 750,000 or more
 us_urban_areas <- get_acs(
   geography = "urban area",
   variables = "B01001_001",
@@ -51,7 +51,8 @@ us_urban_areas <- get_acs(
   survey = "acs1"
 ) %>%
   filter(estimate >= 750000) %>%
-  transmute(urban_name = str_remove(NAME, fixed(", CA Urbanized Area (2010)")))
+  transmute(urban_name = str_remove(NAME, 
+                                    fixed(", CA Urbanized Area (2010)")))
 
 # Compute an inner spatial join between the California tracts and the 
 # urbanized areas, returning tracts in the largest California urban 
@@ -64,7 +65,7 @@ ca_urban_data <- ca_acs_data %>%
 
 To summarize, the spatial analysis workflow detailed above uses the following steps:
 
-1.  Data on race & ethnicity from the 2015-2019 5-year ACS for the four largest demographic groups in California is acquired with tidycensus's `get_acs()` at the Census tract level with feature geometry included. Depending on the goals of the study, other racial/ethnic groups (e.g. native American, native Hawaiian/Pacific Islander) should be added or removed as needed.
+1.  Data on race & ethnicity from the 2015-2019 5-year ACS for the four largest demographic groups in California is acquired with **tidycensus**'s `get_acs()` at the Census tract level with feature geometry included. Depending on the goals of the study, other racial/ethnic groups (e.g. native American, native Hawaiian/Pacific Islander) should be added or removed as needed.
 2.  As urban areas as defined by the Census Bureau often cross state boundaries, urban areas must be obtained for the entire US with `get_acs()`. Once obtained, urban areas are filtered to only those areas with populations of 750,000 or greater, and then `transmute()` is used to retain only a new column representing the area name (along with the simple feature geometry column).
 3.  A spatial join between the Census tract data and the urban area data is computed with `st_join()`. The argument `left = FALSE` computes an *inner spatial join*, which retains only those Census tracts that intersect the urban area boundaries, and appends the corresponding `urban_name` column to each Census tract.
 
@@ -101,7 +102,7 @@ ca_urban_data %>%
 
 The $D$ index of segregation between non-Hispanic white and Hispanic populations in the San Francisco-Oakland area is 0.51. This statistic, however, is more meaningful in comparison with other cities. To compute dissimilarity for each urban area, we can creatively apply tidyverse techniques covered in earlier chapters. The code below uses the `split()` function from base R to split the dataset into a list based on unique values of the `urban_name` column. `imap_dfr()` iterates over the list elements as well as the list indices (which are the values of `urban_name`), returning a combined data frame with a column representing the index values (the `.id` argument).
 
-```{r compare-dissim}
+```{r compare-dissim, eval = FALSE}
 ca_urban_data %>%
   split(~urban_name) %>%
   imap_dfr(~{
@@ -116,11 +117,27 @@ ca_urban_data %>%
   arrange(desc(est))
 ```
 
+```{r compare-dissim-show, echo = FALSE}
+ca_urban_data %>%
+  split(~urban_name) %>%
+  imap_dfr(~{
+    .x %>%
+      filter(variable %in% c("white", "hispanic")) %>%
+      dissimilarity(
+        group = "variable",
+        unit = "GEOID",
+        weight = "estimate"
+      )
+  }, .id = "urban_name") %>%
+  arrange(desc(est)) %>%
+  style_data(caption = "Dissimilarity indices for Hispanic and non-Hispanic white populations, large California urbanized areas")
+```
+
 The Los Angeles area is the most segregated of the large urbanized areas in California with respect to non-Hispanic white and Hispanic populations at the Census tract level, followed by San Francisco/Oakland. Riverside/San Bernardino and Sacramento are the least segregated of the large urban areas in the state.
 
 ### Multi-group segregation indices
 
-One disadvantage of the dissimilarity index is that it only measures segregation between two groups. For a state as diverse as California, we may be interested in measuring segregation and diversity between multiple groups at a time. The **segregation** package implements two such indices: the Mutual Information Index $M$, and Theil's Entropy Index $H$ [@mora2011]. Following [@elbers2021], $M$ is computed as follows for a dataset $T$:
+One disadvantage of the dissimilarity index is that it only measures segregation between two groups. For a state as diverse as California, we may be interested in measuring segregation and diversity between multiple groups at a time. The **segregation** package implements two such indices: the Mutual Information Index $M$, and Theil's Entropy Index $H$ [@mora2011]. Following @elbers2021, $M$ is computed as follows for a dataset $T$:
 
 $$
 M(\mathbf{T})=\sum_{u=1}^U\sum_{g=1}^Gp_{ug}\log\frac{p_{ug}}{p_{u}p_{g}}
@@ -195,7 +212,7 @@ la_tracts_seg %>%
 
 ### Visualizing the diversity gradient
 
-The *diversity gradient* is a concept that uses scatterplot smoothing to visualize how neighborhood diversity varies by distance or travel-time from the core of an urban region [@walker2016b]. Historically, literature on suburbanization in the social sciences assume a more heterogeneous urban core relative to segregated and homogeneous suburban neighborhoods. The diversity gradient is a visual heuristic used to evaluate the validity of this demographic model.
+The *diversity gradient* is a concept that uses scatterplot smoothing to visualize how neighborhood diversity varies by distance or travel-time from the core of an urban region [@walker2016b]. Historically, literature on suburbanization in the social sciences assumes a more heterogeneous urban core relative to segregated and homogeneous suburban neighborhoods. The diversity gradient is a visual heuristic used to evaluate the validity of this demographic model.
 
 The entropy index for a given geographic unit is calculated as follows:
 
@@ -257,13 +274,13 @@ The visualization of the diversity gradient shows that neighborhood diversity in
 
 ## Regression modeling with US Census data
 
-*Regression modeling* is widely used in industry and the social sciences to understand social processes. In the social sciences, the goal of regression modeling is commonly to understand the relationships between a variable under study, termed an *outcome variable*, and one or more *predictors* that are believed to have some influence on the outcome variable. In very simple terms, a regression model can be represented with the following notation:
+*Regression modeling* is widely used in industry and the social sciences to understand social processes. In the social sciences, the goal of regression modeling is commonly to understand the relationships between a variable under study, termed an *outcome variable*, and one or more *predictors* that are believed to have some influence on the outcome variable. Following @james2013c, a model can be represented with the following general notation:
 
 $$
-Y = f(X,\beta) + \epsilon
+Y = f(X) + \epsilon
 $$
 
-where $Y$ represents the outcome variable; $X$ represents one or more predictors hypothesized to have some influence on the outcome variable; $\beta$ represents *coefficients* or *parameters* that represent the modeled relationships between $X$ and $Y$, controlling for the other predictors in the model; and $\epsilon$ represents the *error terms* or residuals, the differences between the modeled values of $Y$ and the actual values. The relationships between $X$ and $Y$ will be estimated using a method appropriate for the structure of the data and selected by the analyst.
+where $Y$ represents the outcome variable; $X$ represents one or more predictors hypothesized to have some influence on the outcome variable; $f$ is a function that represents the relationships between $X$ and $Y$; and $\epsilon$ represents the *error terms* or residuals, the differences between the modeled values of $Y$ and the actual values. The function $f$ will be estimated using a method appropriate for the structure of the data and selected by the analyst.
 
 A complete treatment of regression modeling is beyond the scope of this book; recommended resources include @james2013c, @boehmke2019j, @cetinkaya2021, and @matloff2017a. The purpose of this section is to illustrate an example workflow using regression modeling to analyze data from the American Community Survey. The section will start with a simple linear model and extend its discussion from there. In doing so, some problems with the application of the linear model to aggregated Census data will be discussed. First, demographic statistics are often highly correlated with one another, meaning that Census data-based models risk *collinearity* where predictors are not independent of one another. Second, spatial demographic data commonly exhibit *spatial autocorrelation*, which may lead to a violation of the assumption of independent and identically distributed error terms ($i.i.d$) in the linear model. Suggested approaches for addressing these problems discussed in this section include dimension reduction and spatial regression.
 
@@ -301,6 +318,7 @@ dfw_data <- get_acs(
   output = "wide",
   year = 2019
 ) %>%
+  select(-NAME) %>%
   st_transform(32138) # NAD83 / Texas North Central
 ```
 
@@ -391,12 +409,12 @@ library(units)
 dfw_data_for_model <- dfw_data %>%
   mutate(pop_density = as.numeric(set_units(total_populationE / st_area(.), "1/km2")),
          median_structure_age = 2017 - median_year_builtE) %>%
-  select(!ends_with("M"), -NAME) %>% 
+  select(!ends_with("M")) %>% 
   rename_with(.fn = ~str_remove(.x, "E$")) %>%
   na.omit()
 ```
 
-The calculation of the `pop_density` column appears more complicated, so it is helpful to read it from the inside out. The `st_area()` function from the sf package calculates the area of the Census tract; by default this will be in square meters, using the base measurement unit of the data's coordinate reference system. The `total_population` column is then divided by the area of the tract. Next, the `set_units()` function is used to convert the measurement to population per square kilometer using `"1/km2"`. Finally, the calculation is converted from a units vector to a numeric vector with `as.numeric()`. Calculating median structure age is more straightforward, as the `median_year_builtE` column is subtracted from 2017, the mid-point of the 5-year ACS period from which our data are derived. Finally, to simplify the dataset, margin of error columns are dropped, the `E` at the end of the estimate columns is removed, and tracts with `NA` values are dropped as well with `na.omit()`.
+The calculation of the `pop_density` column appears more complicated, so it is helpful to read it from the inside out. The `st_area()` function from the sf package calculates the area of the Census tract; by default this will be in square meters, using the base measurement unit of the data's coordinate reference system. The `total_population` column is then divided by the area of the tract. Next, the `set_units()` function is used to convert the measurement to population per square kilometer using `"1/km2"`. Finally, the calculation is converted from a units vector to a numeric vector with `as.numeric()`. Calculating median structure age is more straightforward, as the `median_year_builtE` column is subtracted from 2017, the mid-point of the 5-year ACS period from which our data are derived. Finally, to simplify the dataset, margin of error columns are dropped, the `E` at the end of the estimate columns is removed with `rename_with()`, and tracts with `NA` values are dropped as well with `na.omit()`.
 
 We can then examine our modified dataset:
 
@@ -449,7 +467,7 @@ One calculated, the correlation matrix can be visualized with `network_plot()`:
 network_plot(correlations)
 ```
 
-We notice that most of the predictors are correlated with one another to some degree, which is unsurprising given that they all represent social demographic data. Collinearity can be diagnosed further by calculating the *variance inflation factor* (VIF) for the model, which takes into account not just pairwise correlations but the extent to which predictors are collinear with all other predictors. A VIF value of 1 indicates no collinearity; VIF values above 5 suggest a level of collinearity that is having a problematic influence on model interpretation. VIF is implemented by the `vif()` function in the **car** package [@fox2019].
+We notice that most of the predictors are correlated with one another to some degree, which is unsurprising given that they all represent social demographic data. Collinearity can be diagnosed further by calculating the *variance inflation factor* (VIF) for the model, which takes into account not just pairwise correlations but the extent to which predictors are collinear with all other predictors. A VIF value of 1 indicates no collinearity; VIF values above 5 suggest a level of collinearity that has a problematic influence on model interpretation [@james2013c]. VIF is implemented by the `vif()` function in the **car** package [@fox2019].
 
 ```{r check-vif}
 library(car)
@@ -599,7 +617,7 @@ The field of *spatial econometrics* is broadly concerned with the estimation and
 
 #### Spatial lag models
 
-Spatial lag models account for spatial dependence by including a spatial lag of the outcome variable in the model. In doing so, it accounts for *spatial spillover effects* -- the possibility that values in neighboring areas have an influence on values in a given location. A spatial lag model can be written as follows:
+Spatial lag models account for spatial dependence by including a spatial lag of the outcome variable in the model. In doing so, it accounts for *spatial spillover effects* -- the possibility that values in neighboring areas have an influence on values in a given location. A spatial lag model can be written as follows [@rey2020]:
 
 $$
 {Y_i} = \alpha + \rho{Y_{lag-i}} + \sum_k \beta_k X_{ki} + \epsilon_i, 
@@ -695,7 +713,7 @@ All test statistics are large and statistically significant; in this case, the r
 
 The models addressed in the previous sections -- both the regular linear model and its spatial adaptations -- estimate *global* relationships between the outcome variable, median home values, and its predictors. This lends itself to conclusions like "In the Dallas-Fort Worth metropolitan area, higher levels of educational attainment are associated with higher median home values." However, metropolitan regions like Dallas-Fort Worth are diverse and multifaceted. It is possible that a relationship between a predictor and the outcome variable that is observed for the entire region *on average* may vary significantly from neighborhood to neighborhood. This type of phenomenon is called *spatial non-stationarity*, and can be explored with *geographically weighted regression*, or GWR [@brunsdon1996].
 
-GWR is a technique designed to evaluate local variations in the results of regression models given a kernel (distance-decay) weighting function. Following [@lu2014], the basic form of GWR for a given location $i$ can be written as:
+GWR is a technique designed to evaluate local variations in the results of regression models given a kernel (distance-decay) weighting function. Following @lu2014, the basic form of GWR for a given location $i$ can be written as:
 
 $$
 Y_i = \alpha_i + \sum\limits_{k=1}^m\beta_{ik}X_{ik} + \epsilon_i
@@ -873,13 +891,15 @@ A useful companion visualization to the map is a color-coded scatterplot using t
 ```{r cluster-scatterplot, fig.cap = "Interactive scatterplot of PC1 and PC3 colored by cluster"}
 library(plotly)
 
-cluster_plot <- ggplot(dfw_clusters, aes(x = PC1, y = PC3, color = cluster)) + 
+cluster_plot <- ggplot(dfw_clusters, 
+                       aes(x = PC1, y = PC3, color = cluster)) + 
   geom_point() + 
   scale_color_brewer(palette = "Set1") + 
   theme_minimal()
 
 ggplotly(cluster_plot) %>%
-  layout(legend = list(orientation = "h", y = -0.15, x = 0.2, title = "Cluster"))
+  layout(legend = list(orientation = "h", y = -0.15, 
+                       x = 0.2, title = "Cluster"))
 ```
 
 While Cluster 1 overlaps with several other clusters in the feature space shown on the plot (double-click it in the legend to isolate it), the other five clusters show distinctive differences with respect to the two principal components. Cluster 4 represents affluent, homogeneous, urban communities; the Dallas enclave of Highland Park falls within this cluster. Cluster 5, which includes the two downtowns, also scores lower on the "rurality" index PC3 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.

@@ -285,7 +285,7 @@ census1910 %>% summarize(n())
 
 There are 92.4 million rows in the dataset, reflecting the US population size in 1910. Given that we are working with complete-count data, the workflow for using microdata differs from the sample data covered in Chapters 9 and 10. While IPUMS by default returns a person-weight column, the value for all rows in the dataset for this column is 1, reflecting a 1:1 relationship between the records and actual people in the United States at that time.
 
-dplyr's database interface can accommodate more complex examples as well. Let's say we want to tabulate literacy statistics in 1910 for the population age 18 and up in Texas by sex. A straightforward tidyverse pipeline can accommodate this request to the database. For reference, male is coded as 1 and female as 2, and the literacy codes are as follows:
+**dplyr**'s database interface can accommodate more complex examples as well. Let's say we want to tabulate literacy statistics in 1910 for the population age 18 and up in Texas by sex. A straightforward tidyverse pipeline can accommodate this request to the database. For reference, male is coded as 1 and female as 2, and the literacy codes are as follows:
 
 -   1: No, illiterate (cannot read or write)
 
@@ -394,7 +394,7 @@ tx_econ17 <- getCensus(
 style_data(tx_econ17, caption = "Data from the 2017 Economic Census acquired with the censusapi package")
 ```
 
-**censusapi** can also be used in combination with other packages covered in this book such as **tigris** for mapping. The example below uses the [Small Area Health Insurance Estimates API](https://www.census.gov/programs-surveys/sahie/data/api.html), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using **censusapi** and **tigris**, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from **tigris** with shifted geometry, then mapped with ggplot2.
+**censusapi** can also be used in combination with other packages covered in this book such as **tigris** for mapping. The example below uses the [Small Area Health Insurance Estimates API](https://www.census.gov/programs-surveys/sahie/data/api.html), which delivers modeled estimates of health insurance coverage at the county level with various demographic breakdowns. Using **censusapi** and **tigris**, we can retrieve data on the percent of the population below age 19 without health insurance for all counties in the US. This information will be joined to a counties dataset from **tigris** with shifted geometry, then mapped with **ggplot2**.
 
 ```{r map-sahie, fig.cap = "Map of youth without health insurance using censusapi and tigris"}
 library(tigris)
@@ -409,7 +409,7 @@ us_youth_sahie <- getCensus(
   AGECAT = 4
 )
 
-us_counties <- counties(cb = TRUE, resolution = "20m") %>%
+us_counties <- counties(cb = TRUE, resolution = "20m", year = 2019) %>%
   shift_geometry(position = "outside") %>%
   inner_join(us_youth_sahie, by = "GEOID") 
 
@@ -451,7 +451,7 @@ The result is a dataset that shows tract-to-tract commute flows (`S000`) and bro
 style_data(wa_lodes_od, caption = "Origin-destination data acquired with the lehdr package")
 ```
 
-lehdr can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with tidycensus for Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in tidycensus) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
+**lehdr** can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with tidycensus for 2018 Census tracts in Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in tidycensus) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
 
 ```{r microsoft-commuters}
 seattle_adults <- get_acs(
@@ -460,6 +460,7 @@ seattle_adults <- get_acs(
   state = "WA",
   county = c("King", "Kitsap", "Pierce",
              "Snohomish"),
+  year = 2018,
   geometry = TRUE
 )
 
@@ -471,7 +472,7 @@ ms_commuters <- seattle_adults %>%
   st_transform(6596)
 ```
 
-The result can be visualized on a map with ggplot2, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r).
+The result can be visualized on a map with **ggplot2**, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r).
 
 ```{r ms-commuters-map, fig.cap = "Map of commuter origins to the Microsoft Campus area, Seattle-area counties"}
 ggplot(ms_commuters, aes(fill = ms_per_1000)) + 
@@ -485,15 +486,16 @@ ggplot(ms_commuters, aes(fill = ms_per_1000)) +
 
 ### Bureau of Labor Statistics data with blscrapeR
 
-Another essential resource for data on US labor market characteristics is the [Bureau of Labor Statistics](https://www.bls.gov/), which makes their data available to users via an API. BLS data can be accessed from R with the **blscrapeR** package [@eberwein2021]. Like other government APIs, the BLS API requires an API key, obtained from <https://data.bls.gov/registrationEngine/>. Sign up with an email address then validate the key using the link sent to your email, then return to R to get started with blscrapeR.
+Another essential resource for data on US labor market characteristics is the [Bureau of Labor Statistics](https://www.bls.gov/), which makes their data available to users via an API. BLS data can be accessed from R with the **blscrapeR** package [@eberwein2021]. Like other government APIs, the BLS API requires an API key, obtained from <https://data.bls.gov/registrationEngine/>. Sign up with an email address then validate the key using the link sent to your email, then return to R to get started with **blscrapeR**.
 
 ```{r blscraper, eval = FALSE}
+# remotes::install_github("keberwein/blscrapeR")
 library(blscrapeR)
 
 set_bls_key("YOUR KEY HERE")
 ```
 
-blscrapeR includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for a given month.
+**blscrapeR** includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for a given month.
 
 ```{r get-bls-county}
 latest_employment <- get_bls_county("May 2021")
@@ -503,7 +505,7 @@ latest_employment <- get_bls_county("May 2021")
 style_data(latest_employment, caption = "May 2021 employment data from the BLS")
 ```
 
-More complex queries are also possible with the `bls_api()` function; however, this requires knowing the BLS *series ID*. Series IDs are composite strings made up of several alphanumeric codes that can represent different datasets, geographies, and industries, among others. blscrapeR includes an internal dataset, `series_ids`, to help users view some of the most commonly requested IDs.
+More complex queries are also possible with the `bls_api()` function; however, this requires knowing the BLS *series ID*. Series IDs are composite strings made up of several alphanumeric codes that can represent different datasets, geographies, and industries, among others. **blscrapeR** includes an internal dataset, `series_ids`, to help users view some of the most commonly requested IDs.
 
 ```{r series-ids, eval = FALSE}
 head(series_ids)
@@ -620,7 +622,7 @@ library(tidyverse)
 my_token <- Sys.getenv("HUD_TOKEN")
 
 hud_chas_request <- GET("https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59",
-                add_headers(Authorization = glue("Bearer {my_token}")))
+                        add_headers(Authorization = glue("Bearer {my_token}")))
 
 hud_chas_request$status_code
 
@@ -739,4 +741,4 @@ The function returns affordable data for Alexandria, Virginia in a format that i
 
 -   Visit <https://ipums.org> and spend some time exploring NHGIS and/or IPUMS. Attempt to replicate the NHGIS workflow for a different variable and time period.
 
--   Explore the censusapi package and create a request to a Census API endpoint using the package that you weren't previously familiar with. Join the data to shapes you've obtained with tigris and make a map of your data.
+-   Explore the **censusapi** package and create a request to a Census API endpoint using the package that you weren't previously familiar with. Join the data to shapes you've obtained with **tigris** and make a map of your data.

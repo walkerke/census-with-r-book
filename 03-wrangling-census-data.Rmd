@@ -8,17 +8,17 @@ One of the most popular frameworks for data analysis in R is the **tidyverse**, 
 
 ## The tidyverse
 
-[The tidyverse](https://www.tidyverse.org/) is a collection of R packages that are designed to work together in common data wrangling, analysis, and visualization projects. These R packages are maintained by RStudio, many of which are among the most popular R packages worldwide. Some of the key packages you'll use in the tidyverse include:
+[The tidyverse](https://www.tidyverse.org/) is a collection of R packages that are designed to work together in common data wrangling, analysis, and visualization projects. Many of these R packages, maintained by RStudio, are among the most popular R packages worldwide. Some of the key packages you'll use in the tidyverse include:
 
--   **readr**, which contains tools for importing and exporting datasets;
+-   **readr** [@wickham2021_readr], which contains tools for importing and exporting datasets;
 
--   **dplyr**, a powerful framework for data wrangling tasks;
+-   **dplyr** [@wickham2021_dplyr], a powerful framework for data wrangling tasks;
 
--   **tidyr**, a package for reshaping data;
+-   **tidyr** [@wickham2021_tidyr], a package for reshaping data;
 
--   **purrr**, a comprehensive framework for functional programming and iteration;
+-   **purrr** [@henry2020_purrr], a comprehensive framework for functional programming and iteration;
 
--   **ggplot2**, a data visualization package based on the Grammar of Graphics
+-   **ggplot2** [@wickham2016], a data visualization package based on the Grammar of Graphics
 
 The core data structure used in the tidyverse is the *tibble*, which is an R data frame with some small enhancements to improve the user experience. **tidycensus** returns tibbles by default.
 
@@ -35,7 +35,7 @@ library(tidycensus)
 library(tidyverse)
 ```
 
-Eight tidyverse packages are loaded: **ggplot2**, **tibble**, **purrr**, **dplyr**, **readr**, and **tidyr** are included along with **stringr** for string manipulation and **forcats** for working with factors. These tools collectively can be used for many core Census data analysis tasks.
+Eight tidyverse packages are loaded: **ggplot2**, **tibble** [@muller2021_tibble], **purrr**, **dplyr**, **readr**, and **tidyr** are included along with **stringr** [@wickham2019_stringr] for string manipulation and **forcats** [@wickham2021_forcats] for working with factors. These tools collectively can be used for many core Census data analysis tasks.
 
 ### Sorting and filtering data
 
@@ -53,7 +53,7 @@ median_age <- get_acs(
 style_data(median_age, caption = "Median age for US counties")
 ```
 
-The default method for printing data used by the tibble package shows the first 10 rows of the dataset, which in this case prints counties in Alabama. A first exploratory data analysis question might involve understanding which counties are the *youngest* and *oldest* in the United States as measured by median age. This task can be accomplished with the `arrange()` function found in the **dplyr** package. `arrange()` sorts a dataset by values in one or more columns and returns the sorted result. To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
+The default method for printing data used by the **tibble** package shows the first 10 rows of the dataset, which in this case prints counties in Alabama. A first exploratory data analysis question might involve understanding which counties are the *youngest* and *oldest* in the United States as measured by median age. This task can be accomplished with the `arrange()` function found in the **dplyr** package. `arrange()` sorts a dataset by values in one or more columns and returns the sorted result. To view the dataset in ascending order of a given column, supply the data object and a column name to the `arrange()` function.
 
 ```{r youngest-counties, eval = FALSE}
 arrange(median_age, estimate)
@@ -111,9 +111,9 @@ separate(
   style_data(caption = "Separate columns for county and state")
 ```
 
-```{block2, note-text, type='rmdtip'}
-You may have noticed above that existing variable names are unquoted when referenced in tidyverse functions. Many tidyverse functions use non-standard evaluation to refer to column names, which means that column names can be used as arguments directly without quotation marks. Non-standard evaluation makes interactive programming faster, especially for beginners; however, it can introduce some complications when writing your own functions or R packages. A full treatment of non-standard evaluation is beyond the scope of this book; Hadley Wickham's Advanced R is the best resource on the topic if you'd like to learn more.
-```
+::: {.rmdnote}
+You may have noticed above that existing variable names are unquoted when referenced in tidyverse functions. Many tidyverse functions use non-standard evaluation to refer to column names, which means that column names can be used as arguments directly without quotation marks. Non-standard evaluation makes interactive programming faster, especially for beginners; however, it can introduce some complications when writing your own functions or R packages. A full treatment of non-standard evaluation is beyond the scope of this book; Hadley Wickham's *Advanced R* [@wickham2019a] is the best resource on the topic if you'd like to learn more.
+:::
 
 ### Using summary variables and calculating new columns
 
@@ -159,7 +159,7 @@ az_race_percent <- az_race %>%
 style_data(az_race_percent, caption = "Race and ethnicity in Arizona as percentages")
 ```
 
-The above example introduces some additional syntax common to tidyverse data analyses. The `%>%` operator from the **magrittr** R package is a *pipe* operator that allows for analysts to develop *analytic pipelines*, which are deeply embedded in tidyverse-centric data analytic workflows. The pipe operator passes the result of a given line of code as the first argument of the code on the next line. In turn, analysts can develop data analysis pipelines of related operations that fit together in a coherent way.
+The above example introduces some additional syntax common to tidyverse data analyses. The `%>%` operator from the **magrittr** R package [@bache_2020] is a *pipe* operator that allows for analysts to develop *analytic pipelines*, which are deeply embedded in tidyverse-centric data analytic workflows. The pipe operator passes the result of a given line of code as the first argument of the code on the next line. In turn, analysts can develop data analysis pipelines of related operations that fit together in a coherent way.
 
 tidyverse developers recommend that the pipe operator be read as "then". The above code can in turn be interpreted as "Create a new data object `az_race_percent` by using the existing data object `az_race` THEN creating a new `percent` column THEN selecting the `NAME`, `variable`, and `percent` columns."
 
@@ -197,7 +197,7 @@ style_data(largest_group, caption = "Largest group by county in Arizona")
 
 The result of the grouped filter allows us to review the most common racial or ethnic group in each Arizona County along with how their percentages vary. For example, in two Arizona counties (Greenlee and Navajo), none of the racial or ethnic groups form a majority of the population.
 
-`group_by()` is commonly paired with the `summarize()` function in data analysis pipelines. `summarize()` generates a new, compressed dataset that by default returns a column for the grouping variable(s) and columns representing the results of one or more functions applied to those groups. In the example below, the `median()` function is used to identify the median percentage for each of the racial & ethnic groups in the dataset across counties in Arizona. In turn, `variable` is passed to `group_by()` as the grouping variable.
+`group_by()` is commonly paired with the `summarize()` function in data analysis pipelines. `summarize()` generates a new, condensed dataset that by default returns a column for the grouping variable(s) and columns representing the results of one or more functions applied to those groups. In the example below, the `median()` function is used to identify the median percentage for each of the racial & ethnic groups in the dataset across counties in Arizona. In turn, `variable` is passed to `group_by()` as the grouping variable.
 
 ```{r median-by-group, eval = FALSE}
 az_race_percent %>%
@@ -430,7 +430,7 @@ percent_college_by_year <- college_by_year %>%
 style_data(percent_college_by_year, caption = "Percent college by year")
 ```
 
-This particular format is suitable for data display or writing to an Excel spreadsheet for colleagues who are not R-based. In addition, Chapter 4 will address appropriate methods for visualization of this data.
+This particular format is suitable for data display or writing to an Excel spreadsheet for colleagues who are not R-based. Methods for visualization of time-series estimates from the ACS will be covered in Section \@ref(visualizing-acs-estimates-over-time).
 
 ## Handling margins of error in the American Community Survey with tidycensus
 
@@ -494,7 +494,7 @@ salt_lake <- get_acs(
 )
 ```
 
-We can examine values for a specific Census tract:
+Let's focus on a specific Census tract in Salt Lake County using `filter()`:
 
 ```{r specific-tract, eval = FALSE}
 example_tract <- salt_lake %>%

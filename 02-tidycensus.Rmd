@@ -4,7 +4,7 @@
 source("R/book-functions.R")
 ```
 
-The **tidycensus** package [@walker_and_herman2021], first released in 2017, is an R package designed to facilitate the process of acquiring and working with US Census Bureau population data in the R environment. The package has two distinct goals. First, **tidycensus** aims to make Census data available to R users in a **tidyverse**-friendly format, helping kick-start the process of generating insights from US Census data. Second, the package is designed to streamline the data wrangling process for spatial Census data analysts. With **tidycensus**, R users can request *geometry* along with attributes for their Census data, helping facilitate mapping and spatial analysis. This functionality of **tidycensus** is covered in more depth in Chapters 6 through 8.
+The **tidycensus** package [@walker_and_herman2021], first released in 2017, is an R package designed to facilitate the process of acquiring and working with US Census Bureau population data in the R environment. The package has two distinct goals. First, **tidycensus** aims to make Census data available to R users in a **tidyverse**-friendly format, helping kick-start the process of generating insights from US Census data. Second, the package is designed to streamline the data wrangling process for spatial Census data analysts. With **tidycensus**, R users can request *geometry* along with attributes for their Census data, helping facilitate mapping and spatial analysis. This functionality of **tidycensus** is covered in more depth in Chapters \@ref(mapping-census-data-with-r), \@ref(spatial-analysis-with-us-census-data), and \@ref(modeling-us-census-data).
 
 As discussed in the previous chapter, the US Census Bureau makes a wide range of datasets available to the user community through their APIs and other data download resources. **tidycensus** is not a comprehensive portal to these data resources; instead, it focuses on a select number of datasets implemented in a series of core functions. These core functions in **tidycensus** include:
 
@@ -14,7 +14,7 @@ As discussed in the previous chapter, the US Census Bureau makes a wide range of
 
 -   `get_estimates()`, an interface to the Population Estimates APIs. These datasets include yearly estimates of population characteristics by state, county, and metropolitan area, along with components of change demographic estimates like births, deaths, and migration rates.
 
--   `get_pums()`, which accesses data from the ACS Public Use Microdata Sample APIs. These samples include anonymized individual-level records from the ACS organized by household and are highly useful for many different social science analyses. `get_pums()` is covered in more depth in Chapters 9 and 10.
+-   `get_pums()`, which accesses data from the ACS Public Use Microdata Sample APIs. These samples include anonymized individual-level records from the ACS organized by household and are highly useful for many different social science analyses. `get_pums()` is covered in more depth in Chapters \@ref(introduction-to-census-microdata) and \@ref(analyzing-census-microdata).
 
 -   `get_flows()`, an interface to the ACS Migration Flows APIs. Includes information on in- and out-flows from various geographies for the 5-year ACS samples, enabling origin-destination analyses.
 
@@ -31,9 +31,9 @@ library(tidycensus)
 
 Once an API key is installed, users can obtain decennial Census or ACS data with a single function call. Let's start with `get_decennial()`, which is used to access decennial Census data from the 2000 and 2010 Censuses.
 
-```{block2, note-text, type='rmdtip'}
-At the time of this writing, 2020 decennial Census data are not yet available from the Census API.  When the 2020 redistricting files are released to the API (currently scheduled for September 30), tidycensus and `get_decennial()` will support them and this section of the book will be updated.  Until then, the [PL94171 package](https://corymccartan.github.io/PL94171/) is the best way to work with the raw 2020 redistricting files from the Census Bureau.
-```
+::: {.rmdnote}
+At the time of this writing, 2020 decennial Census data are not yet available from the Census API. When the 2020 redistricting files are released to the API (currently scheduled for September 30), **tidycensus** will support them and this section of the book will be updated. Until then, the [PL94171 package](https://corymccartan.github.io/PL94171/) is the best way to work with the raw 2020 redistricting files from the Census Bureau.
+:::
 
 To get data from the decennial US Census, users must specify a string representing the requested `geography`; a vector of Census variable IDs, represented by `variable`; or optionally a Census table ID, passed to `table`. The code below gets data on total population by state from the 2010 decennial Census.
 
@@ -49,7 +49,7 @@ total_population_10 <- get_decennial(
 style_data(total_population_10, caption = "Total population by state, 2010 Census")
 ```
 
-The function returns a tibble of data from the 2010 US Census (the function default year) with information on total population by state. Data for 2000 can also be obtained by supplying the appropriate year to the `year` parameter.
+The function returns a tibble of data from the 2010 US Census (the function default year) with information on total population by state, and assigns it to the object `total_population_10`. Data for 2000 can also be obtained by supplying the appropriate year to the `year` parameter.
 
 ### American Community Survey
 
@@ -106,65 +106,37 @@ The `geography` parameter in `get_acs()` and `get_decennial()` allows users to r
 
 The only geographies available in 2000 are `"state"`, `"county"`, `"county subdivision"`, `"tract"`, `"block group"`, and `"place"`. Some geographies available from the Census API are not available in tidycensus at the moment as they require more complex hierarchy specification than the package supports, and not all variables are available at every geography.
 
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | Geography                                                                            | Definition                                                                        | Available by          | Available in                                                     |
-+======================================================================================+===================================================================================+=======================+==================================================================+
+|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|-----------------------|------------------------------------------------------------------|
 | `"us"`                                                                               | United States                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"region"`                                                                           | Census region                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"division"`                                                                         | Census division                                                                   |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state"`                                                                            | State or equivalent                                                               | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"county"`                                                                           | County or equivalent                                                              | state, county         | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"county subdivision"`                                                               | County subdivision                                                                | **state**, county     | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"tract"`                                                                            | Census tract                                                                      | **state**, county     | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"block group"`                                                                      | Census block group                                                                | **state**, county     | `get_acs()` (2013-), `get_decennial()`                           |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"block"`                                                                            | Census block                                                                      | **state**, **county** | `get_decennial()`                                                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"place"`                                                                            | Census-designated place                                                           | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"alaska native regional corporation"`                                               | Alaska native regional corporation                                                | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area/alaska native area/hawaiian home land"`                       | Federal and state-recognized American Indian reservations and Hawaiian home lands | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area/alaska native area (reservation or statistical entity only)"` | Only reservations and statistical entities                                        | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area (off-reservation trust land only)/hawaiian home land"`        | Only off-reservation trust lands and Hawaiian home lands                          | state                 | `get_acs()`,                                                     |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"metropolitan statistical area/micropolitan statistical area"` OR `"cbsa"`          | Core-based statistical area                                                       | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"combined statistical area"`                                                        | Combined statistical area                                                         | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`                |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"new england city and town area"`                                                   | New England city/town area                                                        | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"combined new england city and town area"`                                          | Combined New England area                                                         | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"urban area"`                                                                       | Census-defined urbanized areas                                                    |                       | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"congressional district"`                                                           | Congressional district for the year-appropriate Congress                          | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (elementary)"`                                                     | Elementary school district                                                        | **state**             | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (secondary)"`                                                      | Secondary school district                                                         | **state**             | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (unified)"`                                                        | Unified school district                                                           | **state**             | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"public use microdata area"`                                                        | PUMA (geography associated with Census microdata samples)                         | state                 | `get_acs()`                                                      |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"zip code tabulation area"` OR `"zcta"`                                             | Zip code tabulation area                                                          | state                 | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state legislative district (upper chamber)"`                                       | State senate districts                                                            | **state**             | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state legislative district (lower chamber)"`                                       | State house districts                                                             | **state**             | `get_acs()`, `get_decennial()`                                   |
-+--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 
-The geography parameter must be typed exactly as specified in the table above to request data correctly from the Census API; use the table above as a reference and copy-paste for longer strings. For core-based statistical areas and zip code tabulation areas, two heavily-requested geographies, the aliases `"cbsa"` and `"zcta"` can be used, respectively, to fetch data for those geographies.
+The geography parameter must be typed exactly as specified in the table above to request data correctly from the Census API; use the guide above as a reference and copy-paste for longer strings. For core-based statistical areas and zip code tabulation areas, two heavily-requested geographies, the aliases `"cbsa"` and `"zcta"` can be used, respectively, to fetch data for those geographies.
 
 ```{r cbsa-alias}
 cbsa_population <- get_acs(
@@ -180,7 +152,7 @@ style_data(cbsa_population, caption = "Population by CBSA")
 
 ### Geographic subsets
 
-For many geographies, **tidycensus** supports more granular requests that are subsetted by state or even by county, if supported by the API. This information is found in the "Available by" column in the table above. If a geographic subset is in bold, it is required; if not, it is optional.
+For many geographies, **tidycensus** supports more granular requests that are subsetted by state or even by county, if supported by the API. This information is found in the "Available by" column in the guide above. If a geographic subset is in bold, it is required; if not, it is optional.
 
 For example, an analyst might be interested in studying variations in household income in the state of Wisconsin. Although the analyst *can* request all counties in the United States, this is not necessary for this specific task. In turn, they can use the `state` parameter to subset the request for a specific state.
 
@@ -250,10 +222,10 @@ v16 <- load_variables(2016, "acs5", cache = TRUE)
 ```
 
 ```{r v16-show, echo = FALSE}
-style_data(v16, caption = "Variables in the 2012-2015 5-year ACS")
+style_data(v16, caption = "Variables in the 2012-2016 5-year ACS")
 ```
 
-The resultant data frame has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data. As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration. However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering. The data viewer can be accessed with the `View()` function:
+The returned data frame has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data. As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration. However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering. The data viewer can be accessed with the `View()` function:
 
 ```{r view-variables, eval = FALSE}
 View(v16)
@@ -358,7 +330,7 @@ As mentioned earlier in this chapter, **tidycensus** does not grant access to al
 
 ### Using `get_estimates()`
 
-The Population Estimates Program, or PEP, provides yearly estimates of the US population and its components between decennial Censuses. It differs from the ACS in that it is not directly based on a dedicated survey, but rather based on population projections since the most recent decennial Census based on birth, death, and migration rates.
+The [Population Estimates Program](https://www.census.gov/programs-surveys/popest.html), or PEP, provides yearly estimates of the US population and its components between decennial Censuses. It differs from the ACS in that it is not directly based on a dedicated survey, but rather projects forward data from the most recent decennial Census based on birth, death, and migration rates.
 
 One advantage of using the PEP to retrieve data is that allows you to access the indicators used to produce the intercensal population estimates. These indicators can be specified as variables direction in the `get_estimates()` function in **tidycensus**, or requested in bulk by using the `product` argument. The products available include `"population"`, `"components"`, `"housing"`, and `"characteristics"`. For example, we can request all components of change population estimates for 2019 for a specific county:
 

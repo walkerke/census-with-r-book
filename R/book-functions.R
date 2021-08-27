@@ -10,7 +10,10 @@ style_data <- function(dat, n_rows = NULL, caption = NULL) {
   
   dat[1:n_rows,] |>
     knitr::kable(caption = caption) |>
-    kableExtra::kable_styling()
+    kableExtra::kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+      fixed_thead = TRUE
+    )
 }
 
 # Set the knitr options
