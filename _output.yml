@@ -3,4 +3,5 @@ bookdown::bs4_book:
     primary: "#035004"
   split_by: chapter
   split_bib: no
-bookdown::epub_book: default
+  includes: 
+    in_header: google_analytics.html
