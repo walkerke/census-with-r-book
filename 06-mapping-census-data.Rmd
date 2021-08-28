@@ -652,7 +652,7 @@ The examples discussed in this chapter thus far likely cover a large proportion 
 
 ### Mapping migration flows
 
-In 2021, **tidycensus** co-author Matt Herman added support for the ACS Migration Flows API in the package, covered briefly in Section \@ref(using-get_flows). One notable feature of this new functionality, available in the `get_flows()` function, is built-in support for flow mapping with the argument `geometry = TRUE`. Geometry operates differently for migration flows data given that the geography of interest is not a single location for a given row, but rather the connection between those locations. In turn, for `get_flows()`, `geometry = TRUE` returns two `POINT` geometry columns: one for the location itself, and one for the location to which it is linked.
+In 2021, **tidycensus** co-author Matt Herman added support for the ACS Migration Flows API in the package, covered briefly in Section \@ref(other-census-bureau-datasets-in-tidycensus). One notable feature of this new functionality, available in the `get_flows()` function, is built-in support for flow mapping with the argument `geometry = TRUE`. Geometry operates differently for migration flows data given that the geography of interest is not a single location for a given row, but rather the connection between those locations. In turn, for `get_flows()`, `geometry = TRUE` returns two `POINT` geometry columns: one for the location itself, and one for the location to which it is linked.
 
 Let's take a look for one of the most popular recent migration destinations in the United States: Travis County Texas, home to Austin.
 

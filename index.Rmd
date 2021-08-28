@@ -11,6 +11,8 @@ bibliography: [references.bib]
 biblio-style: apalike
 link-citations: yes
 github-repo: walkerke/census-with-r-book
+url: "https://walker-data.com/census-r"
+cover-image: "04-visualizing-census-data_files/figure-html/visualize-error-bars-1.png"
 description: "This book is an overview of how practitioners can acquire, wrangle, visualize, and model US Census data with the R programming language."
 ---
 

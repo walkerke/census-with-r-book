@@ -451,7 +451,7 @@ Somewhat surprisingly, `median_rooms` does not appear to have a significant rela
 
 One way to inspect for collinearity is to visualize the *correlation matrix* of the predictors, in which correlations between all predictors are calculated with one another. The `correlate()` function in the **corrr** package [@kuhn2020] offers a straightforward method for calculating a correlation matrix over a rectangular data frame.
 
-```{r evaluate_model}
+```{r evaluate-model}
 library(corrr)
 
 dfw_estimates <- dfw_data_for_model %>%
@@ -542,7 +542,7 @@ pca_tibble %>%
 
 With respect to PC1, which explains nearly 42 percent of the variance in the overall predictor set, the variables `percent_ooh`, `pct_white`, `pct_college`, `median_rooms`, `median_income`, and `median_age` load negatively, whereas `pop_density` and to a lesser extent `pct_foreign_born` load positively. We can attach these principal components to our original data with `predict()` and `cbind()`, then make a map of PC1 for further exploration:
 
-```{r pca_model, fig.cap = "Map of principal component 1"}
+```{r pca-model, fig.cap = "Map of principal component 1"}
 components <- predict(pca, dfw_estimates)
 
 dfw_pca <- dfw_data_for_model %>%
