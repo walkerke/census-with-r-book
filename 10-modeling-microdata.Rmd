@@ -115,9 +115,9 @@ To analyze rent burdens with respect to the marital status and race/ethnicity of
 ms_hh_recoded <- ms_hh_data %>%
   mutate(
     race_ethnicity = case_when(
-      RAC1P == "1" ~ "White",
-      RAC1P == "2" ~ "Black",
-      HISP == "01" ~ "Hispanic",
+      HISP != "01" ~ "Hispanic",
+      HISP == "01" & RAC1P == "1" ~ "White",
+      HISP == "01" & RAC1P == "2" ~ "Black",
       TRUE ~ "Other"
     ),
     married = case_when(
@@ -277,9 +277,9 @@ The `survey_count()` function returns tabulations for each household type by PUM
 ms_svy_summary <- ms_hh_svy %>%
   mutate(
     race_ethnicity = case_when(
-      RAC1P == "1" ~ "White",
-      RAC1P == "2" ~ "Black",
-      HISP == "01" ~ "Hispanic",
+      HISP != "01" ~ "Hispanic",
+      HISP == "01" & RAC1P == "1" ~ "White",
+      HISP == "01" & RAC1P == "2" ~ "Black",
       TRUE ~ "Other"
     ),
     married = case_when(
