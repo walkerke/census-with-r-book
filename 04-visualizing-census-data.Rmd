@@ -111,7 +111,7 @@ The code used to produced the styled graphic uses the following modifications:
 
 -   While aesthetic mappings relative to a column in the input dataset will be specified in a call to `aes()`, **ggplot2** geoms can be styled directly in their corresponding functions. Bars in **ggplot2** are characterized by both a *color*, which is the outline of the bar, and a *fill*. The above code sets both to `"navy"` then modifies the internal transparency of the bar with the `alpha` argument. Finally, `width = 0.85` slightly increases the spacing between bars.
 
--   In the call to `theme_minimal()`, `base_size` and `base_family` parameters are available. `base_size` specifies the base font size to which plot text elements will be drawn; this defaults to 11. `base_family` allows you to change the font family used on your plot. In this example, `base_family` is set to `"Verdana"`, but you can use any font families accessible to R from your operating system. To check this information, use the `system_fonts()` function in the **systemfonts** package [@pederson2021_fonts].
+-   In the call to `theme_minimal()`, `base_size` and `base_family` parameters are available. `base_size` specifies the base font size to which plot text elements will be drawn; this defaults to 11. In many cases, you will want to increase `base_size` to improve plot legibility. `base_family` allows you to change the font family used on your plot. In this example, `base_family` is set to `"Verdana"`, but you can use any font families accessible to R from your operating system. To check this information, use the `system_fonts()` function in the **systemfonts** package [@pederson2021_fonts].
 
 -   The `scale_x_continuous()` function is used to customize the X-axis of the plot. The `labels` parameter can accept a range of values including a function or formula (used here) that operates over the tick labels. The notation `~paste0(.x, "%")` can be read as "concatenate a percentage sign to all X-axis tick labels, represented by `.x`).
 
@@ -162,7 +162,7 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
        subtitle = "Counties in Maine", 
        x = "", 
        y = "ACS estimate") + 
-  theme_minimal() + 
+  theme_minimal(base_size = 12.5) + 
   scale_x_continuous(labels = scales::dollar)
 ```
 
@@ -191,7 +191,7 @@ In turn, a dot plot like the one above intended to visualize a ranking of county
 ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) + 
   geom_errorbarh(aes(xmin = estimate - moe, xmax = estimate + moe)) + 
   geom_point(size = 3, color = "darkgreen") + 
-  theme_minimal() + 
+  theme_minimal(base_size = 12.5) + 
   labs(title = "Median household income", 
        subtitle = "Counties in Maine", 
        x = "2015-2019 ACS estimate", 
@@ -244,7 +244,7 @@ ggplot(deschutes_value, aes(x = year, y = estimate, group = 1)) +
               alpha = 0.4) + 
   geom_line(color = "navy") + 
   geom_point(color = "navy", size = 2) + 
-  theme_minimal() + 
+  theme_minimal(base_size = 12) + 
   scale_y_continuous(labels = scales::dollar) + 
   labs(title = "Median home value in Deschutes County, OR",
        x = "Year",
@@ -301,9 +301,13 @@ ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) +
 The visualization represents a functional population pyramid that is nonetheless in need of some cleanup. In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse. Cleaning up the plot allows us to use some additional visualization options in **ggplot2**. In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in **ggplot2** along with custom label formatters we define. In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information. We'll also make use of an alternative **ggplot2** theme, `theme_minimal()`, which uses a white background with muted gridlines.
 
 ```{r formatted-pyramid-utah, fig.cap = "A formatted population pyramid of Utah"}
-utah_pyramid <- ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) + 
+utah_pyramid <- ggplot(utah_filtered, 
+                       aes(x = value, 
+                           y = AGEGROUP, 
+                           fill = SEX)) + 
   geom_col(width = 0.95, alpha = 0.75) + 
-  theme_minimal(base_family = "Verdana") + 
+  theme_minimal(base_family = "Verdana", 
+                base_size = 12) + 
   scale_x_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
   scale_y_discrete(labels = function(x) gsub("Age | years", "", x)) + 
   scale_fill_manual(values = c("darkred", "navy")) + 
@@ -397,7 +401,7 @@ ggplot(housing_val2, aes(x = estimate)) +
   geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
   facet_wrap(~county) + 
   scale_x_continuous(labels = function(x) paste0("$", x / 1000, "k")) + 
-  theme_minimal() + 
+  theme_minimal(base_size = 14) + 
   theme(axis.text.y = element_blank()) + 
   labs(x = "ACS estimate",
        y = "",
@@ -453,7 +457,7 @@ ny_race_income <- get_acs(
 ggplot(ny_race_income, aes(x = variable, y = summary_est, color = summary_est)) +
   geom_quasirandom(alpha = 0.5) + 
   coord_flip() + 
-  theme_minimal() + 
+  theme_minimal(base_size = 13) + 
   scale_color_viridis_c(guide = FALSE) + 
   scale_y_continuous(labels = scales::dollar) + 
   labs(x = "Largest group in Census tract", 
@@ -507,7 +511,7 @@ The result is a compelling visualization that expresses general geographic relat
 
 If this specific grid arrangement is not to your liking (e.g. Minnesotans may take issue with Wisconsin to the north!), try out some of the other built-in grid options in the package. Also, you can use the `grid_design()` function in the **geofacet** package to pull up an interactive app in which you can design your own grid for use in geofaceted plots!
 
-## Interactive visualization with plotly
+### Interactive visualization with plotly
 
 The **htmlwidgets** package [@vaidyanathan2020] provides a bridge between JavaScript libraries for interactive web-based data visualization and the R language. Since 2015, the R community has released hundreds of packages that depend on htmlwidgets and bring interactive data visualization to R. One of the most popular packages for interactive visualization is the **plotly** package [@sievert2020], an interface to the Plotly visualization library.
 
@@ -521,6 +525,10 @@ ggplotly(utah_pyramid)
 ```
 
 Try hovering your cursor over the different bars; this reveals a tooltip that shares information about the data. The legend is interactive, as data series can be clicked on and off; viewers can also pan and zoom on the plot using the toolbar that appears in the upper right corner of the visualization. Interactive graphics like this are an excellent way to facilitate additional data exploration, and can be polished further for presentation on the web.
+
+## Learning more about visualization
+
+This chapter has introduced a series of visualization techniques implemented in **ggplot2** that are appropriate for US Census Bureau data. Readers may want to learn more about effective principles for visualization design and communication and apply that to the techniques covered here. While Chapter \@ref(mapping-census-data-with-r) covers some of these principles in brief, literature that focuses specifically on these topics will be more comprehensive. @munzner2014 is an in-depth overview of visualization techniques and design principles, and offers a [corresponding website with lecture slides](<https://www.cs.ubc.ca/~tmm/vadbook/>). @evergreen2020 and @knaflic2015 provide guidelines for effective communication with visualization and both offer excellent design tips for business and general audiences. R users may be interested in @wilke2019 and @healy2019, which both offer a comprehensive overview of data visualization best practices along with corresponding R code to reproduce the figures in their books.
 
 ## Exercises
 

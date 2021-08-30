@@ -110,9 +110,9 @@ ggplot(data = us_median_age, aes(fill = estimate)) +
 
 ## Map-making with tmap
 
-For **ggplot2** users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, **ggplot2** is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography.
+For **ggplot2** users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, **ggplot2** is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography. The section that follows is an overview of several cartographic techniques implemented with **tmap** for visualizing US Census data. A full treatment of best practices in cartographic design is beyond the scope of this section; recommended resources for learning more include @peterson2020 and @brewer2016.
 
-To get started, let's grab some ACS data on race and ethnicity from the American Community Survey. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
+To begin, let's grab some ACS data on race and ethnicity from the American Community Survey. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
 ```{r hennepin-race-ethnicity}
 hennepin_race <- get_acs(
