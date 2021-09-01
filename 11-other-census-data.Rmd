@@ -101,6 +101,7 @@ suggest_crs(nyc_1910)
 
 ```{r suggest-nyc-crs-show, echo = FALSE}
 suggest_crs(nyc_1910) %>%
+  select(-crs_proj4) %>%
   style_data(caption = "Suggested CRS options for New York City")
 ```
 
