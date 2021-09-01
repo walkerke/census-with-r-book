@@ -280,11 +280,11 @@ The faceted maps do a good job of showing variations in each group in comparativ
 
 Dot-density maps scatter dots within areal units relative to the size of a data attribute. This cartographic method is intended to show attribute density through the dot distributions; for a Census map, in areas where the dots are dense, more people live there, whereas sparsely positioned dots reflect sparsity of population. Dot-density maps can also incorporate categories in the data to visualize densities of different subgroups simultaneously.
 
-Generating a dot-density map in R requires some more advanced code that uses some of the programmatic skills learned in prior chapters and introduces some new techniques. The code below converts the data in the `hennepin_race` object to a new object, `hennepin_dots`, that is of geometry type `POINT` instead of `MULTIPOLYGON`. Each point in the output spatial dataset will roughly represent an estimated 50 residents of each Census tract who identified as part of a particular racial or ethnic group on the 2015-2019 ACS.
+Generating a dot-density map in R requires some more advanced code that uses some of the programmatic skills learned in prior chapters and introduces some new techniques. The code below converts the data in the `hennepin_race` object to a new object, `hennepin_dots`, that is of geometry type `POINT` instead of `MULTIPOLYGON`. Each point in the output spatial dataset will roughly represent an estimated 100 residents of each Census tract who identified as part of a particular racial or ethnic group on the 2015-2019 ACS.
 
-**purrr**'s `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est50`, which is the population estimate for each group divided by 50. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
+**purrr**'s `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est100`, which is the population estimate for each group divided by 100. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
 
-This code can take a few minutes to run, so be patient when reproducing.
+This code can take a few minutes to run, so be patient when reproducing. If speed of processing is an issue, consider modifying the dots to data ratio and/or setting `exact = FALSE` in `st_sample()`, which will approximate the number of dots in each tract.
 
 ```{r generate-dots, eval = FALSE}
 library(sf)
@@ -295,21 +295,28 @@ hennepin_dots <- map_dfr(groups, ~{
   hennepin_race %>%
     filter(variable == .x) %>%
     st_transform(26915) %>%
-    mutate(est50 = as.integer(estimate / 50)) %>%
-    st_sample(size = .$est50, exact = TRUE) %>%
+    mutate(est100 = as.integer(estimate / 100)) %>%
+    st_sample(size = .$est100, exact = TRUE) %>%
     st_sf() %>%
     mutate(group = .x)
 }) %>%
   slice_sample(prop = 1)
 ```
 
-The map itself is created with the `tm_dots()` function, which in this example is combined with `tm_polygons()` to show the relative racial and ethnic heterogeneity of Census tracts in Hennepin County.
+The map itself is created with the `tm_dots()` function, which in this example is combined with a background map using `tm_polygons()` to show the relative racial and ethnic heterogeneity of Census tracts in Hennepin County.
 
 ```{r make-dot-map, eval = FALSE}
-tm_shape(hennepin_dots) +
+background_tracts <- filter(hennepin_race, variable == "White")
+
+tm_shape(background_tracts, 
+         projection = sf::st_crs(26915)) + 
+  tm_polygons(col = "white", 
+              border.col = "grey") + 
+  tm_shape(hennepin_dots) +
   tm_dots(col = "group", 
           palette = "Set1",
-          size = 0.005) 
+          size = 0.005, 
+          title = "Race/ethnicity")
 ```
 
 ```{r show-hennepin-dots, echo = FALSE, fig.cap = "Dot-density map of race and ethnicity in Hennepin County, Minnesota", out.width="75%"}

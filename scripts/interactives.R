@@ -54,22 +54,29 @@ hennepin_race <- get_acs(
   mutate(percent = 100 * (estimate / summary_est))
 
 groups <- unique(hennepin_race$variable)
+
 hennepin_dots <- map_dfr(groups, ~{
   hennepin_race %>%
     filter(variable == .x) %>%
     st_transform(26915) %>%
-    mutate(est200 = as.integer(estimate / 200)) %>%
-    st_sample(size = .$est200, exact = TRUE) %>%
+    mutate(est100 = as.integer(estimate / 100)) %>%
+    st_sample(size = .$est100, exact = TRUE) %>%
     st_sf() %>%
     mutate(group = .x)
 }) %>%
   slice_sample(prop = 1)
 
-td1 <- tm_shape(filter(hennepin_race, variable == "White")) + 
-  tm_polygons(col = "white", border.col = "grey") + 
+background_tracts <- filter(hennepin_race, variable == "White")
+
+td1 <- tm_shape(background_tracts, 
+                projection = sf::st_crs(26915)) + 
+  tm_polygons(col = "white", 
+              border.col = "grey") + 
   tm_shape(hennepin_dots) +
-  tm_dots(col = "group", palette = "Set1",
-          size = 0.005)
+  tm_dots(col = "group", 
+          palette = "Set1",
+          size = 0.005, 
+          title = "Race/ethnicity")
 
 tmap_save(td1, "img/hennepin_dots.png")
 
