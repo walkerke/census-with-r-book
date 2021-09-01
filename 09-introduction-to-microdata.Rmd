@@ -4,7 +4,7 @@
 source("R/book-functions.R")
 ```
 
-The previous two sections of this book cover aggregate-level analysis of US Census Bureau data. However, such analyses are limited to the pre-tabulated estimates provided by the Census Bureau. While these estimates are voluminous, they may not include the level of detail required by researchers, and they are limited to analyses appropriate for aggregate-level data. In turn, many researchers turn to Census *microdata*, which are anonymized individual-level Census records, to help answer demographic questions. In 2020, tidycensus added support for American Community Survey microdata along with a series of tools to assist with analysis of these datasets. The next two chapters provide an overview of this functionality in tidycensus and help users get started analyzing and modeling ACS microdata appropriately.
+The previous chapters in this book focus on aggregate-level analysis of US Census Bureau data. However, such analyses are limited to the pre-tabulated estimates provided by the Census Bureau. While these estimates are voluminous, they may not include the level of detail required by researchers, and they are limited to analyses appropriate for aggregate-level data. In turn, many researchers turn to Census *microdata*, which are anonymized individual-level Census records, to help answer demographic questions. In 2020, **tidycensus** added support for American Community Survey microdata along with a series of tools to assist with analysis of these datasets. The next two chapters provide an overview of this functionality in **tidycensus** and help users get started analyzing and modeling ACS microdata appropriately.
 
 ## What is "microdata?"
 
@@ -36,7 +36,7 @@ This means that microdata can be accessed with `httr::GET()` requests in R, but 
 
 ## Using microdata in tidycensus
 
-American Community Survey microdata are available in **tidycensus** by using the `get_pums()` function, which communicates with the Census API much like other tidycensus functions and returns PUMS data. Given the unique properties of Census microdata and the different structure of individual-level records as opposed to aggregate data, the data returned by `get_pums()` differs from other tidycensus functions. This section covers the basics of requesting microdata extracts with **tidycensus**.
+American Community Survey microdata are available in **tidycensus** by using the `get_pums()` function, which communicates with the Census API much like other **tidycensus** functions and returns PUMS data. Given the unique properties of Census microdata and the different structure of individual-level records as opposed to aggregate data, the data returned by `get_pums()` differs from other **tidycensus** functions. This section covers the basics of requesting microdata extracts with **tidycensus**.
 
 ### Basic usage of `get_pums()`
 
@@ -110,7 +110,7 @@ sum(wy_households$WGTP)
 
 ## Working with PUMS variables
 
-While the ACS PUMS dataset does not include tens of thousands of variables choices like its aggregate counterpart, it nonetheless includes variables and variable codes that can be difficult to understand without a data dictionary. In the Wyoming example above, only interpretation of the `AGEP` column for age is straightforward. `HHT`, for household type, and `SEX`, for sex, are coded as integers represented as character strings. To help users understand the meanings of these codes, tidycensus includes a built-in dataset, `pums_variables`, that can be viewed, filtered, and browsed.
+While the ACS PUMS dataset does not include tens of thousands of variables choices like its aggregate counterpart, it nonetheless includes variables and variable codes that can be difficult to understand without a data dictionary. In the Wyoming example above, only interpretation of the `AGEP` column for age is straightforward. `HHT`, for household type, and `SEX`, for sex, are coded as integers represented as character strings. To help users understand the meanings of these codes, **tidycensus** includes a built-in dataset, `pums_variables`, that can be viewed, filtered, and browsed.
 
 ### Variables available in the ACS PUMS
 

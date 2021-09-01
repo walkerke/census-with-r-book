@@ -86,7 +86,7 @@ Analysts will often want to use PUMS data and the tabulated aggregate ACS data i
 
 When combined with tidyverse tools as introduced in Chapter \@ref(wrangling-census-data-with-tidyverse-tools), PUMS data can produce highly detailed estimates not available in the regular aggregate ACS. The example below acquires data on rent burden, family type, and race/ethnicity to examine intersections between these variables for households in Mississippi. The `PUMA` variable is also included for use later in this chapter.
 
-Our guiding research question is as follows: how does rent burden vary by race/ethnicity and family type for Mississippi households? This requires obtaining data on rent burden (gross rent as percentage of household income) with variable `GRPIP`; race and ethnicity with variables `RAC1P` and `HISP`; and family type with variable `FES`. The `variables_filter` argument is used to filter the sample to only renter-occupied households paying cash rent, speeding download times.
+Our guiding research question is as follows: how does rent burden vary by race/ethnicity and household type for Mississippi households? This requires obtaining data on rent burden (gross rent as percentage of household income) with variable `GRPIP`; race and ethnicity with variables `RAC1P` and `HISP`; and household type with variable `HHT`. The `variables_filter` argument is used to filter the sample to only renter-occupied households paying cash rent, speeding download times.
 
 ```{r ms-hh-data, results = 'hide'}
 hh_variables <- c("PUMA", "GRPIP", "RAC1P", 
