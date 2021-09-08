@@ -23,7 +23,7 @@ Much of the segregation and diversity literature focuses on race and ethnicity, 
 ```{r get-race-data-ch8}
 library(tidycensus)
 library(tidyverse)
-library(segregation) # remotes::install_github("elbersb/segregation")
+library(segregation)
 library(tigris)
 library(sf)
 
