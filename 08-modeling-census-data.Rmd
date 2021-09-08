@@ -219,22 +219,17 @@ $$
 
 $Q_r$ in this calculation represents group $r$'s proportion of the population in the geographic unit.
 
-This statistic is implemented in the `entropy()` function in the **segregation** package. As the `entropy()` function calculates this statistic for a specific unit at a time, we will first split the dataset into a list by Census tract using base R's `split()` function. We can then iterate over this list of Census tracts with `map_dbl()` from the **purrr** package and compute the entropy index for each tract. The argument `base = 4` is set by convention to the number of groups in the calculation; this sets the maximum value of the statistic to 1, which represents perfect evenness between the four groups in the area. Once computed, the indices are joined to a dataset of Census tracts from California; `inner_join()` is used to retain only those tracts in the Los Angeles urbanized area.
+This statistic is implemented in the `entropy()` function in the **segregation** package. As the `entropy()` function calculates this statistic for a specific unit at a time, we will group the data by tract, and then use `group_modify()` to calculate the entropy for each tract separately. The argument `base = 4` is set by convention to the number of groups in the calculation; this sets the maximum value of the statistic to 1, which represents perfect evenness between the four groups in the area. Once computed, the indices are joined to a dataset of Census tracts from California; `inner_join()` is used to retain only those tracts in the Los Angeles urbanized area.
 
 ```{r calculate-entropy}
 la_entropy <- ca_urban_data %>%
   filter(urban_name == "Los Angeles--Long Beach--Anaheim") %>%
-  split(~GEOID) %>%
-  map_dbl(~{
-    entropy(
+  group_by(GEOID) %>%
+  group_modify(~data.frame(entropy = entropy(
       data = .x,
       group = "variable",
       weight = "estimate",
-      base = 4
-    )
-  }) %>%
-  as_tibble(rownames = "GEOID") %>%
-  rename(entropy = value)
+      base = 4)))
 
 la_entropy_geo <- tracts("CA", cb = TRUE, year = 2019) %>%
   inner_join(la_entropy, by = "GEOID")
