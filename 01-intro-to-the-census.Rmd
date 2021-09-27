@@ -114,7 +114,7 @@ The Obama Administration's [Digital Government Strategy](https://obamawhitehouse
 
 Census APIs are characterized by an *API endpoint*, which is a base web address for a given Census dataset, and a *query*, which customizes the data returned from the API. For example, the API endpoint for the 2010 Decennial US Census is `https://api.census.gov/data/2010/dec/sf1`; an example query that requests total population data for all counties in California, `?get=P001001,NAME&for=county:*&in=state:06`, would be appended to the endpoint in a request to the Census API. [The result of the query can be viewed here](https://api.census.gov/data/2010/dec/sf1?get=P001001,NAME&for=county:*&in=state:06), returning data in JavaScript Object Notation (JSON) format as shown below.
 
-``` {.json}
+``` json
 [["P001001","NAME","state","county"],
 ["21419","Colusa County, California","06","011"],
 ["220000","Butte County, California","06","007"],

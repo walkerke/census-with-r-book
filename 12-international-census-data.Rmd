@@ -466,7 +466,7 @@ ggplot(rj_tracts) +
 
 #### Identifying demographic data resources for Brazil
 
-For many demographic applications, users will want to identify Brazilian data that can be joined to the Census tract shapes. This makes for a useful exercise to illustrate an applied workflow for working with the raw tables. The example below will get data from the 2020 Brazilian Census and merge it to the geometries obtained with **geobr** for analysis.
+For many demographic applications, users will want to identify Brazilian data that can be joined to the Census tract shapes. This makes for a useful exercise to illustrate an applied workflow for working with the raw tables. The example below will get data from the 2010 Brazilian Census and merge it to the geometries obtained with **geobr** for analysis.
 
 Census data tables can be downloaded from the [Instituto Brasileiro de Geografia e Estatística (IBGE) website's FTP page](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2010/Resultados_do_Universo/Agregados_por_Setores_Censitarios/), which provides aggregated data at the Census tract level. These datasets are organized by state, so we'll need to identify the appropriate zipped folder to download and bring in the data we need into R. R's web access tools, discussed in Section \@ref(other-census-and-government-data-resources), can be used to download this data. Our analysis will focus on Brasilia, the capital city of Brazil; in turn, we'll need data for the Distrito Federal (Federal District) in which Brasilia is located.
 

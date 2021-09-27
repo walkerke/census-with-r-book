@@ -16,7 +16,7 @@ As covered in Chapter 3, data from the American Community Survey are based on a 
 
 ## PUMS data and the tidyverse
 
-As discussed in Chapter 9, `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights. These weights can loosely be interpreted as the number of households - or persons - represented by each individual row in the PUMS data. Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data. Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter 3.
+As discussed in Chapter \@ref(introduction-to-census-microdata), `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights. These weights can loosely be interpreted as the number of households - or persons - represented by each individual row in the PUMS data. Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data. Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter \@ref(wrangling-census-data-with-tidyverse-tools).
 
 ### Basic tabulation of weights with tidyverse tools
 
