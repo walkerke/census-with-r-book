@@ -163,6 +163,56 @@ l2 <- leaflet() %>%
 
 saveWidget(l2, "img/leaflet/us_leaflet.html")
 
+# Chapter 7
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(mapview)
+
+gainesville_patients <- tibble(
+  patient_id = 1:10,
+  longitude = c(-82.308131, -82.311972, -82.361748, -82.374377, 
+                -82.38177, -82.259461, -82.367436, -82.404031, 
+                -82.43289, -82.461844),
+  latitude = c(29.645933, 29.655195, 29.621759, 29.653576, 
+               29.677201, 29.674923, 29.71099, 29.711587, 
+               29.648227, 29.624037)
+)
+
+gainesville_sf <- gainesville_patients %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+           crs = 4326)
+
+
+g1 <- mapview(gainesville_sf, 
+              col.regions = "red",
+              legend = FALSE)
+
+htmlwidgets::saveWidget(g1@map, "img/leaflet/gainesville_pts.html")
+mapview::mapshot(g1, file = "img/leaflet/gainesville_pts.png")
+
+alachua_insurance <- get_acs(
+  geography = "tract",
+  variables = "DP03_0096P",
+  state = "FL",
+  county = "Alachua",
+  year = 2019,
+  geometry = TRUE
+) %>%
+  select(GEOID, pct_insured = estimate, 
+         pct_insured_moe = moe) %>%
+  st_transform(6440)
+
+g2 <- mapview(alachua_insurance, 
+        zcol = "pct_insured",
+        layer.name = "% with health<br/>insurance") + 
+  mapview(gainesville_sf, 
+          col.regions = "red",
+          legend = FALSE)
+
+htmlwidgets::saveWidget(g2@map, "img/leaflet/gainesville_relationship.html")
+mapview::mapshot(g2, file = "img/leaflet/gainesfille_relationship.png")
+
 # Chapter 12
 library(cancensus)
 library(tidyverse)
