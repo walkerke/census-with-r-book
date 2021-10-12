@@ -288,16 +288,18 @@ library(redist)
 library(dplyr)
 library(ggplot2)
 library(patchwork) # for plotting
+set.seed(123456)
 
 data(iowa)
 
 iowa_map = redist_map(iowa, existing_plan=cd_2010, pop_tol=0.0001, total_pop = pop)
 
-set.seed(1983)
 iowa_plans = redist_smc(iowa_map, nsims=250, verbose=FALSE)
 ```
 
 ```{r iowa-redist-map, echo = FALSE, fig.cap = "Example redistricting solutions using the redist package"}
+set.seed(123456)
+
 redist.plot.plans(iowa_plans, draws=c("cd_2010", "1", "2", "3"),
                   geom=iowa_map)
 ```
