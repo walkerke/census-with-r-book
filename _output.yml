@@ -4,4 +4,4 @@ bookdown::bs4_book:
   split_by: chapter
   split_bib: no
   includes: 
-    in_header: google_analytics.html
+    in_header: [google_analytics.html, favicon.html]
