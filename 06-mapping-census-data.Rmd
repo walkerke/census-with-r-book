@@ -4,6 +4,7 @@
 options(tigris_use_cache = TRUE)
 library(tidyverse)
 library(tigris)
+library(mapboxapi)
 
 source("R/book-functions.R")
 ```
@@ -200,7 +201,59 @@ The `tm_layout()` function is used to customize the styling of the map and histo
 
 ### Adding reference elements to a map
 
-Cartographers coming to R from a desktop GIS background will be accustomed to adding a variety of reference elements to their map layouts.
+The choropleth map as illustrated in the previous example represents the data as a statistical graphic, with both a map and histogram showing the underlying data distribution. Cartographers coming to R from a desktop GIS background will be accustomed to adding a variety of reference elements to their map layouts to provide additional geographical context to the map. These elements may include a basemap, north arrow, and scale bar, all of which can be accommodated by **tmap**.
+
+The **tmaptools** add-in package to **tmap** includes a function, `read_osm()`, that helps users acquire basemap tiles from OpenStreetMap for use in tmap. `read_osm()` has a dependency on the **rJava** package which can be difficult to install, however, and it limits users to pre-made basemaps. The example shown here uses the **mapboxapi** R package @walker_mapbox, which gives users with a Mapbox account access to pre-designed Mapbox basemaps as well as custom-designed basemaps in [Mapbox Studio](https://studio.mapbox.com/).
+
+To use Mapbox basemaps with **mapboxapi** and **tmap**, you'll first need a Mapbox account and access token. Mapbox accounts are free; [register at the Mapbox website](https://account.mapbox.com/) then find your access token. In R, this token can be set with the `mb_access_token()` function in **mapboxapi**.
+
+```{r map-mb-set-token, eval = FALSE}
+library(mapboxapi)
+
+# Replace with your token below
+mb_access_token("pk.ey92lksd...")
+```
+
+Once set, basemap tiles for an input spatial dataset can be fetched with the `get_static_tiles()` function in **mapboxapi**, which interacts with the [Mapbox Static Tiles API](https://docs.mapbox.com/api/maps/static-tiles/). Mapbox Studio users can design a custom basemap style and use the custom style ID along with their username to fetch tiles from that style for mapping; any Mapbox user can also use the [default Mapbox styles](https://docs.mapbox.com/api/maps/styles/#mapbox-styles) by supplying `username = "mapbox"` and the appropriate style ID. The level of detail of the underlying basemap can be adjusted with the `zoom` argument.
+
+```{r get-hennepin-tiles}
+# If you don't have a Mapbox style to use, replace style_id with "light-v9"
+# and username with "mapbox".  If you do, replace those arguments with your 
+# style ID and user name.
+hennepin_tiles <- get_static_tiles(
+  location = hennepin_black,
+  zoom = 10,
+  style_id = "ckedp72zt059t19nssixpgapb",
+  username = "kwalkertcu"
+)
+```
+
+In most cases, users should choose a muted, monochrome basemap when designing a map with a choropleth overlay to avoid confusing blending of colors.
+
+These basemap tiles are layered into the familiar **tmap** workflow with the `tm_rgb()` function. To show the underlying basemap, users should modify the transparency of the Census tract polygons with the `alpha` argument. Additional **tmap** functions then add ancillary map elements. `tm_scale_bar()` adds a scale bar; `tm_compass()` adds a north arrow; and `tm_credits()` helps cartographers give credit for the basemap, which is required when using Mapbox and OpenStreetMap tiles.
+
+```{r hennepin-map-with-basemap, fig.cap="Map of percent Black in Hennepin County with reference elements"}
+
+tm_shape(hennepin_tiles) + 
+  tm_rgb() + 
+  tm_shape(hennepin_black) + 
+  tm_polygons(col = "percent",
+          style = "jenks",
+          n = 5,
+          palette = "Purples",
+          title = "ACS estimate",
+          alpha = 0.7) +
+  tm_layout(title = "Percent Black\nby Census tract",
+            legend.outside = TRUE,
+            fontfamily = "Verdana") + 
+  tm_scale_bar(position = c("left", "bottom")) + 
+  tm_compass(position = c("right", "top")) + 
+  tm_credits("(c) Mapbox, OSM", 
+             bg.color = "white",
+             position = c("RIGHT", "BOTTOM"))
+```
+
+Depending on the shape of your Census data, the `position` arguments in `tm_scale_bar()`, `tm_compass()`, and `tm_credits()` can be modified to organize ancillary map elements appropriately. When capitalized (as used in `tm_credits()`), the element will be positioned tighter to the map frame.
 
 ### Choosing a color palette
 
