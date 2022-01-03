@@ -31,15 +31,17 @@ This is the online home of *Analyzing US Census Data: Methods, Maps, and Models 
 knitr::include_graphics("img/crc.png")
 ```
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/2.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/2.0/88x31.png" /></a><br/>
-The online version of the book is published with the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0) license](https://creativecommons.org/licenses/by-nc-nd/4.0/). 
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/2.0/"><img src="https://i.creativecommons.org/l/by-nc-nd/2.0/88x31.png" alt="Creative Commons License" style="border-width:0"/></a><br/> The online version of the book is published with the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0) license](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-To support the development of the book and help me maintain this free online version, please consider one of the following: 
-- Purchasing a hard copy of the book from CRC Press (expected publication 2022);
-- Contributing to the book by filing an issue or making a pull request at [the book's GitHub repository](https://github.com/walkerke/census-with-r-book).
-- [Sponsoring book development and maintenance as a GitHub Sponsor](https://github.com/sponsors/walkerke);
-- [Chipping in some funds to support book maintenance via PayPal](https://paypal.me/walkerdata).
+To support the development of the book and help me maintain this free online version, please consider one of the following:
 
+-   Purchasing a hard copy of the book from CRC Press (expected publication 2022);
+
+-   Contributing to the book by filing an issue or making a pull request at [the book's GitHub repository](https://github.com/walkerke/census-with-r-book);
+
+-   [Sponsoring book development and maintenance as a GitHub Sponsor](https://github.com/sponsors/walkerke);
+
+-   [Chipping in some funds to support book maintenance via PayPal](https://paypal.me/walkerdata).
 
 ## About the book
 

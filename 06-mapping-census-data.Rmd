@@ -198,6 +198,10 @@ tm_shape(hennepin_black,
 
 The `tm_layout()` function is used to customize the styling of the map and histogram, and has many more options beyond those shown that can be viewed in the function's documentation.
 
+### Adding reference elements to a map
+
+Cartographers coming to R from a desktop GIS background will be accustomed to adding a variety of reference elements to their map layouts.
+
 ### Choosing a color palette
 
 The examples shown in this chapter thus far have used a variety of *color palettes* to display statistical variation on choropleth maps. Software packages like sf, ggplot2, and tmap will have color palettes built in as "defaults"; I've shown the default palettes for all three, then changed the palettes used in **ggplot2** and in **tmap**. So how do you go about choosing an appropriate color palette? There are a variety of considerations to take into account.
