@@ -248,7 +248,7 @@ tm_shape(hennepin_tiles) +
             fontfamily = "Verdana") + 
   tm_scale_bar(position = c("left", "bottom")) + 
   tm_compass(position = c("right", "top")) + 
-  tm_credits("(c) Mapbox, OSM", 
+  tm_credits("(c) Mapbox, OSM    ", 
              bg.color = "white",
              position = c("RIGHT", "BOTTOM"))
 ```
