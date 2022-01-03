@@ -1,13 +1,6 @@
 # Spatial analysis with US Census data
 
-```{r ch7-setup, include = FALSE}
-library(mapboxapi)
-library(tidyverse)
-library(tigris)
-times <- readr::read_rds("data/ia_trauma_times.rds")
-options(tigris_use_cache = TRUE)
-source("R/book-functions.R")
-```
+
 
 A very common use-case of spatial data from the US Census Bureau is *spatial analysis*. Spatial analysis refers to the performance of analytic tasks that explicitly incorporate the spatial properties of a dataset. Principles in spatial analysis are closely related to the field of *geographic information science*, which incorporates both theoretical perspectives and methodological insights with regards to the use of geographic data.
 
@@ -23,9 +16,10 @@ Spatial data analysis allows practitioners to consider how geographic datasets i
 
 One common use-case employed by the geospatial analyst is *spatial overlay*. Key to the concept of spatial overlay is the representation of geographic datasets as *layers* in a GIS. This representation is exemplified by the graphic below ([credit to Rafael Pereira for the implementation](https://www.urbandemographics.org/post/figures-map-layers-r/)).
 
-```{r layers-view, echo = FALSE, fig.cap = "Conceptual view of GIS layers"}
-knitr::include_graphics("img/screenshots/layers-view.png")
-```
+<div class="figure">
+<img src="img/screenshots/layers-view.png" alt="Conceptual view of GIS layers" width="100%" />
+<p class="caption">(\#fig:layers-view)Conceptual view of GIS layers</p>
+</div>
 
 In this representation, different components of the landscape that interact in the real world are abstracted out into different layers, represented by different geometries. For example, Census tracts might be represented as polygons; customers as points; and roads as linestrings. Separating out these components has significant utility for the geospatial analyst, however. By using spatial analytic tools, a researcher could answer questions like "How many customers live within a given Census tract?" or "Which roads intersect a given Census tract?".
 
@@ -52,7 +46,8 @@ A Census data analyst in the United States will often need to know which Census 
 
 Let's use the example of the Kansas City metropolitan area, which includes Census tracts in both Kansas and Missouri. We'll first use **tigris** to acquire 2020 Census tracts for the two states that comprise the Kansas City region as well as the boundary of the Kansas City metropolitan area.
 
-```{r kc-metro, fig.cap = "The Kansas City CBSA relative to Kansas and Missouri"}
+
+```r
 library(tigris)
 library(tidyverse)
 library(sf)
@@ -73,8 +68,12 @@ ggplot() +
   geom_sf(data = ks_mo_tracts, fill = "white", color = "grey") + 
   geom_sf(data = kc_metro, fill = NA, color = "red") + 
   theme_void()
-
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/kc-metro-1.png" alt="The Kansas City CBSA relative to Kansas and Missouri" width="100%" />
+<p class="caption">(\#fig:kc-metro)The Kansas City CBSA relative to Kansas and Missouri</p>
+</div>
 
 We can see visually from the plot which Census tracts are *within* the Kansas City metropolitan area, and which lay outside. This spatial relationship represented in the image can be expressed through code using *spatial subsetting*, enabled by functionality in the **sf** package.
 
@@ -82,7 +81,8 @@ We can see visually from the plot which Census tracts are *within* the Kansas Ci
 
 Spatial subsetting uses the extent of one spatial dataset to extract features from another spatial dataset based on co-location, defined by a *spatial predicate*. Spatial subsets can be expressed through base R indexing notation:
 
-```{r kc-tracts-intersect, fig.cap = "Census tracts that intersect the Kansas City CBSA"}
+
+```r
 kc_tracts <- ks_mo_tracts[kc_metro, ]
 
 ggplot() + 
@@ -91,11 +91,17 @@ ggplot() +
   theme_void()
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/kc-tracts-intersect-1.png" alt="Census tracts that intersect the Kansas City CBSA" width="100%" />
+<p class="caption">(\#fig:kc-tracts-intersect)Census tracts that intersect the Kansas City CBSA</p>
+</div>
+
 The spatial subsetting operation returns all the Census tracts that *intersect* the extent of the Kansas City metropolitan area, using the default spatial predicate, `st_intersects()`. This gives us back tracts that fall within the metro area's boundary and those that cross or touch the boundary. For many analysts, however, this will be insufficient as they will want to tabulate statistics exclusively for tracts that fall *within* the metropolitan area's boundaries. In this case, a different spatial predicate can be used with the `op` argument.
 
 Generally, Census analysts will want to use the `st_within()` spatial predicate to return tracts within a given metropolitan area. As long as objects within the core Census hierarchy are obtained for the same year from **tigris**, the `st_within()` spatial predicate will cleanly return geographies that fall within the larger geography when requested. The example below illustrates the same process using the `st_filter()` function in **sf**, which allows spatial subsetting to be used cleanly within a tidyverse-style pipeline. The key difference between these two approaches to spatial subsetting is the argument name for the spatial predicate (`op` vs. `.predicate`).
 
-```{r kc-tracts-within, fig.cap = "Census tracts that are within the Kansas City CBSA"}
+
+```r
 kc_tracts_within <- ks_mo_tracts %>%
   st_filter(kc_metro, .predicate = st_within)
 
@@ -108,6 +114,11 @@ ggplot() +
   theme_void()
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/kc-tracts-within-1.png" alt="Census tracts that are within the Kansas City CBSA" width="100%" />
+<p class="caption">(\#fig:kc-tracts-within)Census tracts that are within the Kansas City CBSA</p>
+</div>
+
 ## Spatial joins
 
 *Spatial joins* extend the aforementioned concepts in spatial overlay by transferring attributes between spatial layers. Conceptually, spatial joins can be thought of like the table joins covered in Section \@ref(national-election-mapping-with-tigris-shapes) where the equivalent of a "key field" used to match rows is a spatial relationship defined by a spatial predicate. Spatial joins in R are implemented in **sf**'s `st_join()` function. This section covers two common use cases for spatial joins with Census data. The first topic is the *point-in-polygon spatial join*, where a table of coordinates is matched to Census polygons to determine demographic characteristics around those locations. The second topic covers *polygon-in-polygon spatial joins*, where smaller Census shapes are matched to larger shapes.
@@ -118,7 +129,8 @@ Analysts are commonly tasked with matching point-level data to Census shapes in 
 
 Let's consider a hypothetical task where a health data analyst in Gainesville, Florida needs to determine the percentage of residents age 65 and up who lack health insurance in patients' neighborhoods. The analyst has a dataset of patients with patient ID along with longitude and latitude information.
 
-```{r gainesville-patients}
+
+```r
 library(tidyverse)
 library(sf)
 library(tidycensus)
@@ -135,13 +147,73 @@ gainesville_patients <- tibble(
 )
 ```
 
-```{r gainesville-patients-show, echo = FALSE}
-style_data(gainesville_patients, caption = "Hypothetical dataset of patients in Gainesville, Florida")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:gainesville-patients-show)Hypothetical dataset of patients in Gainesville, Florida</caption>
+ <thead>
+  <tr>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> patient_id </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> longitude </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> latitude </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> -82.30813 </td>
+   <td style="text-align:right;"> 29.64593 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:right;"> -82.31197 </td>
+   <td style="text-align:right;"> 29.65519 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> -82.36175 </td>
+   <td style="text-align:right;"> 29.62176 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 4 </td>
+   <td style="text-align:right;"> -82.37438 </td>
+   <td style="text-align:right;"> 29.65358 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 5 </td>
+   <td style="text-align:right;"> -82.38177 </td>
+   <td style="text-align:right;"> 29.67720 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:right;"> -82.25946 </td>
+   <td style="text-align:right;"> 29.67492 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 7 </td>
+   <td style="text-align:right;"> -82.36744 </td>
+   <td style="text-align:right;"> 29.71099 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:right;"> -82.40403 </td>
+   <td style="text-align:right;"> 29.71159 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:right;"> -82.43289 </td>
+   <td style="text-align:right;"> 29.64823 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 10 </td>
+   <td style="text-align:right;"> -82.46184 </td>
+   <td style="text-align:right;"> 29.62404 </td>
+  </tr>
+</tbody>
+</table>
 
 Whereas the spatial overlay example in the previous section used spatial datasets from **tigris** that already include geographic information, this dataset needs to be converted to a simple features object. The `st_as_sf()` function in the **sf** package can take an R data frame or tibble with longitude and latitude columns like this and create a dataset of geometry type `POINT`. By convention, the coordinate reference system used for longitude / latitude data is WGS 1984, represented with the EPSG code `4326`. We'll need to specify this CRS in `st_as_sf()` so that **sf** can locate the points correctly before we transform to an appropriate projected coordinate reference system with `st_transform()`.
 
-```{r make-spatial-gainesville}
+
+```r
 # CRS: NAD83(2011) / Florida North
 gainesville_sf <- gainesville_patients %>%
   st_as_sf(coords = c("longitude", "latitude"),
@@ -151,7 +223,8 @@ gainesville_sf <- gainesville_patients %>%
 
 Once prepared as a spatial dataset, the patient information can be mapped.
 
-```{r map-gainesville-pts, eval = FALSE}
+
+```r
 mapview(
   gainesville_sf, 
   col.regions = "red",
@@ -159,17 +232,15 @@ mapview(
 )
 ```
 
-```{r map-gainesville-pts-show, echo = FALSE, fig.cap = "Map of hypothetical patient locations in Gainesville, Florida"}
-if (knitr::is_html_output()) {
-  knitr::include_url("img/leaflet/gainesville_pts.html", height = "500px")
-} else {
-  knitr::include_graphics("img/leaflet/gainesville_pts.png")
-}
-```
+<div class="figure">
+<iframe src="img/leaflet/gainesville_pts.html" width="100%" height="500px" data-external="1"></iframe>
+<p class="caption">(\#fig:map-gainesville-pts-show)Map of hypothetical patient locations in Gainesville, Florida</p>
+</div>
 
 As the patient data are now formatted as a simple features object, the next step is to acquire data on health insurance from the American Community Survey. A pre-computed percentage from the ACS Data Profile is available at the Census tract level, which will be used in the example below. Users who require a more granular geography can construct this information from the ACS Detailed Tables at the block group level using table B27001 and techniques learned in Section \@ref(tabulating-new-groups). As Gainesville is contained within Alachua County, Florida, we can obtain data from the 2015-2019 5-year ACS accordingly.
 
-```{r get-alachua-data}
+
+```r
 alachua_insurance <- get_acs(
   geography = "tract",
   variables = "DP03_0096P",
@@ -187,7 +258,8 @@ After obtaining the spatial & demographic data with `get_acs()` and the `geometr
 
 Before computing the spatial join, the spatial relationships between patient points and Census tract demographics can be visualized interactively with `mapview()`, layering two interactive views with the `+` operator.
 
-```{r mapview-gainesville-relationship, eval = FALSE}
+
+```r
 mapview(
   alachua_insurance,
   zcol = "pct_insured", 
@@ -200,26 +272,105 @@ mapview(
   )
 ```
 
-```{r mapview-gainesville-relationship-show, echo = FALSE, fig.cap = "Layered interactive view of patients and Census tracts in Gainesville"}
-if (knitr::is_html_output()) {
-  knitr::include_url("img/leaflet/gainesville_relationship.html", height = "500px")
-} else {
-  knitr::include_graphics("img/leaflet/gainesville_relationship.png")
-}
-```
+<div class="figure">
+<iframe src="img/leaflet/gainesville_relationship.html" width="100%" height="500px" data-external="1"></iframe>
+<p class="caption">(\#fig:mapview-gainesville-relationship-show)Layered interactive view of patients and Census tracts in Gainesville</p>
+</div>
 
 The interrelationships between patient points and tract neighborhoods can be explored on the map. These relationships can be formalized with a *spatial join*, implemented with the `st_join()` function in the **sf** package. `st_join()` returns a new simple features object that inherits geometry and attributes from a first dataset `x` with attributes from a second dataset `y` appended. Rows in `x` are matched to rows in `y` based on a spatial relationship defined by a spatial predicate, which defaults in `st_join()` to `st_intersects()`. For point-in-polygon spatial joins, this default will be sufficient in most cases unless a point falls directly on the boundary between polygons (which is not true in this example).
 
-```{r compute-alachua-join}
+
+```r
 patients_joined <- st_join(
   gainesville_sf,
   alachua_insurance
 )
 ```
 
-```{r compute-alachua-join-show, echo = FALSE}
-style_data(patients_joined, caption = "Patients dataset after spatial join to Census tracts")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:compute-alachua-join-show)Patients dataset after spatial join to Census tracts</caption>
+ <thead>
+  <tr>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> patient_id </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> pct_insured </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> pct_insured_moe </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:left;"> POINT (812216.5 73640.54) </td>
+   <td style="text-align:left;"> 12001000700 </td>
+   <td style="text-align:right;"> 81.6 </td>
+   <td style="text-align:right;"> 7.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:left;"> POINT (811825 74659.85) </td>
+   <td style="text-align:left;"> 12001000500 </td>
+   <td style="text-align:right;"> 91.0 </td>
+   <td style="text-align:right;"> 5.1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:left;"> POINT (807076.2 70862.84) </td>
+   <td style="text-align:left;"> 12001001515 </td>
+   <td style="text-align:right;"> 85.2 </td>
+   <td style="text-align:right;"> 6.2 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 4 </td>
+   <td style="text-align:left;"> POINT (805787.6 74366.12) </td>
+   <td style="text-align:left;"> 12001001603 </td>
+   <td style="text-align:right;"> 88.3 </td>
+   <td style="text-align:right;"> 5.1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 5 </td>
+   <td style="text-align:left;"> POINT (805023.3 76971.06) </td>
+   <td style="text-align:left;"> 12001001100 </td>
+   <td style="text-align:right;"> 96.2 </td>
+   <td style="text-align:right;"> 2.7 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:left;"> POINT (816865 76944.93) </td>
+   <td style="text-align:left;"> 12001001902 </td>
+   <td style="text-align:right;"> 86.0 </td>
+   <td style="text-align:right;"> 5.9 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 7 </td>
+   <td style="text-align:left;"> POINT (806340.4 80741.63) </td>
+   <td style="text-align:left;"> 12001001803 </td>
+   <td style="text-align:right;"> 92.3 </td>
+   <td style="text-align:right;"> 4.0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:left;"> POINT (802798.8 80742.12) </td>
+   <td style="text-align:left;"> 12001001813 </td>
+   <td style="text-align:right;"> 97.9 </td>
+   <td style="text-align:right;"> 1.4 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:left;"> POINT (800134.1 73669.13) </td>
+   <td style="text-align:left;"> 12001002207 </td>
+   <td style="text-align:right;"> 95.7 </td>
+   <td style="text-align:right;"> 2.4 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 10 </td>
+   <td style="text-align:left;"> POINT (797379.1 70937.74) </td>
+   <td style="text-align:left;"> 12001002205 </td>
+   <td style="text-align:right;"> 96.5 </td>
+   <td style="text-align:right;"> 1.6 </td>
+  </tr>
+</tbody>
+</table>
 
 The output dataset includes the patient ID and the original `POINT` feature geometry, but also now includes GEOID information from the Census tract dataset along with neighborhood demographic information from the ACS. This workflow can be used for analyses of neighborhood characteristics in a wide variety of applications and to generate data suitable for hierarchical modeling.
 
@@ -235,7 +386,8 @@ Spatial data operations can also be embedded in workflows where analysts are int
 
 Let's say that we are interested in analyzing the distributions of neighborhoods (defined here as Census tracts) by Hispanic population for the four largest metropolitan areas in Texas. We'll use the variable `B01003_001` from the 2019 1-year ACS to acquire population data by core-based statistical area (CBSA) along with simple feature geometry which will eventually be used for the spatial join.
 
-```{r tx-cbsa}
+
+```r
 library(tidycensus)
 library(tidyverse)
 library(sf)
@@ -253,15 +405,60 @@ tx_cbsa <- get_acs(
   st_transform(6579)
 ```
 
-```{r tx-cbsa-show, echo = FALSE}
-style_data(tx_cbsa, caption = "Large CBSAs in Texas")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:tx-cbsa-show)Large CBSAs in Texas</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> NAME </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> variable </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> estimate </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> moe </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 19100 </td>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7573136 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1681247 760... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((2009903 730... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 41700 </td>
+   <td style="text-align:left;"> San Antonio-New Braunfels, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 2550960 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1538306 729... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 12420 </td>
+   <td style="text-align:left;"> Austin-Round Rock-Georgetown, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 2227083 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1664195 732... </td>
+  </tr>
+</tbody>
+</table>
 
 The filtering steps used merit some additional explanation. The expression `filter(str_detect(NAME, "TX"))` first subsets the core-based statistical area data for only those metropolitan or micropolitan areas in (or partially in) Texas. Given that string matching in `str_detect()` is case-sensitive, using `"TX"` as the search string will match rows correctly. `slice_max()`, introduced in Section \@ref(basic-census-visualization-with-ggplot2), then retains the four rows with the largest population values, found in the `estimate` column. Finally, the spatial dataset is transformed to an appropriate projected coordinate reference system for the state of Texas.
 
 Given that all four of these metropolitan areas are completely contained within the state of Texas, we can obtain data on percent Hispanic by tract from the ACS Data Profile for 2015-2019.
 
-```{r tx-hispanic}
+
+```r
 pct_hispanic <- get_acs(
   geography = "tract",
   variables = "DP05_0071P",
@@ -272,9 +469,101 @@ pct_hispanic <- get_acs(
   st_transform(6579)
 ```
 
-```{r tx-hispanic-show, echo = FALSE}
-style_data(pct_hispanic, caption = "Percent Hispanic by Census tract in Texas")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:tx-hispanic-show)Percent Hispanic by Census tract in Texas</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> NAME </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> variable </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> estimate </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> moe </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 48113019204 </td>
+   <td style="text-align:left;"> Census Tract 192.04, Dallas County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 58.1 </td>
+   <td style="text-align:right;"> 5.7 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1801563 765... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48377950200 </td>
+   <td style="text-align:left;"> Census Tract 9502, Presidio County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 95.6 </td>
+   <td style="text-align:right;"> 3.7 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1060841 729... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48029190601 </td>
+   <td style="text-align:left;"> Census Tract 1906.01, Bexar County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 86.2 </td>
+   <td style="text-align:right;"> 6.7 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1642736 726... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48355002301 </td>
+   <td style="text-align:left;"> Census Tract 23.01, Nueces County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 80.6 </td>
+   <td style="text-align:right;"> 3.9 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1755212 707... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48441012300 </td>
+   <td style="text-align:left;"> Census Tract 123, Taylor County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 26.4 </td>
+   <td style="text-align:right;"> 6.3 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1522575 758... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48051970500 </td>
+   <td style="text-align:left;"> Census Tract 9705, Burleson County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 20.4 </td>
+   <td style="text-align:right;"> 6.1 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1812744 736... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48441010400 </td>
+   <td style="text-align:left;"> Census Tract 104, Taylor County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 64.4 </td>
+   <td style="text-align:right;"> 7.7 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1522727 759... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48201311900 </td>
+   <td style="text-align:left;"> Census Tract 3119, Harris County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 84.9 </td>
+   <td style="text-align:right;"> 5.8 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1950592 729... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48113015500 </td>
+   <td style="text-align:left;"> Census Tract 155, Dallas County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 56.6 </td>
+   <td style="text-align:right;"> 7.5 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1778712 763... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48217960500 </td>
+   <td style="text-align:left;"> Census Tract 9605, Hill County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 9.3 </td>
+   <td style="text-align:right;"> 4.8 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1741591 753... </td>
+  </tr>
+</tbody>
+</table>
 
 The returned dataset covers Census tracts in the entirety of the state of Texas; however we only need to retain those tracts that fall within our four metropolitan areas of interest. We can accomplish this with a spatial join using `st_join()`.
 
@@ -282,7 +571,8 @@ The returned dataset covers Census tracts in the entirety of the state of Texas;
 
 We know that in `st_join()`, we request that a given spatial dataset `x`, for which geometry will be retained, gains attributes from a second spatial dataset `y` based on their spatial relationship. This spatial relationship, as in the above examples, will be defined by a spatial predicate passed to the `join` parameter. The argument `suffix` defines the suffixes to be used for columns that share the same names, which will be important given that both datasets came from **tidycensus**. The argument `left = FALSE` requests an inner spatial join, returning only those tracts that fall within the four metropolitan areas.
 
-```{r hispanic-by-metro}
+
+```r
 hispanic_by_metro <- st_join(
   pct_hispanic,
   tx_cbsa,
@@ -292,13 +582,172 @@ hispanic_by_metro <- st_join(
 ) 
 ```
 
-```{r hispanic-by-metro-show, echo = FALSE}
-style_data(hispanic_by_metro, caption = "Census tracts after spatial join operation")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:hispanic-by-metro-show)Census tracts after spatial join operation</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">   </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID_tracts </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> NAME_tracts </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> variable_tracts </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> estimate_tracts </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> moe_tracts </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID_metro </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> NAME_metro </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> variable_metro </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> estimate_metro </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> moe_metro </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 1 </td>
+   <td style="text-align:left;"> 48113019204 </td>
+   <td style="text-align:left;"> Census Tract 192.04, Dallas County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 58.1 </td>
+   <td style="text-align:right;"> 5.7 </td>
+   <td style="text-align:left;"> 19100 </td>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7573136 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1801563 765... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 3 </td>
+   <td style="text-align:left;"> 48029190601 </td>
+   <td style="text-align:left;"> Census Tract 1906.01, Bexar County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 86.2 </td>
+   <td style="text-align:right;"> 6.7 </td>
+   <td style="text-align:left;"> 41700 </td>
+   <td style="text-align:left;"> San Antonio-New Braunfels, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 2550960 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1642736 726... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 8 </td>
+   <td style="text-align:left;"> 48201311900 </td>
+   <td style="text-align:left;"> Census Tract 3119, Harris County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 84.9 </td>
+   <td style="text-align:right;"> 5.8 </td>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1950592 729... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 9 </td>
+   <td style="text-align:left;"> 48113015500 </td>
+   <td style="text-align:left;"> Census Tract 155, Dallas County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 56.6 </td>
+   <td style="text-align:right;"> 7.5 </td>
+   <td style="text-align:left;"> 19100 </td>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7573136 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1778712 763... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 11 </td>
+   <td style="text-align:left;"> 48439102000 </td>
+   <td style="text-align:left;"> Census Tract 1020, Tarrant County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 15.7 </td>
+   <td style="text-align:right;"> 6.4 </td>
+   <td style="text-align:left;"> 19100 </td>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7573136 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1746016 762... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 13 </td>
+   <td style="text-align:left;"> 48201450200 </td>
+   <td style="text-align:left;"> Census Tract 4502, Harris County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 10.7 </td>
+   <td style="text-align:right;"> 3.9 </td>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1925521 730... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 14 </td>
+   <td style="text-align:left;"> 48201450400 </td>
+   <td style="text-align:left;"> Census Tract 4504, Harris County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 26.8 </td>
+   <td style="text-align:right;"> 13.1 </td>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1922292 730... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 22 </td>
+   <td style="text-align:left;"> 48157670300 </td>
+   <td style="text-align:left;"> Census Tract 6703, Fort Bend County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 27.0 </td>
+   <td style="text-align:right;"> 5.8 </td>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1935603 728... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 25 </td>
+   <td style="text-align:left;"> 48201554502 </td>
+   <td style="text-align:left;"> Census Tract 5545.02, Harris County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 13.4 </td>
+   <td style="text-align:right;"> 3.0 </td>
+   <td style="text-align:left;"> 26420 </td>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7066140 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1918552 732... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 27 </td>
+   <td style="text-align:left;"> 48121020503 </td>
+   <td style="text-align:left;"> Census Tract 205.03, Denton County, Texas </td>
+   <td style="text-align:left;"> DP05_0071P </td>
+   <td style="text-align:right;"> 35.3 </td>
+   <td style="text-align:right;"> 8.7 </td>
+   <td style="text-align:left;"> 19100 </td>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:left;"> B01003_001 </td>
+   <td style="text-align:right;"> 7573136 </td>
+   <td style="text-align:right;"> NA </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1766859 768... </td>
+  </tr>
+</tbody>
+</table>
 
 The output dataset has been reduced from 5,265 Census tracts to 3,201 as a result of the inner spatial join. Notably, the output dataset now includes information for each Census tract about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas such as a faceted plot:
 
-```{r plot-hispanic-by-metro, fig.cap = "Faceted density plot of tract Hispanic populations by CBSA in Texas"}
+
+```r
 hispanic_by_metro %>%
   mutate(NAME_metro = str_replace(NAME_metro, ", TX Metro Area", "")) %>%
   ggplot() + 
@@ -312,23 +761,64 @@ hispanic_by_metro %>%
        x = "Percent Hispanic/Latino in Census tract")
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/plot-hispanic-by-metro-1.png" alt="Faceted density plot of tract Hispanic populations by CBSA in Texas" width="100%" />
+<p class="caption">(\#fig:plot-hispanic-by-metro)Faceted density plot of tract Hispanic populations by CBSA in Texas</p>
+</div>
+
 Output from a spatial join operation can also be "rolled up" to a larger geography through group-wise data analysis. For example, let's say we want to know the median value of the four distributions visualized in the plot above. As explained in Section \@ref(group-wise-census-data-analysis), we can accomplish this by grouping our dataset by metro area then summarizing using the `median()` function.
 
-```{r calculate-median-by-metro}
+
+```r
 median_by_metro <- hispanic_by_metro %>%
   group_by(NAME_metro) %>%
   summarize(median_hispanic = median(estimate_tracts, na.rm = TRUE))
 ```
 
-```{r median-by-metro-show, echo = FALSE}
-style_data(median_by_metro, caption = "Summarized median Hispanic population by metro")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:median-by-metro-show)Summarized median Hispanic population by metro</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> NAME_metro </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> median_hispanic </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Austin-Round Rock-Georgetown, TX Metro Area </td>
+   <td style="text-align:right;"> 25.9 </td>
+   <td style="text-align:left;"> POLYGON ((1732228 7281497, ... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Dallas-Fort Worth-Arlington, TX Metro Area </td>
+   <td style="text-align:right;"> 22.6 </td>
+   <td style="text-align:left;"> POLYGON ((1868068 7602006, ... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Houston-The Woodlands-Sugar Land, TX Metro Area </td>
+   <td style="text-align:right;"> 32.4 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((1957796 721... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> San Antonio-New Braunfels, TX Metro Area </td>
+   <td style="text-align:right;"> 53.5 </td>
+   <td style="text-align:left;"> POLYGON ((1699769 7217758, ... </td>
+  </tr>
+</tbody>
+</table>
 
 The grouping column (`NAME_metro`) and the output of `summarize()` (`median_hispanic`) are returned as expected. However, the `group_by() %>% summarize()` operations also return the dataset as a simple features object with geometry, but in this case with only 4 rows. Let's take a look at the output geometry:
 
-```{r plot-metro-geometry, fig.cap = "Dissolved geometry of Census tracts identified within the Austin CBSA"}
+
+```r
 plot(median_by_metro[1,]$geometry)
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/plot-metro-geometry-1.png" alt="Dissolved geometry of Census tracts identified within the Austin CBSA" width="100%" />
+<p class="caption">(\#fig:plot-metro-geometry)Dissolved geometry of Census tracts identified within the Austin CBSA</p>
+</div>
 
 The returned geometry represents the extent of the given metropolitan area (in the above example, Austin-Round Rock). The analytic process we carried out not only summarized the data by group, it also summarized the geometry by group. The typical name for this geometric process in geographic information systems is a *dissolve* operation, where geometries are identified by group and combined to return a single larger geometry. In this case, the Census tracts are dissolved by metropolitan area, returning metropolitan area geometries. This type of process is extremely useful when creating custom geographies (e.g. sales territories) from Census geometry building blocks that may belong to the same group.
 
@@ -336,7 +826,8 @@ The returned geometry represents the extent of the given metropolitan area (in t
 
 A common use case for spatially-referenced demographic data is the analysis of *accessibility*. This might include studying the relative accessibility of different demographic groups to resources within a given region, or analyzing the characteristics of potential customers who live within a given distance of a store. Conceptually, there are a variety of ways to measure accessibility. The most straightforward method, computationally, is using straight-line (Euclidean) distances over geographic data in a projected coordinate system. A more computationally complex - but potentially more accurate - method involves the use of transportation networks to model accessibility, where proximity is measured not based on distance from a given location but instead based on travel times for a given transit mode, such as walking, cycling, or driving. This section will illustrate both types of approaches. Let's consider the topic of accessibility to Level I and Level II trauma hospitals by Census tract in the state of Iowa. 2019 Census tract boundaries are acquired from **tigris**, and we use `st_read()` to read in a shapefile of hospital locations acquired from the US Department of Homeland Security.
 
-```{r read-hospital-data}
+
+```r
 library(tigris)
 library(sf)
 library(tidyverse)
@@ -351,15 +842,39 @@ hospital_url <- "https://opendata.arcgis.com/api/v3/datasets/6ac5e325468c4cb9b90
 trauma <- st_read(hospital_url) %>%
   filter(str_detect(TRAUMA, "LEVEL I\\b|LEVEL II\\b|RTH|RTC")) %>%
   st_transform(26975)
+```
 
+```
+## Reading layer `Hospitals' from data source 
+##   `https://opendata.arcgis.com/api/v3/datasets/6ac5e325468c4cb9b905f1728d6fbf0f_0/downloads/data?format=geojson&spatialRefId=4326' 
+##   using driver `GeoJSON'
+## Simple feature collection with 7596 features and 32 fields
+## Geometry type: POINT
+## Dimension:     XY
+## Bounding box:  xmin: -176.6403 ymin: -14.29024 xmax: 145.7245 ymax: 71.29773
+## Geodetic CRS:  WGS 84
+```
+
+```r
 names(trauma)
+```
+
+```
+##  [1] "OBJECTID"   "ID"         "NAME"       "ADDRESS"    "CITY"      
+##  [6] "STATE"      "ZIP"        "ZIP4"       "TELEPHONE"  "TYPE"      
+## [11] "STATUS"     "POPULATION" "COUNTY"     "COUNTYFIPS" "COUNTRY"   
+## [16] "LATITUDE"   "LONGITUDE"  "NAICS_CODE" "NAICS_DESC" "SOURCE"    
+## [21] "SOURCEDATE" "VAL_METHOD" "VAL_DATE"   "WEBSITE"    "STATE_ID"  
+## [26] "ALT_NAME"   "ST_FIPS"    "OWNER"      "TTL_STAFF"  "BEDS"      
+## [31] "TRAUMA"     "HELIPAD"    "geometry"
 ```
 
 ### Calculating distances
 
 To determine accessibility of Iowa Census tracts to Level I or II trauma centers, we need to identify not only those hospitals that are located in Iowa, but also those in other states near to the Iowa border, such as in Omaha, Nebraska and Rock Island, Illinois. We can accomplish this by applying a distance threshold in `st_filter()`. In this example, we use the spatial predicate `st_is_within_distance`, and set a 100km distance threshold with the `dist = 100000` argument (specified in meters, the base measurement unit of our coordinate system used).
 
-```{r identify-iowa-hospitals, fig.cap = "Level I or II trauma centers within 100km of Iowa"}
+
+```r
 ia_trauma <- trauma %>%
   st_filter(ia_tracts, 
             .predicate = st_is_within_distance,
@@ -371,11 +886,17 @@ ggplot() +
   theme_void()
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/identify-iowa-hospitals-1.png" alt="Level I or II trauma centers within 100km of Iowa" width="100%" />
+<p class="caption">(\#fig:identify-iowa-hospitals)Level I or II trauma centers within 100km of Iowa</p>
+</div>
+
 As illustrated in the visualization, the `st_filter()` operation has retained Level I and II trauma centers *within* the state of Iowa, but also within the 100km threshold beyond the state's borders.
 
 With the Census tract and hospital data in hand, we can calculate distances from Census tracts to trauma centers by using the `st_distance()` function in the **sf** package. `st_distance(x, y)` by default returns the dense matrix of distances computed from the geometries in `x` to the geometries in `y`. In this example, we will calculate the distances from the *centroids* of Iowa Census tracts (reflecting the center points of each tract geometry) to each trauma center.
 
-```{r tract-centroids, message = FALSE, warning = FALSE}
+
+```r
 dist <- ia_tracts %>%
   st_centroid() %>%
   st_distance(ia_trauma) 
@@ -383,9 +904,20 @@ dist <- ia_tracts %>%
 dist[1:5, 1:5]
 ```
 
+```
+## Units: [m]
+##           [,1]      [,2]     [,3]     [,4]     [,5]
+## [1,] 279570.18 279188.81 385140.7 383863.7 257745.5
+## [2,] 298851.01 298409.46 400428.5 399022.9 276955.8
+## [3,] 350121.53 347800.57 353428.8 350263.3 404616.0
+## [4,] 361742.20 360450.59 421691.6 419364.9 369415.7
+## [5,]  66762.19  63479.67 143552.1 143935.5 194001.0
+```
+
 A glimpse at the matrix shows distances (in meters) between the first five Census tracts in the dataset and the first five hospitals. When considering *accessibility*, we may be interested in the distance to the *nearest* hospital to each Census tract. The code below extracts the minimum distance from the matrix for each row, converts to a vector, and divides each value by 1000 to convert values to kilometers. A quick histogram visualizes the distribution of minimum distances.
 
-```{r get-min-dist, fig.cap = "Base R histogram of minimum distances to trauma centers"}
+
+```r
 min_dist <- dist %>%
   apply(1, min) %>%
   as.vector() %>%
@@ -393,6 +925,11 @@ min_dist <- dist %>%
 
 hist(min_dist)
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/get-min-dist-1.png" alt="Base R histogram of minimum distances to trauma centers" width="100%" />
+<p class="caption">(\#fig:get-min-dist)Base R histogram of minimum distances to trauma centers</p>
+</div>
 
 While many tracts are within 10km of a trauma center, around 16 percent of Iowa Census tracts are beyond 100km from a Level I or II trauma center, suggesting significant accessibility issues for these areas.
 
@@ -404,21 +941,32 @@ The function `mb_matrix()` in **mapboxapi** works much like `st_distance()` in t
 
 If you are using **mapboxapi** for the first time, visit [mapbox.com](), register for an account, and obtain an access token. The function `mb_access_token()` installs this token in your .Renviron for future use.
 
-```{r setup-mapbox, eval = FALSE}
+
+```r
 library(mapboxapi)
 # mb_access_token("pk.eybcasq..., install = TRUE)
 
 times <- mb_matrix(ia_tracts, ia_trauma)
-
 ```
 
-```{r show-time-matrix, eval = TRUE}
+
+```r
 times[1:5, 1:5]
+```
+
+```
+##           [,1]      [,2]     [,3]     [,4]     [,5]
+## [1,] 211.43833 212.50667 278.5733 284.9717 212.1050
+## [2,] 218.15167 214.06000 280.1267 286.5250 226.7733
+## [3,] 274.84500 270.75333 291.8367 290.7117 292.2767
+## [4,] 274.58333 270.49167 291.5750 290.4500 292.0150
+## [5,]  56.80333  52.71167 122.3017 128.7000 161.2617
 ```
 
 A glimpse at the travel-time matrix shows a similar format to the distance matrix, but with travel times in minutes used instead of meters. As with the distance-based example, we can determine the minimum travel time from each tract to a Level I or Level II trauma center. In this instance, we will visualize the result on a map.
 
-```{r show-min-times, fig.cap = "Map of travel-times to trauma centers by Census tract in Iowa"}
+
+```r
 min_time <- apply(times, 1, min)
 
 ia_tracts$time <- min_time
@@ -431,8 +979,12 @@ ggplot(ia_tracts, aes(fill = time)) +
        title = "Travel time to nearest Level I or Level II trauma hospital",
        subtitle = "Census tracts in Iowa",
        caption = "Data sources: US Census Bureau, US DHS, Mapbox")
-  
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/show-min-times-1.png" alt="Map of travel-times to trauma centers by Census tract in Iowa" width="100%" />
+<p class="caption">(\#fig:show-min-times)Map of travel-times to trauma centers by Census tract in Iowa</p>
+</div>
 
 The map illustrates considerable accessibility gaps to trauma centers across the state. Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.
 
@@ -448,22 +1000,24 @@ As with the matrix-based accessibility approach outlined above, catchment area-b
 
 The example below illustrates the distance-based approach using a *buffer*, implemented with the `st_buffer()` function in **sf**. A buffer is a common GIS operation that represents the area within a given distance of a location. The code below creates a 5km buffer around Iowa Methodist Medical Center by using the argument `dist = 5000`.
 
-```{r get-buffer}
+
+```r
 iowa_methodist <- filter(ia_trauma, NAME == "IOWA METHODIST MEDICAL CENTER")
 
 buf5km <- st_buffer(iowa_methodist, dist = 5000) 
-
 ```
 
 An alternative option is to create network-based *isochrones*, which are polygons that represent the accessible area around a given location within a given travel time for a given travel mode. Isochrones are implemented in the **mapboxapi** package with the `mb_isochrone()` function. The example below draws a 10-minute driving isochrone around Iowa Methodist.
 
-```{r get-isochrone}
+
+```r
 iso10min <- mb_isochrone(iowa_methodist, time = 10)
 ```
 
 We can visualize the comparative extents of these two methods in Des Moines. Run the code on your own computer to get a synced interactive map showing the two methods.
 
-```{r sync, eval = FALSE, fig.cap = "Side-by-side comparison of buffer and isochrone methods for catchment areas in Des Moines, Iowa"}
+
+```r
 library(leaflet)
 library(leafsync)
 
@@ -487,9 +1041,10 @@ map2 <- leaflet() %>%
 sync(map1, map2)
 ```
 
-```{r synced-map, echo = FALSE, fig.cap = "Synced map showing buffer and isochrone-based catchment areas in Des Moines"}
-knitr::include_graphics("img/screenshots/synced-map.png")
-```
+<div class="figure">
+<img src="img/screenshots/synced-map.png" alt="Synced map showing buffer and isochrone-based catchment areas in Des Moines" width="100%" />
+<p class="caption">(\#fig:synced-map)Synced map showing buffer and isochrone-based catchment areas in Des Moines</p>
+</div>
 
 The comparative maps illustrate the differences between the two methods quite clearly. Many areas of equal distance to the hospital do not have the same level of access; this is particularly true of areas to the south of the Raccoon/Des Moines River. Conversely, due to the location of highways, there are some areas outside the 5km buffer area that can reach the hospital within 10 minutes.
 
@@ -499,7 +1054,8 @@ Common to both methods, however, is a mis-alignment between their geometries and
 
 Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions. This will require obtaining block-group level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone. The variables requested from the ACS include the number of family households with incomes below the poverty line along with total number of family households to serve as a denominator.
 
-```{r get-polk-poverty}
+
+```r
 polk_poverty <- get_acs(
   geography = "block group",
   variables = c(poverty_denom = "B17010_001",
@@ -516,7 +1072,8 @@ polk_poverty <- get_acs(
 
 *Area-weighted areal interpolation* is implemented in **sf** with the `st_interpolate_aw()` function. This method uses the area of overlap of geometries as the interpolation weights. This means that, in this example, Census tracts that fall entirely within the 5km buffer polygon will receive a weight of 1. Census tracts that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area. Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument. If `extensive = TRUE`, as used below, weighted sums will be computed. Alternatively, if `extensive = FALSE`, the function returns weighted means.
 
-```{r interpolate, message = FALSE, warning = FALSE}
+
+```r
 library(glue)
 
 buffer_pov <- st_interpolate_aw(
@@ -535,7 +1092,18 @@ iso_pov <- st_interpolate_aw(
 
 
 print(glue("Family poverty (5km buffer method): {round(buffer_pov$pct_poverty, 1)}%"))
+```
+
+```
+## Family poverty (5km buffer method): 13.5%
+```
+
+```r
 print(glue("Family poverty (10min isochrone method): {round(iso_pov$pct_poverty, 1)}%"))
+```
+
+```
+## Family poverty (10min isochrone method): 13.9%
 ```
 
 The two methods return slightly different results, illustrating how the definition of catchment area impacts downstream analyses.
@@ -548,7 +1116,8 @@ As discussed in Section \@ref(using-geometry-in-tidycensus), one of the major be
 
 However, there may be circumstances in which your mapping requires more detail. A good example of this would be maps of New York City, in which even the cartographic boundary shapefiles include water area. For example, take this example of median household income by Census tract in Manhattan (New York County), NY:
 
-```{r manhattan, fig.cap = "Map of Manhattan with default CB geometries"}
+
+```r
 library(tidycensus)
 library(tidyverse)
 options(tigris_use_cache = TRUE)
@@ -567,8 +1136,12 @@ ggplot(ny) +
   scale_fill_viridis_c(labels = scales::dollar) + 
   theme_void() + 
   labs(fill = "Median household\nincome")
-
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/manhattan-1.png" alt="Map of Manhattan with default CB geometries" width="100%" />
+<p class="caption">(\#fig:manhattan)Map of Manhattan with default CB geometries</p>
+</div>
 
 As illustrated in the graphic, the boundaries of Manhattan include water boundaries - stretching into the Hudson and East Rivers. In turn, a more accurate representation of Manhattan's land area might be desired. To accomplish this, a **tidycensus** user can use the core TIGER/Line shapefiles instead, then erase water area from Manhattan's geometry.
 
@@ -576,8 +1149,8 @@ As illustrated in the graphic, the boundaries of Manhattan include water boundar
 
 tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`. This argument will be familiar to users of the **tigris** package, as it is used by **tigris** to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.
 
-```{r get-tiger-manhattan}
 
+```r
 # CRS: NAD83(2011) / New York Long Island
 ny2 <- get_acs(
   geography = "tract",
@@ -595,7 +1168,8 @@ Next, tools in the **tigris** and **sf** package can be used to remove the water
 
 The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in **tigris**.
 
-```{r erase-nyc}
+
+```r
 library(sf)
 library(tigris)
 
@@ -607,18 +1181,23 @@ ny_water <- area_water("NY", "New York", year = 2019) %>%
   st_transform(6538)
 
 ny_erase <- st_erase(ny2, ny_water)
-
 ```
 
 After performing this operation, we can map the result:
 
-```{r plot-erase-manhattan, fig.cap = "Map of Manhattan with water areas erased"}
+
+```r
 ggplot(ny_erase) + 
   geom_sf(aes(fill = estimate)) + 
   scale_fill_viridis_c(labels = scales::dollar) + 
   theme_void() + 
   labs(fill = "Median household\nincome")
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/plot-erase-manhattan-1.png" alt="Map of Manhattan with water areas erased" width="100%" />
+<p class="caption">(\#fig:plot-erase-manhattan)Map of Manhattan with water areas erased</p>
+</div>
 
 The map appears as before, but now with a more familiar representation of the extent of Manhattan.
 
@@ -628,7 +1207,8 @@ The spatial capabilities of **tidycensus** also allow for exploratory spatial da
 
 To illustrate how an analyst can apply ESDA to Census data, let's acquire a dataset on median age by Census tract in the Dallas-Fort Worth, TX metropolitan area. Census tracts in the metro area will be identified using methods introduced earlier in this chapter.
 
-```{r get-dfw-tract-ch7}
+
+```r
 library(tidycensus)
 library(tidyverse)
 library(tigris)
@@ -656,8 +1236,9 @@ ggplot(dfw_tracts) +
   geom_sf(aes(fill = estimate), color = NA) + 
   scale_fill_viridis_c() + 
   theme_void()
-
 ```
+
+<img src="07-spatial-analysis-census_files/figure-html/get-dfw-tract-ch7-1.png" width="100%" />
 
 ### Understanding spatial neighborhoods
 
@@ -669,17 +1250,35 @@ Exploratory spatial data analysis relies on the concept of a *neighborhood*, whi
 
 In this example, we'll choose a queen's case contiguity-based neighborhood definition for our Census tracts. We implement this with the function `poly2nb()`, which can take an **sf** object as an argument and produce a neighbors list object. We use the argument `queen = TRUE` to request queen's case neighbors explicitly (though this is the function default).
 
-```{r generate-neighbors}
+
+```r
 neighbors <- poly2nb(dfw_tracts, queen = TRUE)
 
 summary(neighbors)
+```
+
+```
+## Neighbour list object:
+## Number of regions: 1310 
+## Number of nonzero links: 8446 
+## Percentage nonzero weights: 0.4921625 
+## Average number of links: 6.447328 
+## Link number distribution:
+## 
+##   2   3   4   5   6   7   8   9  10  11  12  13  16 
+##   6  43 111 254 286 291 159  94  30  20  11   4   1 
+## 6 least connected regions:
+## 15 626 663 768 823 824 with 2 links
+## 1 most connected region:
+## 924 with 16 links
 ```
 
 On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 2 (there are six such tracts), and the maximum number of neighbors is 16 (the tract at row index 924). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis will be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
 
 Neighborhood relationships can be visualized using plotting functionality in **spdep**:
 
-```{r plot-neighbors, fig.cap = "Visualization of queens-case neighborhood relationships"}
+
+```r
 dfw_coords <- dfw_tracts %>%
   st_centroid() %>%
   st_coordinates()
@@ -692,11 +1291,21 @@ plot(neighbors,
      points = FALSE)
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/plot-neighbors-1.png" alt="Visualization of queens-case neighborhood relationships" width="100%" />
+<p class="caption">(\#fig:plot-neighbors)Visualization of queens-case neighborhood relationships</p>
+</div>
+
 Additionally, row indices for the neighbors of a given feature can be readily extracted from the neighbors list object.
 
-```{r see-neighbors}
+
+```r
 # Get the row indices of the neighbors of the Census tract at row index 1
 neighbors[[1]]
+```
+
+```
+##  [1]   47  153  227  246  353  613  660  751  942 1025 1208
 ```
 
 ### Generating the spatial weights matrix
@@ -705,11 +1314,16 @@ To perform exploratory spatial data analysis, we can convert the neighbors list 
 
 In the example below, we create row-standardized spatial weights for the Dallas-Fort Worth Census tracts and check their values for the feature at row index 1.
 
-```{r make-weights}
+
+```r
 weights <- nb2listw(neighbors, style = "W")
 
 weights$weights[[1]]
+```
 
+```
+##  [1] 0.09090909 0.09090909 0.09090909 0.09090909 0.09090909 0.09090909
+##  [7] 0.09090909 0.09090909 0.09090909 0.09090909 0.09090909
 ```
 
 Given that the Census tract at row index 1 has eleven neighbors, each neighbor is assigned the weight 0.0909.
@@ -732,13 +1346,15 @@ Given Tobler's first law of geography, we tend to expect that most geographic ph
 
 Spatial weights matrices can be used to calculate the *spatial lag* of a given attribute for each observation in a dataset. The spatial lag refers to the neighboring values of an observation given a spatial weights matrix. As discussed above, row-standardized weights matrices will produce lagged means, and binary weights matrices will produce lagged sums. Spatial lag calculations are implemented in the function `lag.listw()`, which requires a spatial weights list object and a numeric vector from which to compute the lag.
 
-```{r calculate-lag}
+
+```r
 dfw_tracts$lag_estimate <- lag.listw(weights, dfw_tracts$estimate)
 ```
 
 The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the mean percentage of bachelor's degree holders for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area. Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.
 
-```{r visualize-lag, fig.cap = "Scatterplot of median age relative to its spatial lag"}
+
+```r
 ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) + 
   geom_point(alpha = 0.3) + 
   geom_abline(color = "red") + 
@@ -747,8 +1363,12 @@ ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) +
        x = "Median age",
        y = "Spatial lag, median age", 
        caption = "Data source: 2015-2019 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
-
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/visualize-lag-1.png" alt="Scatterplot of median age relative to its spatial lag" width="100%" />
+<p class="caption">(\#fig:visualize-lag)Scatterplot of median age relative to its spatial lag</p>
+</div>
 
 The scatterplot suggests a positive correlation between the ACS estimate and its spatial lag, representative of spatial autocorrelation in the data. This relationship can be evaluated further by using a test of global spatial autocorrelation. The most common method used for spatial autocorrelation evaluation is Moran's $I$, which can be interpreted similar to a correlation coefficient but for the relationship between observations and their neighbors. The statistic is computed as:
 
@@ -760,8 +1380,23 @@ where $w_{ij}$ represents the spatial weights matrix, $N$ is the number of spati
 
 Moran's $I$ is implemented in **spdep** with the `moran.test()` function, which requires a numeric vector and a spatial weights list object.
 
-```{r morans-i}
+
+```r
 moran.test(dfw_tracts$estimate, weights)
+```
+
+```
+## 
+## 	Moran I test under randomisation
+## 
+## data:  dfw_tracts$estimate  
+## weights: weights    
+## 
+## Moran I statistic standard deviate = 22.979, p-value < 2.2e-16
+## alternative hypothesis: greater
+## sample estimates:
+## Moran I statistic       Expectation          Variance 
+##      0.3593580070     -0.0007639419      0.0002456130
 ```
 
 The Moran's $I$ statistic of 0.359 is positive, and the small *p*-value suggests that we reject the null hypothesis of spatial randomness in our dataset. (See Section \@ref(a-first-regression-model) for additional discussion of *p-*values). In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
@@ -778,7 +1413,8 @@ In summary, the equation computes a ratio of the weighted average of the neighbo
 
 The code below calculates the local G variant $G_i*$ by re-generating the weights matrix with `include.self()`, then passing this weights matrix to the `localG()` function.
 
-```{r dfw-local-g, fig.cap = "Map of local Gi* scores"}
+
+```r
 # For Gi*, re-compute the weights with `include.self()`
 localg_weights <- nb2listw(include.self(neighbors))
 
@@ -791,9 +1427,15 @@ ggplot(dfw_tracts) +
   labs(fill = "Local Gi* statistic")
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/dfw-local-g-1.png" alt="Map of local Gi* scores" width="100%" />
+<p class="caption">(\#fig:dfw-local-g)Map of local Gi* scores</p>
+</div>
+
 Given that the returned results are z-scores, an analyst can choose hot spot thresholds in the statistic, calculate them with `case_when()`, then plot them accordingly.
 
-```{r local-g-z-scores, fig.cap = "Map of local Gi* scores with significant clusters highlighted"}
+
+```r
 dfw_tracts <- dfw_tracts %>%
   mutate(hotspot = case_when(
     localG >= 2.56 ~ "High cluster",
@@ -806,6 +1448,11 @@ ggplot(dfw_tracts) +
   scale_fill_manual(values = c("red", "blue", "grey")) + 
   theme_void()
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/local-g-z-scores-1.png" alt="Map of local Gi* scores with significant clusters highlighted" width="100%" />
+<p class="caption">(\#fig:local-g-z-scores)Map of local Gi* scores with significant clusters highlighted</p>
+</div>
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
@@ -823,7 +1470,8 @@ In R, LISA can be computed using the `localmoran()` family of functions in the s
 
 The example below calculates local Moran's $I$ statistics in a way that resembles the output from GeoDa, which returns a cluster map and a Moran scatterplot. One of the major benefits of using LISA for exploratory analysis is its ability to identify both *spatial clusters*, where observations are surrounded by similar values, and *spatial outliers*, where observations are surrounded by dissimilar values. We'll use this method to explore clustering and the possible presence of spatial outliers with respect to Census tract median age in Dallas-Fort Worth.
 
-```{r local-morans-i-dfw}
+
+```r
 set.seed(1983)
 
 dfw_tracts$scaled_estimate <- as.numeric(scale(dfw_tracts$estimate))
@@ -853,13 +1501,108 @@ The above code uses the following steps:
 
 Our result appears as follows:
 
-```{r show-dfw-lisa-df, echo = FALSE}
-style_data(dfw_lisa_df, n_rows = 5, caption = "Local Moran's I results")
-```
+<table class="table table-striped table-hover table-condensed table-responsive" style="margin-left: auto; margin-right: auto;">
+<caption>(\#tab:show-dfw-lisa-df)Local Moran's I results</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> GEOID </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> scaled_estimate </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> lagged_estimate </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> local_i </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> exp_i </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> var_i </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> z_i </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> p_i </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> p_i_sim </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> pi_sim_folded </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> skewness </th>
+   <th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"> kurtosis </th>
+   <th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"> geometry </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 48113019204 </td>
+   <td style="text-align:right;"> -0.9083914 </td>
+   <td style="text-align:right;"> -0.3654568 </td>
+   <td style="text-align:right;"> 0.3322315 </td>
+   <td style="text-align:right;"> -0.0019753 </td>
+   <td style="text-align:right;"> 0.0767748 </td>
+   <td style="text-align:right;"> 1.2061629 </td>
+   <td style="text-align:right;"> 0.2277547 </td>
+   <td style="text-align:right;"> 0.234 </td>
+   <td style="text-align:right;"> 0.117 </td>
+   <td style="text-align:right;"> -0.1346414 </td>
+   <td style="text-align:right;"> -0.0136394 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((761835.4 21... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48113015500 </td>
+   <td style="text-align:right;"> -1.0195775 </td>
+   <td style="text-align:right;"> -0.7515397 </td>
+   <td style="text-align:right;"> 0.7668383 </td>
+   <td style="text-align:right;"> -0.0115062 </td>
+   <td style="text-align:right;"> 0.1304586 </td>
+   <td style="text-align:right;"> 2.1549417 </td>
+   <td style="text-align:right;"> 0.0311664 </td>
+   <td style="text-align:right;"> 0.022 </td>
+   <td style="text-align:right;"> 0.011 </td>
+   <td style="text-align:right;"> -0.2059971 </td>
+   <td style="text-align:right;"> -0.0706536 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((738672.9 21... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48439102000 </td>
+   <td style="text-align:right;"> -0.3365773 </td>
+   <td style="text-align:right;"> -0.1822783 </td>
+   <td style="text-align:right;"> 0.0613976 </td>
+   <td style="text-align:right;"> 0.0029962 </td>
+   <td style="text-align:right;"> 0.0163324 </td>
+   <td style="text-align:right;"> 0.4569814 </td>
+   <td style="text-align:right;"> 0.6476844 </td>
+   <td style="text-align:right;"> 0.670 </td>
+   <td style="text-align:right;"> 0.335 </td>
+   <td style="text-align:right;"> -0.1938830 </td>
+   <td style="text-align:right;"> -0.0417957 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((705890.8 21... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48121020503 </td>
+   <td style="text-align:right;"> -1.0195775 </td>
+   <td style="text-align:right;"> 0.3662775 </td>
+   <td style="text-align:right;"> -0.3737336 </td>
+   <td style="text-align:right;"> 0.0185373 </td>
+   <td style="text-align:right;"> 0.2419147 </td>
+   <td style="text-align:right;"> -0.7975446 </td>
+   <td style="text-align:right;"> 0.4251348 </td>
+   <td style="text-align:right;"> 0.390 </td>
+   <td style="text-align:right;"> 0.195 </td>
+   <td style="text-align:right;"> -0.2628396 </td>
+   <td style="text-align:right;"> 0.1497801 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((727489.9 21... </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48439113710 </td>
+   <td style="text-align:right;"> -0.2730424 </td>
+   <td style="text-align:right;"> 0.6588028 </td>
+   <td style="text-align:right;"> -0.1800185 </td>
+   <td style="text-align:right;"> 0.0004427 </td>
+   <td style="text-align:right;"> 0.0244266 </td>
+   <td style="text-align:right;"> -1.1546556 </td>
+   <td style="text-align:right;"> 0.2482315 </td>
+   <td style="text-align:right;"> 0.272 </td>
+   <td style="text-align:right;"> 0.136 </td>
+   <td style="text-align:right;"> -0.2869858 </td>
+   <td style="text-align:right;"> 0.0021632 </td>
+   <td style="text-align:left;"> MULTIPOLYGON (((730154.3 21... </td>
+  </tr>
+</tbody>
+</table>
 
 The information returned by `localmoran_perm()` can be used to compute both a GeoDa-style LISA quadrant plot as well as a cluster map. The LISA quadrant plot is similar to a Moran scatterplot, but also identifies "quadrants" of observations with respect to the spatial relationships identified by LISA. The code below uses `case_when()` to recode the data into appropriate categories for the LISA quadrant plot, using a significance level of *p* = 0.05.
 
-```{r dfw-lisa-clusters}
+
+```r
 dfw_lisa_clusters <- dfw_lisa_df %>%
   mutate(lisa_cluster = case_when(
     p_i >= 0.05 ~ "Not significant",
@@ -872,7 +1615,8 @@ dfw_lisa_clusters <- dfw_lisa_df %>%
 
 The LISA quadrant plot then appears as follow:
 
-```{r dfw-quadrant-plot, fig.cap = "LISA quadrant scatterplot"}
+
+```r
 color_values <- c(`High-high` = "red", 
                   `High-low` = "pink", 
                   `Low-low` = "blue", 
@@ -890,14 +1634,19 @@ ggplot(dfw_lisa_clusters, aes(x = scaled_estimate,
   labs(x = "Median age (z-score)",
        y = "Spatial lag of median age (z-score)",
        fill = "Cluster type")
-
 ```
+
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/dfw-quadrant-plot-1.png" alt="LISA quadrant scatterplot" width="100%" />
+<p class="caption">(\#fig:dfw-quadrant-plot)LISA quadrant scatterplot</p>
+</div>
 
 Observations falling in the top-right quadrant represent "high-high" clusters, where older Census tracts are also surrounded by older tracts in their spatial neighborhoods. Statistically significant clusters - those with a *p*-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes younger tracts that are also surrounded by younger tracts. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
 
 GeoDa also implements a "cluster map" where observations are visualized in relationship to their cluster membership and statistical significance. The code below reproduces the GeoDa cluster map using **ggplot2** and `geom_sf()`.
 
-```{r dfw-lisa-map, fig.cap = "LISA cluster map"}
+
+```r
 ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) + 
   geom_sf(size = 0.1) + 
   theme_void() + 
@@ -905,13 +1654,19 @@ ggplot(dfw_lisa_clusters, aes(fill = lisa_cluster)) +
   labs(fill = "Cluster type")
 ```
 
+<div class="figure">
+<img src="07-spatial-analysis-census_files/figure-html/dfw-lisa-map-1.png" alt="LISA cluster map" width="100%" />
+<p class="caption">(\#fig:dfw-lisa-map)LISA cluster map</p>
+</div>
+
 The map illustrates distinctive patterns of spatial clustering by age in the Dallas-Fort Worth region. Older clusters are colored red; this includes areas like the wealthy Highland Park community north of downtown Dallas. Younger clusters are colored dark blue, and found in areas like east Fort Worth, east Dallas, and Arlington in the center of the metropolitan area. Spatial outliers appear scattered throughout the map as well; in the Dallas area, low-high clusters are Census tracts with large quantities of multifamily housing that are adjacent to predominantly single-family neighborhoods.
 
 One very useful feature of GeoDa for exploratory spatial data analysis is the ability to perform linked brushing between the LISA quadrant plot and cluster map. This allows users to click and drag on either plot and highlight the corresponding observations on the other plot. Building on the chart linking example using ggiraph introduced in Section \@ref(linking-maps-and-charts), a linked brushing approach similar to GeoDa can be implemented in Shiny, and is represented in the image below and available at <https://walkerke.shinyapps.io/linked-brushing/>.
 
-```{r linked-brushing, echo = FALSE, fig.cap = "View of LISA Shiny app with linked brushing enabled"}
-knitr::include_graphics("img/screenshots/linked-brushing.png")
-```
+<div class="figure">
+<img src="img/screenshots/linked-brushing.png" alt="View of LISA Shiny app with linked brushing enabled" width="100%" />
+<p class="caption">(\#fig:linked-brushing)View of LISA Shiny app with linked brushing enabled</p>
+</div>
 
 Using the lasso select tool, you can click and drag on either the scatterplot or the map and view the corresponding observations highlighted on the other chart panel. Code to reproduce this Shiny app is available in `scripts/linked_brushing` in the book's GitHub repository.
 

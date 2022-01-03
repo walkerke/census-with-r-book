@@ -275,7 +275,7 @@ utah <- get_estimates(
 style_data(utah, caption = "Age and sex data for Utah from the PEP API")
 ```
 
-The function returns a long-form dataset in which each row represents population values broken down by age and sex for the state of Utah. However, there are some key issues with this dataset that must be addressed before constructing a population pyramid. First, several rows represent values that we don't need for our population pyramid visualization. For example, the first few rows in the dataset represent population values for `"Both sexes"` or for `"All ages"`. In turn, it will be necessary to isolate those rows that represent five-year age bands by sex, anmd remove the rows that do not. This can be resolved with some data wrangling using tidyverse tools.
+The function returns a long-form dataset in which each row represents population values broken down by age and sex for the state of Utah. However, there are some key issues with this dataset that must be addressed before constructing a population pyramid. First, several rows represent values that we don't need for our population pyramid visualization. For example, the first few rows in the dataset represent population values for `"Both sexes"` or for `"All ages"`. In turn, it will be necessary to isolate those rows that represent five-year age bands by sex, and remove the rows that do not. This can be resolved with some data wrangling using tidyverse tools.
 
 In the dataset returned by `get_estimates()`, five-year age bands are identified in the `AGEGROUP` column beginning with the word `"Age"`. We can filter this dataset for rows that match this pattern, and remove those rows that represent both sexes. This leaves us with rows that represent five-year age bands by sex. However, to achieve the desired visual effect, data for one sex must mirror another, split by a central vertical axis. To accomplish this, we can set the values for all `Male` values to negative.
 
@@ -291,7 +291,7 @@ style_data(utah_filtered, caption = "Filtered and transformed Utah population da
 
 ### Designing and styling the population pyramid
 
-The data are now ready for visualization. The core components of the pyramid visualization require mapping the population value and the age group to the chart axes. Sex can be mapped to the `fill` aesthetic allowing for the plotting of these categories by color. Importantly, to get the visualization to work correctly, `value` must be mapped to the `y` aesthetic and `AGEGROUP` to the `x` aesthetic, with the `coord_flip()` function then used to plot the bars horizontally instead of vertically.
+The data are now ready for visualization. The core components of the pyramid visualization require mapping the population value and the age group to the chart axes. Sex can be mapped to the `fill` aesthetic allowing for the plotting of these categories by color.
 
 ```{r first-pyramid-utah, fig.cap = "A first population pyramid"}
 ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) + 
@@ -528,7 +528,7 @@ Try hovering your cursor over the different bars; this reveals a tooltip that sh
 
 ## Learning more about visualization
 
-This chapter has introduced a series of visualization techniques implemented in **ggplot2** that are appropriate for US Census Bureau data. Readers may want to learn more about effective principles for visualization design and communication and apply that to the techniques covered here. While Chapter \@ref(mapping-census-data-with-r) covers some of these principles in brief, literature that focuses specifically on these topics will be more comprehensive. @munzner2014 is an in-depth overview of visualization techniques and design principles, and offers a [corresponding website with lecture slides](<https://www.cs.ubc.ca/~tmm/vadbook/>). @evergreen2020 and @knaflic2015 provide guidelines for effective communication with visualization and both offer excellent design tips for business and general audiences. R users may be interested in @wilke2019 and @healy2019, which both offer a comprehensive overview of data visualization best practices along with corresponding R code to reproduce the figures in their books.
+This chapter has introduced a series of visualization techniques implemented in **ggplot2** that are appropriate for US Census Bureau data. Readers may want to learn more about effective principles for visualization design and communication and apply that to the techniques covered here. While Chapter \@ref(mapping-census-data-with-r) covers some of these principles in brief, literature that focuses specifically on these topics will be more comprehensive. @munzner2014 is an in-depth overview of visualization techniques and design principles, and offers a [corresponding website with lecture slides](https://www.cs.ubc.ca/~tmm/vadbook/). @evergreen2020 and @knaflic2015 provide guidelines for effective communication with visualization and both offer excellent design tips for business and general audiences. R users may be interested in @wilke2019 and @healy2019, which both offer a comprehensive overview of data visualization best practices along with corresponding R code to reproduce the figures in their books.
 
 ## Exercises
 

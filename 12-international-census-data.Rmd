@@ -571,7 +571,7 @@ The map highlights income disparities between central Brasilia and the more rura
 
 As the spatial data have been prepared appropriately, methods from Section \@ref(global-and-local-spatial-autocorrelation) can be used to explore patterns of spatial autocorrelation by monthly income in the Brasilia area. The example below uses the local form of the Moran's $I$ statistic, described in more detail in Section \@ref(identifying-clusters-and-spatial-outliers-with-local-indicators-of-spatial-association-lisa). The steps used are described in brief below:
 
--   A queens-case contiguity-based spatial weights matrix is created with functions from the **spdep** package, using the argument `zero_policy = TRUE` as a small number of tracts in the dataset have no neighbors after omitting NA values;
+-   A queens-case contiguity-based spatial weights matrix is created with functions from the **spdep** package, using the argument `zero.policy = TRUE` as a small number of tracts in the dataset have no neighbors after omitting NA values;
 
 -   The `monthly_income` column is scaled to a z-score;
 
@@ -583,24 +583,25 @@ As the spatial data have been prepared appropriately, methods from Section \@ref
 library(spdep)
 set.seed(1983)
 
-# Generate contiguity-based weights with zero-policy = TRUE
-brasilia_weights <- brasilia_income_geo %>%
-  na.omit() %>%
-  poly2nb() %>%
-  nb2listw(zero.policy = TRUE)
-
 # Omit NAs and scale the income variable
 brasilia_input <- brasilia_income_geo %>%
-  na.omit() %>%
-  mutate(scaled_income = as.numeric(scale(monthly_income)))
+  mutate(scaled_income = as.numeric(scale(monthly_income))) %>%
+  na.omit() 
+
+# Generate contiguity-based weights with zero.policy = TRUE
+brasilia_weights <- brasilia_input %>%
+  poly2nb() %>%
+  nb2listw(zero.policy = TRUE)
 
 # Compute the LISA and convert to a tibble
 brasilia_lisa <- localmoran_perm(brasilia_input$scaled_income, 
                                  brasilia_weights,
                                  nsim = 999L, 
-                                 alternative = "two.sided") %>%
+                                 alternative = "two.sided",
+                                 na.action = na.pass) %>%
   as_tibble() %>%
-  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
+  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i",
+              "p_i_sim", "pi_sim_folded", "skewness", "kurtosis"))
 
 # Add the LISA columns to the spatial dataset 
 # and recode them into cluster values
@@ -627,7 +628,7 @@ color_values <- c(`High-high` = "red",
 
 ggplot(brasilia_lisa_clusters, aes(fill = lisa_cluster)) + 
   geom_sf(size = 0.1) + 
-  theme_void() + 
+  theme_void(base_family = "Verdana") + 
   scale_fill_manual(values = color_values) + 
   labs(title = "LISA clusters of median monthly income",
        subtitle = "Census tracts, Brasilia/Federal District",
