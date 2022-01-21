@@ -115,6 +115,27 @@ The code used to produced the styled graphic uses the following modifications:
 
 -   The `scale_x_continuous()` function is used to customize the X-axis of the plot. The `labels` parameter can accept a range of values including a function or formula (used here) that operates over the tick labels. The notation `~paste0(.x, "%")` can be read as "concatenate a percentage sign to all X-axis tick labels, represented by `.x`).
 
+### Exporting data visualizations from R
+
+Once an analyst has settled on a visualization design, they may want to export their image from R to display on a website, in a blog post, or in a report. Plots generated in RStudio can be exported with the **Export \> Save as Image** command; however, analysts who want more programmatic control over their image exports can script this with **ggplot2**. The `ggsave()` function in **ggplot2** will save the last plot generated to an image file in the user's current working directory by default. The specified file extension will control the output image format, e.g. `.png`.
+
+```{r ggsave-1, eval = FALSE}
+ggsave("metro_transit.png")
+```
+
+`ggsave()` includes a variety of options for more fine-grained control over the image output. Common options used by analysts will be `width` and `height` to control the image size; `dpi` to control the image resolution (in dots per inch); and `path` to specify the directory in which the image will be located. For example, the code below would write the most recent plot generated to an 8 inch by 5 inch image file in a custom location with a resolution of 300 dpi.
+
+```{r ggsave-2, eval = FALSE}
+ggsave(
+  filename = "metro_transit.png",
+  path = "~/images",
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 300
+)
+```
+
 ## Visualizing margins of error
 
 As discussed in Chapter 3, handling margins of error appropriately is of significant importance for analysts working with ACS data. While **tidycensus** has tools available for working with margins of error in a data wrangling workflow, it is also often useful to visualize those margins of error to illustrate the degree of uncertainty around estimates, especially when making comparisons between those estimates.
