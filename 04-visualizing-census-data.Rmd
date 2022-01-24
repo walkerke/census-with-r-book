@@ -15,6 +15,82 @@ This chapter includes several examples of how R users can visualize data from th
 
 ## Basic Census visualization with ggplot2
 
+A critical part of the Census data analysis process is *data visualization*, where an analyst examines patterns and trends found in their data graphically. In many cases, the exploratory analyses outlined in the previous two chapters would be augmented significantly with accompanying graphics. This first section illustrates some examples for getting started with exploratory Census data visualization with **ggplot2**.
+
+To get started, we'll return to a dataset used in Section \@ref(renaming-variable-ids), which includes data on median household income and median age by county in the state of Georgia from the 2015-2019 ACS. We are requesting the data in wide format, which will spread the estimate and margin of error information across the columns.
+
+```{r get-ga-data-ch4}
+library(tidycensus)
+
+ga_wide <- get_acs(
+  geography = "county",
+  state = "Georgia",
+  variables = c(medinc = "B19013_001",
+                medage = "B01002_001"),
+  output = "wide",
+  year = 2019
+)
+```
+
+### Getting started with ggplot2
+
+**ggplot2** visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an *aesthetic*, defined with the `aes()` function. Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.
+
+After initializing the ggplot object, users can layer plot elements onto the plot object. Essential to the plot is a `geom`, which specifies one of many chart types available in **ggplot2**. For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth. Layers are linked to the ggplot object by using the `+` operator.
+
+One of the first exploratory graphics an analyst will want to produce when examining a new dataset is a *histogram*, which characterizes the distribution of values in a column through varying lengths of bars. This first example uses **ggplot2** and its `geom_histogram()` function to generate such a histogram of median household income by county in Georgia. The optional call to `options(scipen = 999)` instructs R to avoid using scientific notation in its output, including on the **ggplot2** tick labels.
+
+```{r ga-income-histogram, fig.cap="Histogram of median household income, Georgia counties"}
+library(tidyverse)
+options(scipen = 999)
+
+ggplot(ga_wide, aes(x = medincE)) + 
+  geom_histogram()
+```
+
+The histogram shows that the modal median household income of Georgia counties is around \$40,000 per year, with a longer tail of wealthier counties on the right-hand side of the plot. In the histogram, counties are organized into "bins", which are groups of equal width along the X-axis. The Y-axis then represents the number of counties that fall within each bin. By default, **ggplot2** organizes the data into 30 bins; this option can be changed with the `bins` parameter. For example, we can re-make the visualization with half the previous number of bins by including the argument `bins = 15` in our call to `geom_histogram()`.
+
+```{r ga-income-histogram-newbins, fig.cap = "Histogram with the number of bins reduced to 15"}
+ggplot(ga_wide, aes(x = medincE)) + 
+  geom_histogram(bins = 15)
+```
+
+Histograms are not the only options for visualizing univariate data distributions. A popular alternative is the *box-and-whisker plot*, which is implemented in **ggplot2** with `geom_boxplot()`. In this example, the column `medincE` is passed to the `y` parameter instead of `x`; this creates a vertical rather than horizontal box plot.
+
+```{r ga-income-boxplot, fig.cap = "Box plot of median household income, Georgia counties"}
+ggplot(ga_wide, aes(y = medincE)) + 
+  geom_boxplot()
+```
+
+The graphic visualizes the distribution of median household incomes by county in Georgia with a number of different components. The central *box* covers the interquartile range (the IQR, representing the 25th to 75th percentile of values in the distribution) with a central line representing the value of the distribution's median. The *whiskers* then extend to either the minimum and maximum values of the distribution *or* 1.5 times the IQR. In this example, the lower whisker extends to the minimum value, and the upper whisker extends to 1.5 times the IQR. Values beyond the whiskers are represented as *outliers* on the plot with points.
+
+### Visualizing multivariate relationships with scatter plots
+
+As part of the exploratory data analysis process, analysts will often want to visualize *interrelationships between Census variables* along with the univariate data distributions discussed above. For two numeric variables, a common exploratory chart is a *scatter plot*, which maps values in one column to the X-axis and values in another column to the Y-axis. The resulting plot then gives the analyst a sense of the nature of the relationship between the two variables.
+
+Scatter plots are implemented in **ggplot2** with the `geom_point()` function, which plots points on a chart relative to X and Y values for observations in a dataset. This requires specification of two columns in the call to `aes()` as opposed to the single column used in the univariate distribution visualization examples. The example that follows generates a scatter plot to visualize the relationship between county median age and county median household income in Georgia.
+
+```{r first-scatterplot-ga, fig.cap="Scatter plot of median age and median household income, counties in Georgia"}
+ggplot(ga_wide, aes(x = medageE, y = medincE)) + 
+  geom_point()
+
+```
+
+The graphic shows a cloud of points that in some cases can suggest the nature of the correlation between the two columns. In this example, however, the correlation is not immediately clear from the distribution of points. Fortunately, **ggplot2** includes the ability to "layer on" additional chart elements to help clarify the nature of the relationship between the two columns. The `geom_smooth()` function draws a fitted line representing the relationship between the two columns on the plot. The argument `method = "lm"` draws a straight line based on a linear model fit; smoothed relationships can be visualized as well with `method = "loess"`.
+
+```{r scatterplot-geom-smooth, fig.cap = "Scatter plot with linear relationship superimposed on the graphic"}
+
+ggplot(ga_wide, aes(x = medageE, y = medincE)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+The regression line suggests a modest negative relationship between the two columns, showing that county median household income in Georgia tends to decline slightly as median age increases.
+
+## Customizing ggplot2 visualizations
+
+The attractive defaults of **ggplot2** visualizations allow for the creation of legible graphics with little to no customization. This helps greatly with exploratory data analysis tasks where the primary audience is the analyst exploring the dataset. Analysts planning to present their work to an external audience, however, will want to customize the appearance of their plots beyond the defaults to maximize interpretability. This section covers how to take a Census data visualization that is relatively illegible by default and polish it up for eventual presentation and export from R.
+
 In this example, we will create a visualization that illustrates the percent of commuters that take public transportation to work for the largest metropolitan areas in the United States. The data come from the 2019 1-year American Community Survey Data Profile, variable `DP03_0021P`. To determine this information, we can use **tidyverse** tools to sort our data by descending order of a summary variable representing total population and then retaining the 20 largest metropolitan areas by population using the `slice_max()` function.
 
 ```{r get-metro-data}
@@ -37,13 +113,7 @@ style_data(metros, n_rows = 5, caption = "Large metro areas by public transit co
 
 The returned data frame has 7 columns, as is standard for `get_acs()` with a summary variable, but has 20 rows as specified by the `slice_max()` command. While the data can be filtered and sorted further to facilitate comparative analysis, it also can be represented succinctly with a visualization. The tidy format returned by `get_acs()` is well-suited for visualization with **ggplot2**.
 
-### Getting started with ggplot2
-
-**ggplot2** visualizations are initialized with the `ggplot()` function, to which a user commonly supplies a dataset and an *aesthetic*, defined with the `aes()` function. Within the `aes()` function, a user can specify a series of mappings onto either the data axes or other characteristics of the plot, such as element fill or color.
-
-After initializing the ggplot object, users can layer plot elements onto the plot object. Essential to the plot is a `geom`, which specifies one of many chart types available in ggplot2. For example, `geom_bar()` will create a bar chart, `geom_line()` a line chart, `geom_point()` a point plot, and so forth. Layers are linked to the ggplot object by using the `+` operator.
-
-In the basic example below, we can create a dot plot comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code. The first argument to `ggplot()` in the example below is the name of our dataset; the second argument is an aesthetic mapping of columns to plot elements, specified inside the `aes()` function. This plot initialization is then linked with the `+` operator to the `geom_col()` function to create a bar chart.
+In the basic example below, we can create a bar chart comparing public transportation as commute share for the most populous metropolitan areas in the United States with a minimum of code. The first argument to `ggplot()` in the example below is the name of our dataset; the second argument is an aesthetic mapping of columns to plot elements, specified inside the `aes()` function. This plot initialization is then linked with the `+` operator to the `geom_col()` function to create a bar chart.
 
 ```{r first-plot, fig.cap = "A first bar chart with ggplot2"}
 ggplot(metros, aes(x = NAME, y = estimate)) + 
