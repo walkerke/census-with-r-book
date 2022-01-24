@@ -962,7 +962,7 @@ tmap_save(
 
 Interactive maps designed with **leaflet** can be written to HTML documents using the `saveWidget()` function from the **htmlwidgets** package. A Leaflet map should first be assigned to a variable, which is then passed to `saveWidget()` along with a specified name and path for the output HTML file. Interactive maps created with `mapview()` are written to HTML files the same way, though the object to be saved will need to be accessed from the `map` slot with the notation `@map`, as shown below.
 
-```{r save-leaflet-map}
+```{r save-leaflet-map, eval = FALSE}
 library(htmlwidgets)
 
 dallas_map <- mapview(dallas_bachelors, zcol = "estimate")
