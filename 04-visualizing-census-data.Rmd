@@ -399,8 +399,8 @@ utah_pyramid <- ggplot(utah_filtered,
   geom_col(width = 0.95, alpha = 0.75) + 
   theme_minimal(base_family = "Verdana", 
                 base_size = 12) + 
-  scale_x_continuous(labels = function(y) paste0(abs(y / 1000), "k")) + 
-  scale_y_discrete(labels = function(x) gsub("Age | years", "", x)) + 
+  scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
+  scale_y_discrete(labels = function(y) str_remove_all(y, "Age\\s|\\syears")) + 
   scale_fill_manual(values = c("darkred", "navy")) + 
   labs(x = "", 
        y = "2019 Census Bureau population estimate", 
