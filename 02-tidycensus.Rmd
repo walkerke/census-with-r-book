@@ -134,36 +134,65 @@ The `geography` parameter in `get_acs()` and `get_decennial()` allows users to r
 
 The only geographies available in 2000 are `"state"`, `"county"`, `"county subdivision"`, `"tract"`, `"block group"`, and `"place"`. Some geographies available from the Census API are not available in tidycensus at the moment as they require more complex hierarchy specification than the package supports, and not all variables are available at every geography.
 
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | Geography                                                                            | Definition                                                                        | Available by          | Available in                                                     |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|-----------------------|------------------------------------------------------------------|
++======================================================================================+===================================================================================+=======================+==================================================================+
 | `"us"`                                                                               | United States                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"region"`                                                                           | Census region                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"division"`                                                                         | Census division                                                                   |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state"`                                                                            | State or equivalent                                                               | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"county"`                                                                           | County or equivalent                                                              | state, county         | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"county subdivision"`                                                               | County subdivision                                                                | **state**, county     | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"tract"`                                                                            | Census tract                                                                      | **state**, county     | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"block group"`                                                                      | Census block group                                                                | **state**, county     | `get_acs()` (2013-), `get_decennial()`                           |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"block"`                                                                            | Census block                                                                      | **state**, **county** | `get_decennial()`                                                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"place"`                                                                            | Census-designated place                                                           | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"alaska native regional corporation"`                                               | Alaska native regional corporation                                                | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area/alaska native area/hawaiian home land"`                       | Federal and state-recognized American Indian reservations and Hawaiian home lands | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area/alaska native area (reservation or statistical entity only)"` | Only reservations and statistical entities                                        | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"american indian area (off-reservation trust land only)/hawaiian home land"`        | Only off-reservation trust lands and Hawaiian home lands                          | state                 | `get_acs()`,                                                     |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"metropolitan statistical area/micropolitan statistical area"` OR `"cbsa"`          | Core-based statistical area                                                       | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`, `get_flows()` |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"combined statistical area"`                                                        | Combined statistical area                                                         | state                 | `get_acs()`, `get_decennial()`, `get_estimates()`                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"new england city and town area"`                                                   | New England city/town area                                                        | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"combined new england city and town area"`                                          | Combined New England area                                                         | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"urban area"`                                                                       | Census-defined urbanized areas                                                    |                       | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"congressional district"`                                                           | Congressional district for the year-appropriate Congress                          | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (elementary)"`                                                     | Elementary school district                                                        | **state**             | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (secondary)"`                                                      | Secondary school district                                                         | **state**             | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"school district (unified)"`                                                        | Unified school district                                                           | **state**             | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"public use microdata area"`                                                        | PUMA (geography associated with Census microdata samples)                         | state                 | `get_acs()`                                                      |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"zip code tabulation area"` OR `"zcta"`                                             | Zip code tabulation area                                                          | state                 | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state legislative district (upper chamber)"`                                       | State senate districts                                                            | **state**             | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"state legislative district (lower chamber)"`                                       | State house districts                                                             | **state**             | `get_acs()`, `get_decennial()`                                   |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 | `"voting district"`                                                                  | Voting districts (2020 only)                                                      | **state**             | `get_decennial()`                                                |
++--------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+-----------------------+------------------------------------------------------------------+
 
 The geography parameter must be typed exactly as specified in the table above to request data correctly from the Census API; use the guide above as a reference and copy-paste for longer strings. For core-based statistical areas and zip code tabulation areas, two heavily-requested geographies, the aliases `"cbsa"` and `"zcta"` can be used, respectively, to fetch data for those geographies.
 
@@ -316,6 +345,39 @@ style_data(hhinc_wide, caption = "Income table in wide form")
 ```
 
 The wide-form dataset includes `GEOID` and `NAME` columns, as in the tidy dataset, but is also characterized by estimate/margin of error pairs across the columns for each Census variable in the table.
+
+### Understanding GEOIDs
+
+The `GEOID` column returned by default in **tidycensus** can be used to uniquely identify geographic units in a given dataset. For geographies within the core Census hierarchy (Census block through state, as discussed in Section \@ref(census-hierarchies)), GEOIDs can be used to uniquely identify specific units as well as units' parent geographies. Let's take the example of households by Census block from the 2020 Census in Cimarron County, Oklahoma.
+
+```{r get-osage-blocks}
+cimarron_blocks <- get_decennial(
+  geography = "block",
+  variables = "H1_001N",
+  state = "OK",
+  county = "Cimarron",
+  year = 2020,
+  sumfile = "pl"
+)
+```
+
+```{r cimarron-blocks-show, echo = FALSE}
+style_data(cimarron_blocks, caption = "Households by block in Cimarron County, Oklahoma")
+```
+
+The mapping between the `GEOID` and `NAME` columns in the returned 2020 Census block data offers some insight into how GEOIDs work for geographies within the core Census hierarchy. Take the first block in the table, Block 1110, which has a GEOID of **400259503001110**. The GEOID value breaks down as follows:
+
+-   The first two digits, **40**, correspond to the [Federal Information Processing Series (FIPS) code](https://www.census.gov/library/reference/code-lists/ansi.html) for the state of Oklahoma. All states and US territories, along with other geographies at which the Census Bureau tabulates data, will have a FIPS code that can uniquely identify that geography.
+
+-   Digits 3 through 5, **025**, are representative of Cimarron County. These three digits will uniquely identify Cimarron County within Oklahoma. County codes are generally combined with their corresponding state codes to uniquely identify a county within the United States, as three-digit codes will be repeated across states. Cimarron County's code in this example would be **40025**.
+
+-   The next six digits, **950300**, represent the block's Census tract. The tract name in the `NAME` column is Census Tract 9503; the six-digit tract ID is right-padded with zeroes.
+
+-   The twelfth digit, **1**, represents the parent block group of the Census block. As there are no more than nine block groups in any Census tract, the block group name will not exceed 9.
+
+-   The last three digits, **110**, represent the individual Census block, though these digits are combined with the parent block group digit to form the block's name.
+
+For geographies outside the core Census hierarchy, GEOIDs will uniquely identify geographic units but will only include IDs of parent geographies to the degree to which they nest within them. For example, a geography that nests within states but may cross county boundaries like school districts will include the state GEOID in its GEOID but unique digits after that. Geographies like core-based statistical areas that do not nest within states will have fully unique GEOIDs, independent of any other geographic level of aggregation such as states.
 
 ### Renaming variable IDs
 
