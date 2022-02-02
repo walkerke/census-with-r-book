@@ -111,17 +111,17 @@ separate(
   style_data(caption = "Separate columns for county and state")
 ```
 
-::: {.rmdnote}
+::: rmdnote
 You may have noticed above that existing variable names are unquoted when referenced in tidyverse functions. Many tidyverse functions use non-standard evaluation to refer to column names, which means that column names can be used as arguments directly without quotation marks. Non-standard evaluation makes interactive programming faster, especially for beginners; however, it can introduce some complications when writing your own functions or R packages. A full treatment of non-standard evaluation is beyond the scope of this book; Hadley Wickham's *Advanced R* [@wickham2019a] is the best resource on the topic if you'd like to learn more.
 :::
 
 ### Using summary variables and calculating new columns
 
-Data in Census and ACS tables, as in the example above, are frequently comprised of variables that individually constitute sub-categories such as the numbers of households in different household income bands. One limitation of the approach above, however, is that the data - and the resulting analysis - return estimated counts, which are difficult to compare across geographies. For example, Maricopa County in Arizona is the state's most populous county with 4.3 million residents; the second-largest county, Pima, only has just over 1 million residents and six of the state's 15 counties have fewer than 100,000 residents. In turn, comparing Maricopa's estimates with those of smaller counties in the state would often be inappropriate.
+Data in Census and ACS tables, as in the example above, are frequently comprised of variables that individually constitute sub-categories such as the numbers of households in different household income bands. One limitation of the approach above, however, is that the data and the resulting analysis return estimated counts, which are difficult to compare across geographies. For example, Maricopa County in Arizona is the state's most populous county with 4.3 million residents; the second-largest county, Pima, only has just over 1 million residents and six of the state's 15 counties have fewer than 100,000 residents. In turn, comparing Maricopa's estimates with those of smaller counties in the state would often be inappropriate.
 
 A solution to this issue might involve **normalizing** the estimated count data by dividing it by the overall population from which the sub-group is derived. Appropriate denominators for ACS tables are frequently found in the tables themselves as variables. In ACS table B19001, which covers the number of households by income bands, the variable `B19001_001` represents the total number of households in a given enumeration unit, which we removed from our analysis earlier. Given that this variable is an appropriate denominator for the other variables in the table, it merits its own column to facilitate the calculation of proportions or percentages.
 
-In **tidycensus**, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions. Doing so will create two new columns for the decennial Census datasets - `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value - and three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which includes the ACS estimate and margin of error for the summary variable.
+In **tidycensus**, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions. When using `get_decennial()`, doing so will create two new columns for the decennial Census datasets, `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value. When using `get_acs()`, using `summary_var` creates three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which include the ACS estimate and margin of error for the summary variable.
 
 With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2015-2019 ACS.
 
@@ -480,11 +480,27 @@ get_acs(
 
 ### Calculating derived margins of error in tidycensus
 
-For small geographies or small populations, margins of error can get quite large, in some cases exceeding their corresponding estimates. In the example below, we can examine data on age groups by sex for the population age 65 and older for Census tracts in Salt Lake County, Utah.
+For small geographies or small populations, margins of error can get quite large, in some cases exceeding their corresponding estimates. In the example below, we can examine data on age groups by sex for the population age 65 and older for Census tracts in Salt Lake County, Utah. We will first generate a vector of variable IDs for which we want to request data from the ACS using some base R functionality.
 
-```{r salt-lake-example}
+In this workflow, an analyst has used `load_variables()` to look up the variables that represent estimates for populations age 65 and up; this includes `B01001_020` through `B01001_025` for males, and `B01001_044` through `B01001_049` for females. Typing out each variable individually would be tedious, so an analyst can use string concatenation to generate the required vector of variable IDs as follows:
+
+```{r salt-lake-example-vars}
 vars <- paste0("B01001_0", c(20:25, 44:49))
 
+vars
+```
+
+When R evaluates nested expressions like this, it starts with the inner-most expressions then evaluates them from the inside out. The steps taken to assemble the correct vector of variable IDs are as follows:
+
+-   First, the expressions `20:25` and `44:49` are evaluated. The colon operator `:` in base R, when used between two numbers, will generate a vector of numbers from the first to the second at intervals of 1. This creates vectors of the integers 20 through 25 and 44 through 49, which will serve as the suffixes for the variable IDs.
+
+-   Second, the `c()` function is used to combine the two vectors of integers into a single vector.
+
+-   Third, the `paste0()` function concatenates the string prefix `"B01001_0"` with each of the integers in the vector created with `c()` and returns a vector of variable IDs. `paste0()` is a convenient extension of the more flexible `paste()` function that concatenates strings with no spaces in between them by default.
+
+The resulting variables object, named `vars`, can now be used to request variables in a call to `get_acs()`.
+
+```{r salt-lake-example}
 salt_lake <- get_acs(
   geography = "tract",
   variables = vars,
@@ -494,7 +510,7 @@ salt_lake <- get_acs(
 )
 ```
 
-Let's focus on a specific Census tract in Salt Lake County using `filter()`:
+We will now want to examine the margins of error around the estimates in the returned data. Let's focus on a specific Census tract in Salt Lake County using `filter()`:
 
 ```{r specific-tract, eval = FALSE}
 example_tract <- salt_lake %>%
@@ -555,7 +571,7 @@ The margins of error relative to their estimates are now much more reasonable th
 
 That said, [the Census Bureau issues a note of caution](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2019_Instructions_for_Stat_Testing_ACS.pdf?) [@acs_moe]:
 
-> All [derived MOE methods] are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate's standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
+> All \[derived MOE methods\] are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate's standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
 
 This means that your "best bet" is to first search the ACS tables to see if your data are found in aggregated form elsewhere before doing the aggregation and MOE estimation yourself. In many cases, you'll find aggregated information in the ACS combined tables, Data Profile, or Subject Tables that will include pre-computed margins of error for you.
 
