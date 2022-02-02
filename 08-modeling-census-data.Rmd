@@ -350,7 +350,7 @@ library(patchwork)
 
 mhv_map <- ggplot(dfw_data, aes(fill = median_valueE)) + 
   geom_sf(color = NA) + 
-  scale_fill_viridis_c(labels = scales::dollar) + 
+  scale_fill_viridis_c(labels = scales::label_dollar()) + 
   theme_void() + 
   labs(fill = "Median home value ")
 
