@@ -699,7 +699,7 @@ us_value_shifted <- us_value %>%
 gg <- ggplot(us_value_shifted, aes(fill = estimate)) + 
   geom_sf_interactive(aes(tooltip = tooltip, data_id = NAME), 
                       size = 0.1) + 
-  scale_fill_viridis_c(option = "plasma", labels = scales::dollar) + 
+  scale_fill_viridis_c(option = "plasma", labels = label_dollar()) + 
   labs(title = "Median housing value by State, 2019",
        caption = "Data source: 2019 1-year ACS, US Census Bureau",
        fill = "ACS estimate") + 
@@ -799,8 +799,8 @@ vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate),
   geom_point_interactive(color = "black", size = 4, shape = 21,
                          aes(data_id = GEOID)) +
   scale_fill_distiller(palette = "Greens", direction = 1,
-                       labels = scales::dollar) + 
-  scale_x_continuous(labels = scales::dollar) + 
+                       labels = label_dollar()) + 
+  scale_x_continuous(labels = label_dollar()) + 
   labs(title = "Household income by county in Vermont",
        subtitle = "2015-2019 American Community Survey",
        y = "",

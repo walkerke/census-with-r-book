@@ -162,6 +162,8 @@ The inclusion of labels provides key information about the contents of the plot 
 While an analyst may be comfortable with the plot as-is, **ggplot2** allows for significant customization with respect to stylistic presentation. The example below makes a few such modifications. This includes styling the bars on the plot with a different color and internal transparency; changing the font; and customizing the axis tick labels.
 
 ```{r customized-plot, fig.cap = "A ggplot2 bar chart with custom styling"}
+library("scales")
+
 metros %>%
   mutate(NAME = str_remove(NAME, "-.*$")) %>%
   mutate(NAME = str_remove(NAME, ",.*$")) %>%
@@ -169,7 +171,7 @@ metros %>%
   geom_col(color = "navy", fill = "navy", 
            alpha = 0.5, width = 0.85) +  
   theme_minimal(base_size = 12, base_family = "Verdana") + 
-  scale_x_continuous(labels = ~paste0(.x, "%")) + 
+  scale_x_continuous(labels = label_percent(scale = 1)) + 
   labs(title = "Public transit commute share", 
        subtitle = "2019 1-year ACS estimates", 
        y = "", 
@@ -183,7 +185,7 @@ The code used to produced the styled graphic uses the following modifications:
 
 -   In the call to `theme_minimal()`, `base_size` and `base_family` parameters are available. `base_size` specifies the base font size to which plot text elements will be drawn; this defaults to 11. In many cases, you will want to increase `base_size` to improve plot legibility. `base_family` allows you to change the font family used on your plot. In this example, `base_family` is set to `"Verdana"`, but you can use any font families accessible to R from your operating system. To check this information, use the `system_fonts()` function in the **systemfonts** package [@pederson2021_fonts].
 
--   The `scale_x_continuous()` function is used to customize the X-axis of the plot. The `labels` parameter can accept a range of values including a function or formula (used here) that operates over the tick labels. The notation `~paste0(.x, "%")` can be read as "concatenate a percentage sign to all X-axis tick labels, represented by `.x`).
+-   The `scale_x_continuous()` function is used to customize the X-axis of the plot. The `labels` parameter can accept a range of values including a function (used here) or formula that operates over the tick labels. The **scales** [@scales] package contains many useful formatting functions to neatly present tick labels, such as `label_percent()`, `label_dollar()`, and `label_date()`. The functions also accept arguments to modify the presentation.
 
 ### Exporting data visualizations from R
 
@@ -254,7 +256,7 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
        x = "", 
        y = "ACS estimate") + 
   theme_minimal(base_size = 12.5) + 
-  scale_x_continuous(labels = scales::dollar)
+  scale_x_continuous(labels = label_dollar())
 ```
 
 The above visualization suggests a ranking of counties from the wealthiest (Cumberland) to the poorest (Piscataquis). However, the data used to generate this chart is significantly different from the metropolitan area data used in the previous example. In our first example, ACS estimates covered the top 20 US metros by population - areas that all have populations exceeding 2.8 million. For these areas, margins of error are small enough that they do not meaningfully change the interpretation of the estimates given the large sample sizes used to generate them. However, as discussed in Section \@ref(handling-margins-of-error-in-the-american-community-survey-with-tidycensus), smaller geographies may have much larger margins of error relative to their ACS estimates.
@@ -287,7 +289,7 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
        subtitle = "Counties in Maine", 
        x = "2015-2019 ACS estimate", 
        y = "") + 
-  scale_x_continuous(labels = scales::dollar)
+  scale_x_continuous(labels = label_dollar())
 ```
 
 Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income. For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties *could* conceivably have lower median household incomes. Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.
@@ -296,7 +298,7 @@ Adding the horizontal error bars around each point gives us critical information
 
 Section \@ref(preparing-time-series-acs-estimates) covered how to obtain a time series of ACS estimates to explore temporal demographic shifts. While the output table usefully represented the time series of educational attainment in Colorado counties, data visualization is also commonly used to illustrate change over time. Arguably the most common chart type chosen for time-series visualization is the line chart, which **ggplot2** handles capably with the `geom_line()` function.
 
-For an illustrative example, we'll obtain 1-year ACS data back to 2005 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005.
+For an illustrative example, we'll obtain 1-year ACS data back to 2005 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005, and we use the formula specification for anonymous functions so that `~ .x` translates to `function(x) x`.
 
 ```{r get-deschutes-value}
 years <- 2005:2019
@@ -336,7 +338,7 @@ ggplot(deschutes_value, aes(x = year, y = estimate, group = 1)) +
   geom_line(color = "navy") + 
   geom_point(color = "navy", size = 2) + 
   theme_minimal(base_size = 12) + 
-  scale_y_continuous(labels = scales::dollar) + 
+  scale_y_continuous(labels = label_dollar(scale = .001, suffix = "k")) + 
   labs(title = "Median home value in Deschutes County, OR",
        x = "Year",
        y = "ACS estimate",
@@ -389,7 +391,7 @@ ggplot(utah_filtered, aes(x = value, y = AGEGROUP, fill = SEX)) +
   geom_col()
 ```
 
-The visualization represents a functional population pyramid that is nonetheless in need of some cleanup. In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse. Cleaning up the plot allows us to use some additional visualization options in **ggplot2**. In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in **ggplot2** along with custom label formatters we define. In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information. We'll also make use of an alternative **ggplot2** theme, `theme_minimal()`, which uses a white background with muted gridlines.
+The visualization represents a functional population pyramid that is nonetheless in need of some cleanup. In particular, the axis labels are not informative; the y-axis tick labels have redundant information ("Age" and "years"); and the x-axis tick labels are difficult to parse. Cleaning up the plot allows us to use some additional visualization options in **ggplot2**. In addition to specifying appropriate chart labels, we can format the axis tick labels by using appropriate `scale_*` functions in **ggplot2** and setting the X-axis limits to show both sides of 0 equally. In particular, this involves the use of custom absolute values to represent population sizes, and the removal of redundant age group information. We'll also make use of an alternative **ggplot2** theme, `theme_minimal()`, which uses a white background with muted gridlines.
 
 ```{r formatted-pyramid-utah, fig.cap = "A formatted population pyramid of Utah"}
 utah_pyramid <- ggplot(utah_filtered, 
@@ -399,8 +401,12 @@ utah_pyramid <- ggplot(utah_filtered,
   geom_col(width = 0.95, alpha = 0.75) + 
   theme_minimal(base_family = "Verdana", 
                 base_size = 12) + 
-  scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
-  scale_y_discrete(labels = function(y) str_remove_all(y, "Age\\s|\\syears")) + 
+  # scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
+  scale_x_continuous(
+    labels = ~ number_format(scale = .001, suffix = "k")(abs(.x)),
+    limits = 140000 * c(-1,1)
+  ) + 
+  scale_y_discrete(labels = ~ str_remove_all(.x, "Age\\s|\\syears")) + 
   scale_fill_manual(values = c("darkred", "navy")) + 
   labs(x = "", 
        y = "2019 Census Bureau population estimate", 
@@ -497,7 +503,6 @@ ggplot(housing_val2, aes(x = estimate)) +
   labs(x = "ACS estimate",
        y = "",
        title = "Median home values by Census tract, 2015-2019 ACS")
-  
 ```
 
 The side-by-side comparative graphics show how the value distributions vary between the three counties. Home values in all three counties are common around \$250,000, but Multnomah County has some Census tracts that represent the highest values in the dataset.
@@ -518,7 +523,7 @@ ggplot(housing_val2, aes(x = estimate, y = county)) +
   theme_ridges() + 
   labs(x = "Median home value: 2015-2019 ACS estimate", 
        y = "") + 
-  scale_x_continuous(labels = scales::dollar)
+  scale_x_continuous(labels = label_dollar(scale = .001, suffix = "k"))
 ```
 
 The overlapping density "ridges" offer both a pleasing aesthetic but also a practical way to compare the different data distributions. As **ggridges** extends **ggplot2**, analysts can style the different chart components to their liking using the methods introduced earlier in this chapter.
@@ -550,7 +555,7 @@ ggplot(ny_race_income, aes(x = variable, y = summary_est, color = summary_est)) 
   coord_flip() + 
   theme_minimal(base_size = 13) + 
   scale_color_viridis_c(guide = FALSE) + 
-  scale_y_continuous(labels = scales::dollar) + 
+  scale_y_continuous(labels = label_dollar()) + 
   labs(x = "Largest group in Census tract", 
        y = "Median household income", 
        title = "Household income distribution by largest racial/ethnic group", 
