@@ -148,7 +148,7 @@ $$
 
 where $E(T)$ is the entropy of $T$, normalizing $H$ to range between values of 0 and 1.
 
-Computing these indices is straightforward with the **segregation** package. The `mutual_total()` function computes both indices; when different regions are to be considered (like multiple urban areas, as in this example) the `mutual_within()` function will compute $M$ and $H$ by urban area with the `within` argument appropriately specified.
+Computing these indices is straightforward with the **segregation** package. The `mutual_total()` function computes both indices; when different regions are to be considered (like multiple urban areas, as in this example) the `mutual_within()` function will compute $M$ and $H$ by urban area with the `within` argument appropriately specified. We'll be using the full `ca_urban_data` dataset, which includes population estimates for non-Hispanic white, non-Hispanic Black, non-Hispanic Asian, and Hispanic populations.
 
 ```{r multi-entropy, eval = FALSE}
 mutual_within(
@@ -175,7 +175,7 @@ mutual_within(
 
 When multi-group segregation is considered using these indices, Los Angeles remains the most segregated urban area, whereas Riverside/San Bernardino is the least segregated.
 
-The **segregation** package also offers a function for local segregation analysis, `mutual_local()`, which decomposes $M$ into unit-level segregation scores. In the example below, we will use `mutual_local()` to examine patterns of segregation across the most segregated urban area, Los Angeles.
+The **segregation** package also offers a function for local segregation analysis, `mutual_local()`, which decomposes $M$ into unit-level segregation scores, represented by `ls`. In the example below, we will use `mutual_local()` to examine patterns of segregation across the most segregated urban area, Los Angeles.
 
 ```{r map-local-seg}
 la_local_seg <- ca_urban_data %>%
@@ -439,7 +439,7 @@ The printed summary gives us information about the model fit. The `Estimate` col
 
 By convention, researchers will use *p*-value cutoffs of 0.05, 0.01, or 0.001, depending on the topic under study; these values are highlighted with asterisks in the model summary printout. Examining the model parameters and *p*-values suggests that median household income, bachelor's degree attainment, the percentage non-Hispanic white population, and median age are positively associated with median home values, whereas the percentage owner-occupied housing is negatively associated with median home values. The R-squared value is 0.78, suggesting that our model explains around 78 percent of the variance in `median_value`.
 
-Somewhat surprisingly, `median_rooms` does not appear to have a significant relationship with median home value as per the model. On the one hand, this can be interpreted as "the effect of median rooms on median home value with all other predictors held constant" - but also could be suggestive of model mis-specification. As mentioned earlier, models using ACS data as predictors are highly vulnerable to *collinearity*. Collinearity occurs when two or more predictors are highly correlated with one another, which can lead to mis-interpretation of the actual relationships between predictors and the outcome variable.
+Somewhat surprisingly, `median_rooms` does not appear to have a significant relationship with median home value as per the model. On the one hand, this can be interpreted as "the effect of median rooms on median home value with all other predictors held constant" - but also could be suggestive of model mis-specification. As mentioned earlier, models using ACS data as predictors are highly vulnerable to *collinearity*. Collinearity occurs when two or more predictors are highly correlated with one another, which can lead to misinterpretation of the actual relationships between predictors and the outcome variable.
 
 One way to inspect for collinearity is to visualize the *correlation matrix* of the predictors, in which correlations between all predictors are calculated with one another. The `correlate()` function in the **corrr** package [@kuhn2020] offers a straightforward method for calculating a correlation matrix over a rectangular data frame.
 
@@ -635,7 +635,7 @@ lag_model <- lagsarlm(
 summary(lag_model, Nagelkerke = TRUE)
 ```
 
-The general statistical relationships observed in the non-spatial model are preserved in the spatial lag model, though the effect sizes (the model parameters) shrink, illustrating the importance of controlling for the spatial lag. Additionally, the $\rho$ parameter is positive and statistically significant, suggesting the presence of spatial spillover effects. This finding makes practical sense, as median home values may be influenced by the values of homes in neighboring Census tracts along with the characteristics of the neighborhood itself. The argument `Nagelkerke = TRUE` computes a pseudo-R-squared value, which is slightly higher than the corresponding value for the non-spatial model.
+The general statistical relationships observed in the non-spatial model are preserved in the spatial lag model, though the effect sizes (the model parameters) are smaller, illustrating the importance of controlling for the spatial lag. Additionally, the $\rho$ parameter is positive and statistically significant, suggesting the presence of spatial spillover effects. This finding makes practical sense, as median home values may be influenced by the values of homes in neighboring Census tracts along with the characteristics of the neighborhood itself. The argument `Nagelkerke = TRUE` computes a pseudo-R-squared value, which is slightly higher than the corresponding value for the non-spatial model.
 
 #### Spatial error models
 
@@ -669,7 +669,7 @@ error_model <- errorsarlm(
 summary(error_model, Nagelkerke = TRUE)
 ```
 
-The $\lambda$ value is large and statistically significant, again illustrating the importance of accounting for spatial autocorrelation in the model.
+The $\lambda$ (lambda) value is large and statistically significant, again illustrating the importance of accounting for spatial autocorrelation in the model.
 
 ### Choosing between spatial lag and spatial error models
 
@@ -689,7 +689,7 @@ moran.test(error_model$residuals, wts)
 
 Both models reduce Moran's $I$; however, the error model does a better job of eliminating spatial autocorrelation in the residuals entirely. We can also use *Lagrange multiplier tests* to evaluate the appropriateness of these models together [@anselin1996]. These tests check for spatial error dependence, whether a spatially lagged dependent variable is missing, and the robustness of each in the presence of the other.
 
-The `lm.LMtests()` function can be used with an input linear model to compute these tests:
+The `lm.LMtests()` function can be used with an input linear model to compute these tests. We'll use `model2`, the home value model with median household income omitted, to compute the tests.
 
 ```{r lagrange}
 lm.LMtests(

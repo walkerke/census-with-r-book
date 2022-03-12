@@ -691,6 +691,7 @@ A compromise solution can involve other R packages that allow for interactive ma
 
 ```{r ggiraph-alternative, fig.cap = "Interactive US map with ggiraph"}
 library(ggiraph)
+library(scales)
 
 us_value_shifted <- us_value %>%
   shift_geometry(position = "outside") %>%

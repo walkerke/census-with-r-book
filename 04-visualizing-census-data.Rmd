@@ -162,7 +162,7 @@ The inclusion of labels provides key information about the contents of the plot 
 While an analyst may be comfortable with the plot as-is, **ggplot2** allows for significant customization with respect to stylistic presentation. The example below makes a few such modifications. This includes styling the bars on the plot with a different color and internal transparency; changing the font; and customizing the axis tick labels.
 
 ```{r customized-plot, fig.cap = "A ggplot2 bar chart with custom styling"}
-library("scales")
+library(scales)
 
 metros %>%
   mutate(NAME = str_remove(NAME, "-.*$")) %>%
@@ -401,7 +401,6 @@ utah_pyramid <- ggplot(utah_filtered,
   geom_col(width = 0.95, alpha = 0.75) + 
   theme_minimal(base_family = "Verdana", 
                 base_size = 12) + 
-  # scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
   scale_x_continuous(
     labels = ~ number_format(scale = .001, suffix = "k")(abs(.x)),
     limits = 140000 * c(-1,1)

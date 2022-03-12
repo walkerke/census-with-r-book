@@ -60,6 +60,9 @@ The example below uses `read_nhgis_sf()` to read in spatial and demographic data
 library(ipumsr)
 library(tidyverse)
 
+# Note: the NHGIS file name depends on a download number
+# that is unique to each user, so your file names will be 
+# different from the code below
 nyc_1910 <- read_nhgis_sf(
   data_file = "data/NHGIS/nhgis0099_csv.zip",
   shape_file = "data/NHGIS/nhgis0099_shape/nhgis0099_shapefile_tl2000_us_tract_1910.zip",
@@ -362,7 +365,7 @@ To this point, this book has focused on a smaller number of US Census Bureau dat
 
 **censusapi** [@recht2021] is an R package designed to give R users access to *all* of the US Census Bureau's API endpoints. Unlike **tidycensus**, which only focuses on a select number of datasets, **censusapi**'s `getCensus()` function can be widely applied to the hundreds of possible datasets the Census Bureau makes available. **censusapi** requires some knowledge of how to structure Census Bureau API requests to work; however this makes the package more flexible than **tidycensus** and may be preferable for users who want to submit highly customized queries to the decennial Census or ACS APIs.
 
-censusapi uses the same Census API key as **tidycensus**, though references it with the R environment variable `CENSUS_KEY`. If this environment variable is set in a user's `.Renviron` file, functions in **censusapi** will pick up the key without having to supply it directly.
+**censusapi** uses the same Census API key as **tidycensus**, though references it with the R environment variable `CENSUS_KEY`. If this environment variable is set in a user's `.Renviron` file, functions in **censusapi** will pick up the key without having to supply it directly.
 
 The **usethis** package [@wickham_and_bryan2021] is the most user-friendly way to work with the `.Renviron` file in R with its function `edit_r_environ()`. Calling this function will bring up the `.Renviron` file in a text editor, allowing users to set environment variables that will be made available to R when R starts up.
 
@@ -372,7 +375,7 @@ library(usethis)
 edit_r_environ()
 ```
 
-Add the line `CENSUS_KEY='YOUR KEY HERE'` to your `.Renviron` file, replacing the `YOUR KEY HERE` text with your API key.
+Add the line `CENSUS_KEY='YOUR KEY HERE'` to your `.Renviron` file, replacing the `YOUR KEY HERE` text with your API key, then restart R to get access to your key.
 
 **censusapi**'s core function is `getCensus()`, which translates R code to Census API queries. The `name` argument references the API name; the [censusapi documentation](https://www.hrecht.com/censusapi/articles/example-masterlist.html) or the function `listCensusApis()` helps you understand how to format this.
 
@@ -432,6 +435,7 @@ Another very useful package for working with Census Bureau data is the **lehdr**
 The core function implemented in **lehdr** is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state.
 
 ```{r lehdr}
+# remotes::install_github("jamgreen/lehdr")
 library(lehdr)
 library(tidycensus)
 library(sf)
@@ -452,7 +456,7 @@ The result is a dataset that shows tract-to-tract commute flows (`S000`) and bro
 style_data(wa_lodes_od, caption = "Origin-destination data acquired with the lehdr package")
 ```
 
-**lehdr** can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with tidycensus for 2018 Census tracts in Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in tidycensus) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
+**lehdr** can be used for a variety of purposes including transportation and economic development planning. For example, the workflow below illustrates how to use LODES data to understand the origins of commuters to the Microsoft campus (represented by its Census tract) in Redmond, Washington. Commuters from LODES will be normalized by the total population age 18 and up, acquired with **tidycensus** for 2018 Census tracts in Seattle-area counties. The dataset `ms_commuters` will include Census tract geometries (obtained with `geometry = TRUE` in **tidycensus**) and an estimate of the number of Microsoft-area commuters per 1000 adults in that Census tract.
 
 ```{r microsoft-commuters}
 seattle_adults <- get_acs(
@@ -612,7 +616,7 @@ The breath of R's developer ecosystem means that in many cases if you have a nee
 
 Most data API packages in R will rely on the **httr** R package [@wickham_httr], which provides R functions for common HTTP requests such as `GET`, `POST`, and `PUT`, among others. In this example, we'll use the `httr::GET()` function to make a request to the new [Department of Housing and Urban Development Comprehensive Affordable Housing Strategy (CHAS) API](https://www.huduser.gov/portal/dataset/chas-api.html). This will require getting a HUD API token and storing it as an environment variable as described earlier in this chapter.
 
-Every API will be structured differently with respect to how it accepts queries and authenticates with API tokens. In this example, the documentation instructs users to pass the API token in the HTTP request with the `Authentication: Bearer` header. The example URL in the documentation, [`https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59`](https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59), is passed to `GET()`, and the `add_headers()` function in httr is used to assemble an appropriate string to send to the API.
+Every API will be structured differently with respect to how it accepts queries and authenticates with API tokens. In this example, the documentation instructs users to pass the API token in the HTTP request with the `Authentication: Bearer` header. The example URL in the documentation, [`https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59`](https://www.huduser.gov/hudapi/public/chas?type=3&year=2012-2016&stateId=51&entityId=59), is passed to `GET()`, and the `add_headers()` function in **httr** is used to assemble an appropriate string to send to the API.
 
 ```{r get-data-hud}
 library(glue)
@@ -742,4 +746,4 @@ The function returns affordable data for Alexandria, Virginia in a format that i
 
 -   Visit <https://ipums.org> and spend some time exploring NHGIS and/or IPUMS. Attempt to replicate the NHGIS workflow for a different variable and time period.
 
--   Explore the **censusapi** package and create a request to a Census API endpoint using the package that you weren't previously familiar with. Join the data to shapes you've obtained with **tigris** and make a map of your data.
+-   Explore the **censusapi** package and create a request to a Census API endpoint using a dataset that you weren't previously familiar with. Join the data to shapes you've obtained with **tigris** and make a map of your data.

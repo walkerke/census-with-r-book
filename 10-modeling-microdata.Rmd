@@ -12,11 +12,11 @@ A major benefit of using the individual-level microdata returned by `get_pums()`
 
 Analysts must pay careful attention to the structure of the PUMS datasets in order to produce accurate estimates and handle errors appropriately. PUMS datasets are *weighted* samples, in which each person or household is not considered unique or individual, but rather representative of multiple other persons or households. In turn, analyses and tabulations using PUMS data must use appropriate tools for handling weighting variables to accurately produce estimates. Fortunately, tidyverse tools like **dplyr**, covered elsewhere in this book, are excellent for producing these tabulations and handling survey weights
 
-As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error. This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific. Fortunately, the US Census Bureau provides *replicate weights* to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample. While working with replicate weights has traditionally been cumbersome for analysts, tidycensus with help from the **survey** [@lumley2010] and **srvyr** [@ellis2021] R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.
+As covered in Chapter 3, data from the American Community Survey are based on a sample and in turn characterized by error. This means that ACS data acquired with `get_pums()` are similarly characterized by error, which can be substantial when cross-tabulations are highly specific. Fortunately, the US Census Bureau provides *replicate weights* to help analysts generate standard errors around tabulated estimates with PUMS data as they take into account the complex structure of the survey sample. While working with replicate weights has traditionally been cumbersome for analysts, **tidycensus** with help from the **survey** [@lumley2010] and **srvyr** [@ellis2021] R packages has integrated tools for handling replicate weights and correctly estimating standard errors when tabulating and modeling data. These workflows will be covered later in this chapter.
 
 ## PUMS data and the tidyverse
 
-As discussed in Chapter \@ref(introduction-to-census-microdata), `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights. These weights can loosely be interpreted as the number of households - or persons - represented by each individual row in the PUMS data. Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data. Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter \@ref(wrangling-census-data-with-tidyverse-tools).
+As discussed in Chapter \@ref(introduction-to-census-microdata), `get_pums()` automatically returns data with both household (`WGTP`) and person (`PWGTP`) weights. These weights can loosely be interpreted as the number of households or persons represented by each individual row in the PUMS data. Appropriate use of these weights columns is essential for tabulating accurate estimates of population characteristics with PUMS data. Fortunately, weighted tabulations work quite well within familiar tidyverse workflows, such as those covered in Chapter \@ref(wrangling-census-data-with-tidyverse-tools).
 
 ### Basic tabulation of weights with tidyverse tools
 
@@ -53,7 +53,7 @@ We can perform similar calculations with tidyverse tools. The `count()` function
 ms_pums %>% count(wt = PWGTP)
 ```
 
-`count()` has the additional benefit of allowing for the specification of one our more columns that will be grouped and tabulated. For example, we could tabulate data by unique values of age and sex in Mississippi:
+`count()` has the additional benefit of allowing for the specification of one our more columns that will be grouped and tabulated. For example, we could tabulate data by unique values of age and sex in Mississippi. The `wt` argument in `count()` specifies the `PWGTP` column as the appropriate weight for data tabulation.
 
 ```{r ms-age-count}
 ms_pums %>%
@@ -206,7 +206,7 @@ where $x$ is the PUMS estimate and $x_r$ is the rth weighted estimate.
 
 With respect to SDR standard errors, the PUMS documentation acknowledges (p. 12),
 
-> Successive Difference Replication (SDR) standard errors and margins of error are expected to be more accurate than generalized variance formulas (GVF) standard errorsand margins of error, although they may be more inconvenient for some users to calculate.
+> Successive Difference Replication (SDR) standard errors and margins of error are expected to be more accurate than generalized variance formulas (GVF) standard errors and margins of error, although they may be more inconvenient for some users to calculate.
 
 The "inconvenience" is generally due to the need to download 80 additional weighting variables and prepare the equation written above. The `rep_weights` parameter in `get_pums()` makes it easier for users to retrieve the replicate weights variables without having to request all 80 directly. In a call to `get_pums()`, an analyst can use `rep_weights = "person"` for person-weights, `"housing"` for household weights, or `"both"` to get both sets.
 
@@ -340,7 +340,7 @@ The rich complexity of demographic data available in the PUMS samples allow for 
 
 Before estimating the model, data should be acquired with `get_pums()` along with appropriate replicate weights. The example below will model whether or not an individual in the labor force aged between 25 and 49 changed residences in the past year as a function of educational attainment, wages, age, class of worker, and family status in Rhode Island.
 
-```{r ri-data, results = 'hide', echo = FALSE}
+```{r ri-data, results = 'hide', echo = TRUE}
 ri_pums_to_model <- get_pums(
   variables = c("PUMA", "SEX", "MIG",
                 "AGEP", "SCHL", "WAGP", 

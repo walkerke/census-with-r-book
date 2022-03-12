@@ -183,7 +183,7 @@ One of the steps the Census Bureau takes to preserve anonymity in the PUMS datas
 
 Public Use Microdata Areas (PUMAs) are the smallest available geographies at which records are identifiable in the PUMS datasets. PUMAs are redrawn with each decennial US Census, and typically are home to between 100,000 - 200,000 people when drawn, although some may be much larger by the end of a Census cycle. In large cities, a PUMA will represent a collection of nearby neighborhoods; in rural areas, it might represent several counties across a large area of a state.
 
-::: {.rmdtip}
+::: rmdtip
 At the time of this writing, PUMA geographies correspond to the 2010 Census definitions, even. While PUMAs are redrawn with each decennial US Census, their release lags the decennial Census by a couple of years. To determine appropriate PUMA geographies, the Census Bureau consults with State Data Centers (SDCs) and incorporates their suggested revisions to these geographies. For 2020 PUMAs, this process takes place through the 2021 calendar year. This means that the updated PUMA geographies, and their incorporation into PUMS datasets, are planned for public release in the summer of 2022. For more information, visit <https://www.census.gov/programs-surveys/geography/guidance/geo-areas/pumas/2020pumas.html>.
 :::
 
@@ -268,7 +268,7 @@ twostate_puma_subset <- get_pums(
 
 ```
 
-```{r show-multistate-pumas}
+```{r show-multistate-pumas, echo = FALSE}
 style_data(twostate_puma_subset, caption = "Data for PUMA 00500 in Wyoming and PUMA 05001 in Utah")
 ```
 

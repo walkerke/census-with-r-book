@@ -296,7 +296,7 @@ hispanic_by_metro <- st_join(
 style_data(hispanic_by_metro, caption = "Census tracts after spatial join operation")
 ```
 
-The output dataset has been reduced from 5,265 Census tracts to 3,201 as a result of the inner spatial join. Notably, the output dataset now includes information for each Census tract about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas such as a faceted plot:
+The output dataset has been reduced from 5,265 Census tracts to 3,189 as a result of the inner spatial join. Notably, the output dataset now includes information for each Census tract about the metropolitan area that it falls within. This enables group-wise data visualization and analysis across metro areas such as a faceted plot:
 
 ```{r plot-hispanic-by-metro, fig.cap = "Faceted density plot of tract Hispanic populations by CBSA in Texas"}
 hispanic_by_metro %>%
@@ -394,6 +394,14 @@ min_dist <- dist %>%
 hist(min_dist)
 ```
 
+::: rmdnote
+The code that extracts minimum distances from the distance matrix includes some notation that may be unfamiliar to readers.
+
+-   The `apply()` function from base R is used to iterate over rows of the matrix. Matrices are a data structure not handled by the `map_*()` family of functions in the tidyverse, so base R methods must be used. In the example pipeline, the `apply()` function inherits the `dist` matrix object as its first argument. The second argument, `1`, refers to the margin of the matrix that `apply()` will iterate over; `1` references rows (which we want), whereas `2` would be used for columns. `min` then is the function to be applied to each row, giving us the minimum distance to a hospital for each Census tract.
+
+-   The `divide_by()` function in the **magrittr** package is a convenience arithmetic function to be used in analytic pipelines as R's arithmetic operators (e.g. `/` for division) won't work in this way. In this example, it divides all the values by 1000 to convert meters to kilometers.
+:::
+
 While many tracts are within 10km of a trauma center, around 16 percent of Iowa Census tracts are beyond 100km from a Level I or II trauma center, suggesting significant accessibility issues for these areas.
 
 ### Calculating travel times
@@ -406,7 +414,7 @@ If you are using **mapboxapi** for the first time, visit [mapbox.com](), registe
 
 ```{r setup-mapbox, eval = FALSE}
 library(mapboxapi)
-# mb_access_token("pk.eybcasq..., install = TRUE)
+# mb_access_token("pk.eybcasq...", install = TRUE)
 
 times <- mb_matrix(ia_tracts, ia_trauma)
 
@@ -437,7 +445,7 @@ ggplot(ia_tracts, aes(fill = time)) +
 The map illustrates considerable accessibility gaps to trauma centers across the state. Whereas urban residents typically live within 20 minutes of a trauma center, travel times in rural Iowa can exceed two hours.
 
 ::: rmdnote
-An advantage to using a package like **mapboxapi** for routing and travel times is that users can connect directly to a hosted routing engine using an API. Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale. There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks. These packages include [osrm](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [opentripplanner](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [r5r](https://ipeagit.github.io/r5r/) for R5.
+An advantage to using a package like **mapboxapi** for routing and travel times is that users can connect directly to a hosted routing engine using an API. Due to rate limitations, however, web APIs are likely inadequate for more advanced users who need to compute travel times at scale. There are several R packages that can connect to user-hosted routing engines which may be better-suited to such tasks. These packages include [**osrm**](https://github.com/rCarto/osrm) for the Open Source Routing Machine; [**opentripplanner**](https://docs.ropensci.org/opentripplanner/) for OpenTripPlanner; and [**r5r**](https://ipeagit.github.io/r5r/) for R5.
 :::
 
 ### Catchment areas with buffers and isochrones
@@ -461,7 +469,7 @@ An alternative option is to create network-based *isochrones*, which are polygon
 iso10min <- mb_isochrone(iowa_methodist, time = 10)
 ```
 
-We can visualize the comparative extents of these two methods in Des Moines. Run the code on your own computer to get a synced interactive map showing the two methods.
+We can visualize the comparative extents of these two methods in Des Moines. Run the code on your own computer to get a synced interactive map showing the two methods. The `makeAwesomeIcon()` function in **leaflet** creates a custom icon appropriate for a medical facility; [many other icons are available for common points of interest](http://rstudio.github.io/leaflet/markers.html#awesome-icons).
 
 ```{r sync, eval = FALSE, fig.cap = "Side-by-side comparison of buffer and isochrone methods for catchment areas in Des Moines, Iowa"}
 library(leaflet)
@@ -497,7 +505,7 @@ The comparative maps illustrate the differences between the two methods quite cl
 
 Common to both methods, however, is a mis-alignment between their geometries and those of any Census geographies we may use to infer catchment area demographics. As opposed to the spatial overlay analysis matching Census tracts to metropolitan areas earlier in this chapter, Census tracts or block groups on the edge of the catchment area will only be partially included in the catchment. A common method for resolving this issue in geographic information science is *areal interpolation*. Areal interpolation refers to the allocation of data from one set of zones to a second overlapping set of zones that may or may not perfectly align spatially. In cases of mis-alignment, some type of weighting scheme needs to be specified to determine how to allocate partial data in areas of overlap.
 
-Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions. This will require obtaining block-group level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone. The variables requested from the ACS include the number of family households with incomes below the poverty line along with total number of family households to serve as a denominator.
+Let's produce interpolated estimates of the percentage of population in poverty for both catchment area definitions. This will require obtaining block group-level poverty information from the ACS for Polk County, Iowa, which encompasses both the buffer and the isochrone. The variables requested from the ACS include the number of family households with incomes below the poverty line along with total number of family households to serve as a denominator.
 
 ```{r get-polk-poverty}
 polk_poverty <- get_acs(
@@ -514,7 +522,7 @@ polk_poverty <- get_acs(
   st_transform(26975)
 ```
 
-*Area-weighted areal interpolation* is implemented in **sf** with the `st_interpolate_aw()` function. This method uses the area of overlap of geometries as the interpolation weights. This means that, in this example, Census tracts that fall entirely within the 5km buffer polygon will receive a weight of 1. Census tracts that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area. Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument. If `extensive = TRUE`, as used below, weighted sums will be computed. Alternatively, if `extensive = FALSE`, the function returns weighted means.
+*Area-weighted areal interpolation* is implemented in **sf** with the `st_interpolate_aw()` function. This method uses the area of overlap of geometries as the interpolation weights. This means that, in this example, block groups that fall entirely within the 5km buffer polygon will receive a weight of 1. Block groups that overlap the edge of the buffer area will receive a weight commensurate with the proportion of their area that falls within the buffer area. Those weights are applied to target variables (in this case, the poverty information) in accordance with the value of the `extensive` argument. If `extensive = TRUE`, as used below, weighted sums will be computed. Alternatively, if `extensive = FALSE`, the function returns weighted means.
 
 ```{r interpolate, message = FALSE, warning = FALSE}
 library(glue)
@@ -661,7 +669,7 @@ ggplot(dfw_tracts) +
 
 ### Understanding spatial neighborhoods
 
-Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a representation of how a given geographic feature interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is **spdep**, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, **spdep** supports a variety of neighborhood definitions. These definitions include:
+Exploratory spatial data analysis relies on the concept of a *neighborhood*, which is a representation of how a given geographic feature (e.g. a given point, line, or polygon) interrelates with other features nearby. The workhorse package for exploratory spatial data analysis in R is **spdep**, which includes a wide range of tools for exploring and modeling spatial data. As part of this framework, **spdep** supports a variety of neighborhood definitions. These definitions include:
 
 -   *Proximity-based neighbors*, where neighboring features are identified based on some measure of distance. Neighbors might be defined as those that fall within a given distance threshold (e.g. all features within 2km of a given feature) or as *k*-nearest neighbors (e.g. the nearest eight features to a given feature).
 -   *Graph-based neighbors*, where neighbors are defined through network relationships (e.g. along a street network).
@@ -677,7 +685,7 @@ summary(neighbors)
 
 On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 2 (there are six such tracts), and the maximum number of neighbors is 16 (the tract at row index 924). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis will be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
 
-Neighborhood relationships can be visualized using plotting functionality in **spdep**:
+Neighborhood relationships can be visualized using plotting functionality in **spdep**, with blue lines connecting each polygon with its neighbors.
 
 ```{r plot-neighbors, fig.cap = "Visualization of queens-case neighborhood relationships"}
 dfw_coords <- dfw_tracts %>%
@@ -716,11 +724,11 @@ Given that the Census tract at row index 1 has eleven neighbors, each neighbor i
 
 ## Global and local spatial autocorrelation
 
-The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of educational attainment in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads [@tobler1970]:
+The row-standardized spatial weights object named `weights` provides the needed information to perform exploratory spatial data analysis of median age in the Dallas-Fort Worth metropolitan area. In many cases, an analyst may be interested in understanding how the attributes of geographic features relate to those of their neighbors. Formally, this concept is called *spatial autocorrelation*. The concept of spatial autocorrelation relates to Waldo Tobler's famous "first law of geography," which reads [@tobler1970]:
 
 > Everything is related to everything else, but near things are more related than distant things.
 
-This formulation informs much of the theory behind spatial data science and geographical inquiry more broadly. With respect to the exploratory spatial analysis of Census data, we might be interested in the degree to which a given attribute clusters spatially, and subsequently where those clusters are found. One such way to assess clustering is to assess the degree to which attribute values are similar to or differ from those of their neighbors as defined by a weights matrix. Patterns can in turn be explained as follows:
+This formulation informs much of the theory behind spatial data science and geographical inquiry more broadly. With respect to the exploratory spatial analysis of Census data, we might be interested in the degree to which a given Census variable clusters spatially, and subsequently where those clusters are found. One such way to assess clustering is to assess the degree to which ACS estimates are similar to or differ from those of their neighbors as defined by a weights matrix. Patterns can in turn be explained as follows:
 
 -   *Spatial clustering*: data values tend to be similar to neighboring data values;
 -   *Spatial uniformity*: data values tend to differ from neighboring data values;
@@ -736,7 +744,7 @@ Spatial weights matrices can be used to calculate the *spatial lag* of a given a
 dfw_tracts$lag_estimate <- lag.listw(weights, dfw_tracts$estimate)
 ```
 
-The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the mean percentage of bachelor's degree holders for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area. Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.
+The code above creates a new column in `dfw_tracts`, `lag_estimate`, that represents the average median age for the neighbors of each Census tract in the Dallas-Fort Worth metropolitan area. Using this information, we can draw a scatterplot of the ACS estimate vs. its lagged mean to do a preliminary assessment of spatial clustering in the data.
 
 ```{r visualize-lag, fig.cap = "Scatterplot of median age relative to its spatial lag"}
 ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) + 
@@ -764,7 +772,7 @@ Moran's $I$ is implemented in **spdep** with the `moran.test()` function, which 
 moran.test(dfw_tracts$estimate, weights)
 ```
 
-The Moran's $I$ statistic of 0.359 is positive, and the small *p*-value suggests that we reject the null hypothesis of spatial randomness in our dataset. (See Section \@ref(a-first-regression-model) for additional discussion of *p-*values). In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
+The Moran's $I$ statistic of 0.359 is positive, and the small *p*-value suggests that we reject the null hypothesis of spatial randomness in our dataset. (See Section \@ref(a-first-regression-model) for additional discussion of *p-*values). As the statistic is positive, it suggests that our data are *spatially clustered*; a negative statistic would suggest spatial uniformity. In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
 
 ### Local spatial autocorrelation
 
@@ -806,6 +814,8 @@ ggplot(dfw_tracts) +
   scale_fill_manual(values = c("red", "blue", "grey")) + 
   theme_void()
 ```
+
+The red areas on the resulting map are representative of "high" clustering of median age, where neighborhoods with older populations are surrounded by other older-age neighborhoods. "Low" clusters are represented in blue, which reflect clustering of Census tracts with comparatively youthful populations.
 
 ### Identifying clusters and spatial outliers with local indicators of spatial association (LISA)
 
@@ -893,7 +903,7 @@ ggplot(dfw_lisa_clusters, aes(x = scaled_estimate,
 
 ```
 
-Observations falling in the top-right quadrant represent "high-high" clusters, where older Census tracts are also surrounded by older tracts in their spatial neighborhoods. Statistically significant clusters - those with a *p*-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes younger tracts that are also surrounded by younger tracts. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
+Observations falling in the top-right quadrant represent "high-high" clusters, where Census tracts with higher median ages are also surrounded by Census tracts with older populations. Statistically significant clusters - those with a *p*-value less than or equal to 0.05 - are colored red on the chart. The bottom-left quadrant also represents spatial clusters, but instead includes lower-median-age tracts that are also surrounded by tracts with similarly low median ages. The top-left and bottom-right quadrants are home to the spatial outliers, where values are dissimilar from their neighbors.
 
 GeoDa also implements a "cluster map" where observations are visualized in relationship to their cluster membership and statistical significance. The code below reproduces the GeoDa cluster map using **ggplot2** and `geom_sf()`.
 
