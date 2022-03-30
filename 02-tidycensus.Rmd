@@ -8,7 +8,7 @@ The **tidycensus** package [@walker_and_herman2021], first released in 2017, is 
 
 As discussed in the previous chapter, the US Census Bureau makes a wide range of datasets available to the user community through their APIs and other data download resources. **tidycensus** is not a comprehensive portal to these data resources; instead, it focuses on a select number of datasets implemented in a series of core functions. These core functions in **tidycensus** include:
 
--   `get_decennial()`, which requests data from the US Decennial Census APIs for 2000 and 2010. When 2020 Census data are released via the API, R users will be able to access it with this function as well.
+-   `get_decennial()`, which requests data from the US Decennial Census APIs for 2000, 2010, and 2020.
 
 -   `get_acs()`, which requests data from the 1-year and 5-year American Community Survey samples. Data are available from the 1-year ACS back to 2005 and the 5-year ACS back to 2005-2009.
 
@@ -87,15 +87,15 @@ Similarly, `get_acs()` retrieves data from the American Community Survey. As dis
 born_in_mexico <- get_acs(
   geography = "state", 
   variables = "B05006_150",
-  year = 2019
+  year = 2020
 )
 ```
 
 ```{r acs-5-year-show, echo = FALSE}
-style_data(born_in_mexico, caption = "Mexican-born population by state, 2015-2019 5-year ACS")
+style_data(born_in_mexico, caption = "Mexican-born population by state, 2016-2020 5-year ACS")
 ```
 
-If the year is not specified, `get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2015-2019. The data returned is similar in structure to that returned by `get_decennial()`, but includes an `estimate` column (for the ACS estimate) and `moe` column (for the margin of error around that estimate) instead of a `value` column. Different years and different surveys are available by adjusting the `year` and `survey` parameters. `survey` defaults to the 5-year ACS; however this can be changed to the 1-year ACS by using the argument `survey = "acs1"`. For example, the following code will fetch data from the 1-year ACS for 2019:
+If the year is not specified, `get_acs()` defaults to the most recent five-year ACS sample, which at the time of this writing is 2016-2020. The data returned is similar in structure to that returned by `get_decennial()`, but includes an `estimate` column (for the ACS estimate) and `moe` column (for the margin of error around that estimate) instead of a `value` column. Different years and different surveys are available by adjusting the `year` and `survey` parameters. `survey` defaults to the 5-year ACS; however this can be changed to the 1-year ACS by using the argument `survey = "acs1"`. For example, the following code will fetch data from the 1-year ACS for 2019:
 
 ```{r acs-1yr}
 born_in_mexico_1yr <- get_acs(
@@ -112,18 +112,29 @@ style_data(born_in_mexico_1yr, caption = "Mexican-born population by state, 2019
 
 Note the differences between the 5-year ACS estimates and the 1-year ACS estimates shown. For states with larger Mexican-born populations like Arizona, California, and Colorado, the 1-year ACS data will represent the most up-to-date estimates, albeit characterized by larger margins of error relative to their estimates. For states with smaller Mexican-born populations like Alabama, Alaska, and Arkansas, however, the estimate returns `NA`, R's notation representing missing data. If you encounter this in your data's `estimate` column, it will generally mean that the estimate is too small for a given geography to be deemed reliable by the Census Bureau. In this case, only the states with the largest Mexican-born populations have data available for that variable in the 1-year ACS, meaning that the 5-year ACS should be used to make full state-wise comparisons if desired.
 
-Variables from the ACS detailed tables, data profiles, summary tables, and supplemental estimates are available through **tidycensus**'s `get_acs()` function; the function will auto-detect from which dataset to look for variables based on their names. Alternatively, users can supply a table name to the `table` parameter in `get_acs()`; this will return data for every variable in that table. For example, to get all variables associated with table B01001, which covers sex broken down by age, from the 2015-2019 5-year ACS:
+::: rmdnote
+If users try accessing data from the 2020 1-year ACS in **tidycensus**, they will encounter the following error:
+
+    Error: The regular 1-year ACS was not released in 2020 due to low response rates.
+    The Census Bureau released a set of experimental estimates for the 2020 1-year ACS
+    that are not available in tidycensus.
+    These estimates can be downloaded at https://www.census.gov/programs-surveys/acs/data/experimental-data/1-year.html.
+
+This means that for 1-year ACS data, **tidycensus** users will need to use older datasets (2019 and earlier) or access 2021 data once it is released in late 2022.
+:::
+
+Variables from the ACS detailed tables, data profiles, summary tables, comparison profile, and supplemental estimates are available through **tidycensus**'s `get_acs()` function; the function will auto-detect from which dataset to look for variables based on their names. Alternatively, users can supply a table name to the table parameter in get_acs(); this will return data for every variable in that table. For example, to get all variables associated with table B01001, which covers sex broken down by age, from the 2016-2020 5-year ACS:
 
 ```{r state-age-table}
 age_table <- get_acs(
   geography = "state", 
   table = "B01001",
-  year = 2019
+  year = 2020
 )
 ```
 
 ```{r state-age-table-show, echo = FALSE}
-style_data(age_table, caption = "Table B01001 by state from the 2015-2019 5-year ACS")
+style_data(age_table, caption = "Table B01001 by state from the 2016-2020 5-year ACS")
 ```
 
 To find all of the variables associated with a given ACS table, **tidycensus** downloads a dataset of variables from the Census Bureau website and looks up the variable codes for download. If the `cache_table` parameter is set to `TRUE`, the function instructs **tidycensus** to cache this dataset on the user's computer for faster future access. This only needs to be done once per ACS or Census dataset if the user would like to specify this option.
@@ -135,7 +146,7 @@ The `geography` parameter in `get_acs()` and `get_decennial()` allows users to r
 The only geographies available in 2000 are `"state"`, `"county"`, `"county subdivision"`, `"tract"`, `"block group"`, and `"place"`. Some geographies available from the Census API are not available in tidycensus at the moment as they require more complex hierarchy specification than the package supports, and not all variables are available at every geography.
 
 | Geography                                                                            | Definition                                                                        | Available by          | Available in                                                     |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|-----------------------|------------------------------------------------------------------|
+|-------------------|------------------|------------------|------------------|
 | `"us"`                                                                               | United States                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
 | `"region"`                                                                           | Census region                                                                     |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
 | `"division"`                                                                         | Census division                                                                   |                       | `get_acs()`, `get_decennial()`, `get_estimates()`                |
@@ -171,7 +182,7 @@ The geography parameter must be typed exactly as specified in the table above to
 cbsa_population <- get_acs(
   geography = "cbsa",
   variables = "B01003_001",
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -190,7 +201,7 @@ wi_income <- get_acs(
   geography = "county", 
   variables = "B19013_001", 
   state = "WI",
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -207,7 +218,8 @@ dane_income <- get_acs(
   geography = "tract", 
   variables = "B19013_001", 
   state = "WI", 
-  county = "Dane"
+  county = "Dane",
+  year = 2020
 )
 
 ```
@@ -244,7 +256,7 @@ One additional challenge when searching for Census variables is understanding va
 
 The function takes two required arguments: `year`, which takes the year or endyear of the Census dataset or ACS sample, and `dataset`, which references the dataset name. For the 2000 or 2010 Decennial Census, use `"sf1"` or `"sf2"` as the dataset name to access variables from Summary Files 1 and 2, respectively. The 2000 Decennial Census also accepts `"sf3"` and `"sf4"` for Summary Files 3 and 4. For 2020, the only dataset supported at the time of this writing is `"pl"` for the PL-94171 Redistricting dataset; more datasets will be supported as the 2020 Census data are released. An example request would look like `load_variables(year = 2020, dataset = "pl")` for variables from the 2020 Decennial Census Redistricting data.
 
-For variables from the American Community Survey, users should specify the dataset as `"acs1"` for the 1-year ACS or `"acs5"` for the 5-year ACS. If no suffix to these dataset names is specified, users will retrieve data from the ACS Detailed Tables. Variables from the ACS Data Profile and Summary Tables are also available by appending the suffixes `/profile` or `/summary`, respectively. For example, a user requesting variables from the 2019 5-year ACS Detailed Tables would specify `load_variables(year = 2019, dataset = "acs5")`; a request for variables from the Data Profile then would be `load_variables(year = 2019, dataset = "acs5/profile")`. In addition to these datasets, the ACS Supplemental Estimates variables can be accessed with the dataset name `"acsse"`.
+For variables from the American Community Survey, users should specify the dataset as `"acs1"` for the 1-year ACS or `"acs5"` for the 5-year ACS. If no suffix to these dataset names is specified, users will retrieve data from the ACS Detailed Tables. Variables from the ACS Data Profile, Summary Tables, and Comparison Profile are also available by appending the suffixes `/profile`, `/summary`, or `/cprofile`, respectively. For example, a user requesting variables from the 2020 5-year ACS Detailed Tables would specify `load_variables(year = 2020, dataset = "acs5")`; a request for variables from the Data Profile then would be `load_variables(year = 2020, dataset = "acs5/profile")`. In addition to these datasets, the ACS Supplemental Estimates variables can be accessed with the dataset name `"acsse"`.
 
 As this function requires processing thousands of variables from the Census Bureau which may take a few moments depending on the user's internet connection, the user can specify `cache = TRUE` in the function call to store the data in the user's cache directory for future access. On subsequent calls of the `load_variables()` function, `cache = TRUE` will direct the function to look in the cache directory for the variables rather than the Census website.
 
@@ -258,7 +270,7 @@ v16 <- load_variables(2016, "acs5", cache = TRUE)
 style_data(v16, caption = "Variables in the 2012-2016 5-year ACS")
 ```
 
-The returned data frame has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data. As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration. However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering. The data viewer can be accessed with the `View()` function:
+The returned data frame always has three columns: `name`, which refers to the Census variable ID; `label`, which is a descriptive data label for the variable; and `concept`, which refers to the topic of the data and often corresponds to a table of Census data. For the 5-year ACS detailed tables, the returned data frame also includes a fourth column, `geography`, which specifies the smallest geography at which a given variable is available from the Census API. As illustrated above, the data frame can be filtered using tidyverse tools for variable exploration. However, the RStudio integrated development environment includes an interactive data viewer which is ideal for browsing this dataset, and allows for interactive sorting and filtering. The data viewer can be accessed with the `View()` function:
 
 ```{r view-variables, eval = FALSE}
 View(v16)
@@ -272,7 +284,7 @@ By browsing the table in this way, users can identify the appropriate variable I
 
 ## Data structure in tidycensus
 
-Key to the design philosophy of tidycensus is its interpretation of tidy data. Following @wickham2014, "tidy" data are defined as follows:
+Key to the design philosophy of **tidycensus** is its interpretation of tidy data. Following @wickham2014, "tidy" data are defined as follows:
 
 1.  Each observation forms a row;
 2.  Each variable forms a column;
@@ -325,7 +337,7 @@ The wide-form dataset includes `GEOID` and `NAME` columns, as in the tidy datase
 
 The `GEOID` column returned by default in **tidycensus** can be used to uniquely identify geographic units in a given dataset. For geographies within the core Census hierarchy (Census block through state, as discussed in Section \@ref(census-hierarchies)), GEOIDs can be used to uniquely identify specific units as well as units' parent geographies. Let's take the example of households by Census block from the 2020 Census in Cimarron County, Oklahoma.
 
-```{r get-osage-blocks}
+```{r get-cimarron-blocks}
 cimarron_blocks <- get_decennial(
   geography = "block",
   variables = "H1_001N",
@@ -356,7 +368,7 @@ For geographies outside the core Census hierarchy, GEOIDs will uniquely identify
 
 ### Renaming variable IDs
 
-Census variables IDs can be cumbersome to type and remember in the course of an R session. As such, **tidycensus** has built-in tools to automatically rename the variable IDs if requested by a user. For example, let's say that a user is requesting data on median household income (variable ID `B19013_001`) and median age (variable ID `B01002_001`). By passing a *named* vector to the `variables` parameter in `get_acs()` or `get_decennial()`, the functions will return the desired names rather than the Census variable IDs. Let's examine this for counties in Georgia from the 2015-2019 five-year ACS.
+Census variables IDs can be cumbersome to type and remember in the course of an R session. As such, **tidycensus** has built-in tools to automatically rename the variable IDs if requested by a user. For example, let's say that a user is requesting data on median household income (variable ID `B19013_001`) and median age (variable ID `B01002_001`). By passing a *named* vector to the `variables` parameter in `get_acs()` or `get_decennial()`, the functions will return the desired names rather than the Census variable IDs. Let's examine this for counties in Georgia from the 2016-2020 five-year ACS.
 
 ```{r georgia-data}
 ga <- get_acs(
@@ -364,7 +376,7 @@ ga <- get_acs(
   state = "Georgia",
   variables = c(medinc = "B19013_001",
                 medage = "B01002_001"),
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -380,7 +392,8 @@ ga_wide <- get_acs(
   state = "Georgia",
   variables = c(medinc = "B19013_001",
                 medage = "B01002_001"),
-  output = "wide"
+  output = "wide",
+  year = 2020
 )
 ```
 
@@ -448,8 +461,7 @@ honolulu_migration <- get_flows(
   geography = "county",
   state = "HI",
   county = "Honolulu",
-  year = 2018,
-  show_call = TRUE
+  year = 2019
 )
 ```
 
@@ -518,4 +530,4 @@ A common use-case for `show_call = TRUE` is to understand what data is available
 
 1.  Review the available geographies in tidycensus from the geography table in this chapter. Acquire data on median age (variable `B01002_001`) for a geography we have not yet used.
 
-2.  Use the `load_variables()` function to find a variable that interests you that we haven't used yet. Use `get_acs()` to fetch data from the 2015-2019 ACS for counties in the state where you live, where you have visited, or where you would like to visit.
+2.  Use the `load_variables()` function to find a variable that interests you that we haven't used yet. Use `get_acs()` to fetch data from the 2016-2020 ACS for counties in the state where you live, where you have visited, or where you would like to visit.
