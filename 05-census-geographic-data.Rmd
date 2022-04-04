@@ -28,13 +28,15 @@ This chapter will cover the core functionality of the **tigris** package for wor
 
 The **tigris** R package simplifies the process for R users of obtaining and using Census geographic datasets. Functions in **tigris** *download* a requested Census geographic dataset from the US Census Bureau website, then *load* the dataset into R as a spatial object. Generally speaking, each type of geographic dataset available in the Census Bureau's TIGER/Line database is available with a corresponding function in **tigris**. For example, the `states()` function can be run without arguments to download a boundary file of US states and state equivalents.
 
-```{r tigris-states}
+```{r tigris-states, message = TRUE}
 library(tigris)
 
 st <- states()
 ```
 
-Let's take a look at what we get back:
+We get a message letting us know that data for the year 2020 are returned; **tigris** typically defaults to the most recent year for which a complete set of Census shapefiles are available, which at the time of this writing is 2020.
+
+Let's take a look at what we got back:
 
 ```{r class-states}
 class(st)
@@ -130,7 +132,7 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
 | Function                                | Datasets available                             | Years available       |
-|-----------------------------------------|------------------------------------------------|-----------------------|
+|-------------------------|------------------------------|-----------------|
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2020             |
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
@@ -321,9 +323,9 @@ Once the plots are generated, we can use **patchwork** to facet the plots as we 
 
 Tarrant County added 180 new Census tracts between 1990 and 2020. As the plot shows, many of these tracts are found in fast-growing parts of the county in the northeast and southeast. Notably, these changes in Census tract geography have downstream implications as well for time-series analysis, as covered in Section \@ref(time-series-analysis-some-cautions). Data at the Census tract level in 2010, for example, will be tabulated differently than in 2020 because the tract geographies are different. One common method for adjusting demographic data between disparate zonal configurations is *areal interpolation*, a topic covered in Section \@ref(computing-demographic-estimates-for-zones-with-areal-interpolation).
 
-The default year of shapefiles in **tigris** aligns with the most recently-released 5-year American Community Survey data. At the time of this writing, the default year is 2019. This will be changed to 2020 pending full data availability of the TIGER/Line shapefiles for that year and upon release of the 2016-2020 5-year ACS estimates in December 2021. If users need the 2020 boundaries in their projects and do not want to type `year = 2020` for each dataset, the command `options(tigris_year = 2020)` can be used. This will direct **tigris** to download the 2020 shapefiles when available without having to specify the year explicitly.
+The default year of shapefiles in **tigris** is typically updated when cartographic boundary shapefiles for that year become fully available. At the time of this writing, the default year is 2020. This will be changed to 2021 pending full data availability of the cartographic boundary shapefiles for that year later in 2022. If users need the 2021 boundaries in their projects and do not want to type `year = 2021` for each dataset, the command `options(tigris_year = 2021)` can be used. This will direct **tigris** to download the 2021 shapefiles when available without having to specify the year explicitly.
 
-### Combining tigris datasets
+### Combining tigris datasets (need to update)
 
 For smaller geographies like Census tracts, block groups, and blocks, the Census Bureau stores shapefiles by state and does not provide a national file. For some geographic features, datasets are further subdivided by county. In these instances, **tigris** users must specify a state and/or county to appropriately make a request to the Census Bureau website for data.
 

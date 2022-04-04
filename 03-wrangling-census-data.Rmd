@@ -39,13 +39,13 @@ Eight tidyverse packages are loaded: **ggplot2**, **tibble** [@muller2021_tibble
 
 ### Sorting and filtering data
 
-For a first example, let's request data on median age from the 2015-2019 ACS with `get_acs()` for all counties in the United States. This requires specifying `geography = "county"` and leaving state set to `NULL`, the default.
+For a first example, let's request data on median age from the 2016-2020 ACS with `get_acs()` for all counties in the United States. This requires specifying `geography = "county"` and leaving state set to `NULL`, the default.
 
 ```{r median-age}
 median_age <- get_acs(
   geography = "county",
   variables = "B01002_001",
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -64,7 +64,7 @@ arrange(median_age, estimate) %>%
   style_data(caption = "The youngest counties in the US by median age")
 ```
 
-Per the 2015-2019 ACS, the two youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University. The youngest *county* then by median age is Madison County, Idaho.
+Per the 2016-2020 ACS, the youngest county is De Baca County, New Mexico. Two of the five youngest "counties" in the United States are independent cities in Virginia, which are treated as county-equivalents. Both Lexington and Radford are college towns; Lexington is home to both Washington & Lee University and the Virginia Military Institute, and Radford houses Radford University.
 
 To retrieve the *oldest* counties in the United States by median age, an analyst can use the `desc()` function available in **dplyr** to sort the `estimate` column in descending order.
 
@@ -77,7 +77,7 @@ arrange(median_age, desc(estimate)) %>%
   style_data(caption = "The oldest counties in the US by median age")
 ```
 
-The oldest county in the United States by almost 7 years over the second-oldest is Sumter County, Florida. Sumter County is home to The Villages, a Census-designated place that includes a large age-restricted community [also called The Villages](https://www.thevillages.com/).
+The oldest county in the United States is Sumter County, Florida. Sumter County is home to The Villages, a Census-designated place that includes a large age-restricted community [also called The Villages](https://www.thevillages.com/).
 
 The tidyverse includes several tools for parsing datasets that allow for exploration beyond sorting and browsing data. The `filter()` function in **dplyr** queries a dataset for rows where a given condition evaluates to `TRUE`, and retains those rows only. For analysts who are familiar with databases and SQL, this is equivalent to a `WHERE` clause. This helps analysts subset their data for specific areas by their characteristics, and answer questions like "how many counties in the US have a median age of 50 or older?"
 
@@ -90,7 +90,7 @@ filter(median_age, estimate >= 50) %>%
   style_data(caption = "Counties with a median age of 50 or above")
 ```
 
-Functions like `arrange()` and `filter()` operate on row values and organize data by row. Other tidyverse functions, like **tidyr**'s `separate()`, operate on columns. The `NAME` column, returned by default by most **tidycensus** functions, contains a basic description of the location that can be more intuitive than the `GEOID`. For the 2015-2019 ACS, `NAME` is formatted as "X County, Y", where X is the county name and Y is the state name. `separate()` can split this column into two columns where one retains the county name and the other retains the state; this can be useful for analysts who need to complete a comparative analysis by state.
+Functions like `arrange()` and `filter()` operate on row values and organize data by row. Other tidyverse functions, like **tidyr**'s `separate()`, operate on columns. The `NAME` column, returned by default by most **tidycensus** functions, contains a basic description of the location that can be more intuitive than the `GEOID`. For the 2016-2020 ACS, `NAME` is formatted as "X County, Y", where X is the county name and Y is the state name. `separate()` can split this column into two columns where one retains the county name and the other retains the state; this can be useful for analysts who need to complete a comparative analysis by state.
 
 ```{r separate, eval = FALSE}
 separate(
@@ -123,7 +123,7 @@ A solution to this issue might involve **normalizing** the estimated count data 
 
 In **tidycensus**, this can be accomplished by supplying a variable ID to the `summary_var` parameter in both the `get_acs()` and `get_decennial()` functions. When using `get_decennial()`, doing so will create two new columns for the decennial Census datasets, `summary_var` and `summary_value`, representing the summary variable ID and the summary variable's value. When using `get_acs()`, using `summary_var` creates three new columns for the ACS datasets, `summary_var`, `summary_est`, and `summary_moe`, which include the ACS estimate and margin of error for the summary variable.
 
-With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2015-2019 ACS.
+With this information in hand, normalizing data is straightforward. The following example uses the `summary_var` parameter to compare the population of counties in Arizona by race & Hispanic origin with their baseline populations, using data from the 2016-2020 ACS.
 
 ```{r az-race}
 race_vars <- c(
@@ -139,7 +139,8 @@ az_race <- get_acs(
   geography = "county",
   state = "AZ",
   variables = race_vars,
-  summary_var = "B03002_001"
+  summary_var = "B03002_001",
+  year = 2020
 ) 
 ```
 
@@ -147,7 +148,7 @@ az_race <- get_acs(
 style_data(az_race, caption = "Race and ethnicity in Arizona")
 ```
 
-By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2015-2019. The `select()` function, also in dplyr, retains only those columns that we need to view.
+By using dplyr's `mutate()` function, we calculate a new column, `percent`, representing the percentage of each Census tract's population that corresponds to each racial/ethnic group in 2016-2020. The `select()` function, also in dplyr, retains only those columns that we need to view.
 
 ```{r az-race-percent}
 az_race_percent <- az_race %>%
@@ -230,7 +231,7 @@ mn_hh_income <- get_acs(
 ```
 
 ```{r mn-hh-income-show, echo = FALSE}
-style_data(mn_hh_income, caption = "Table B19001 for counties in Minnesota")
+style_data(mn_hh_income, caption = "Table B19001 for counties in Minnesota, 2012-2016 ACS")
 ```
 
 Our data include household income categories for each county in the rows. However, let's say we only need three income categories for purposes of analysis: below \$35,000/year, between \$35,000/year and \$75,000/year, and \$75,000/year and up.
@@ -281,40 +282,40 @@ oglala_lakota_age <- get_acs(
   state = "SD",
   county = "Oglala Lakota",
   table = "B01001",
-  year = 2019
+  year = 2020
 )
 ```
 
 ```{r oglala-lakota-show, echo = FALSE}
-style_data(oglala_lakota_age, caption = "2015-2019 age table for Oglala Lakota County, SD")
+style_data(oglala_lakota_age, caption = "2016-2020 age table for Oglala Lakota County, SD")
 ```
 
-To understand how the age composition of the county has changed over the past 10 years, we may want to look at the 2005-2009 ACS for the county. Normally, we would just change the year argument to `2009`:
+To understand how the age composition of the county has changed over the past 10 years, we may want to look at the 2006-2010 ACS for the county. Normally, we would just change the year argument to `2010`:
 
-```{r oglala-lakota-2009, error = TRUE}
-oglala_lakota_age_09 <- get_acs(
+```{r oglala-lakota-2010, error = TRUE}
+oglala_lakota_age_10 <- get_acs(
   geography = "county",
   state = "SD",
   county = "Oglala Lakota",
   table = "B01001",
-  year = 2009
+  year = 2010
 )
 ```
 
-The request errors, and we don't get an informative error message back from the API as was discussed in Section \@ref(debugging-tidycensus-errors). The problem here is that Oglala Lakota County had a different name in 2009, Shannon County, meaning that the `county = "Oglala Lakota"` argument will not return any data. In turn, the equivalent code for the 2005-2009 ACS would use `county = "Shannon"`.
+The request errors, and we don't get an informative error message back from the API as was discussed in Section \@ref(debugging-tidycensus-errors). The problem here is that Oglala Lakota County had a different name in 2010, Shannon County, meaning that the `county = "Oglala Lakota"` argument will not return any data. In turn, the equivalent code for the 2006-2010 ACS would use `county = "Shannon"`.
 
 ```{r shannon-county-age}
-oglala_lakota_age_09 <- get_acs(
+oglala_lakota_age_10 <- get_acs(
   geography = "county",
   state = "SD",
   county = "Shannon",
   table = "B01001",
-  year = 2009
+  year = 2010
 )
 ```
 
 ```{r shannon-county-age-show, echo = FALSE}
-style_data(oglala_lakota_age_09, caption = "2005-2009 age table for Oglala Lakota County, SD (then named Shannon County)")
+style_data(oglala_lakota_age_10, caption = "200-2010 age table for Oglala Lakota County, SD (then named Shannon County)")
 ```
 
 Note the differences in the `GEOID` column between the two tables of data. When a county or geographic entity changes its name, the Census Bureau assigns it a new `GEOID`, meaning that analysts need to take care when dealing with those changes. A full listing of geography changes [is available on the Census website for each year](https://www.census.gov/programs-surveys/acs/technical-documentation/table-and-geography-changes.2019.html).
@@ -355,7 +356,11 @@ The values are completely different, and clearly not percentages! This is becaus
 
 ### Preparing time-series ACS estimates
 
-A safer way to perform time-series analysis of the ACS, then, is to use the Detailed Tables. While this option lacks the convenience of the pre-computed estimates in the Data Profile, it ensures that variable IDs will remain consistent across years allowing for consistent and correct analysis. That said, there still are some potential pitfalls to account for when using the Detailed Tables. The Census Bureau will add and remove variables from survey to survey depending on data needs and data availability. For example, questions are sometimes added and removed from the ACS survey meaning that you won't always be able to get every data point for every year and geography combination. In turn, it is still important to check on data availability using `load_variables()` for the years you plan to analyze before carrying out your time-series analysis.
+**New content: comparison profile tables**
+
+The safest option for time-series analysis in the ACS is to use the Comparison Profile Tables. These tables are available for both the
+
+Using the Detailed Tables also represents a safer option than the Data Profile, as it ensures that variable IDs will remain consistent across years allowing for consistent and correct analysis. That said, there still are some potential pitfalls to account for when using the Detailed Tables. The Census Bureau will add and remove variables from survey to survey depending on data needs and data availability. For example, questions are sometimes added and removed from the ACS survey meaning that you won't always be able to get every data point for every year and geography combination. In turn, it is still important to check on data availability using `load_variables()` for the years you plan to analyze before carrying out your time-series analysis.
 
 Let's re-engineer the analysis above on educational attainment in Colorado counties, which below will be computed for a time series from 2010 to 2019. Information on "bachelor's degree or higher" is split by sex and across different tiers of educational attainment in the detailed tables, found in ACS table 15002. Given that we only need a few variables (representing estimates of populations age 25+ who have finished a 4-year degree or graduate degrees, by sex), we'll request those variables directly rather than the entire B15002 table.
 
@@ -444,7 +449,8 @@ The confidence level of the MOE can be controlled with the `moe_level` argument 
 get_acs(
   geography = "county",
   state = "Rhode Island",
-  variables = "B19013_001"
+  variables = "B19013_001",
+  year = 2020
 )
 ```
 
@@ -452,7 +458,8 @@ get_acs(
 get_acs(
   geography = "county",
   state = "Rhode Island",
-  variables = "B19013_001"
+  variables = "B19013_001",
+  year = 2020
 ) %>%
   style_data(caption = "Default MOE at 90 percent confidence level")
 ```
@@ -464,6 +471,7 @@ get_acs(
   geography = "county",
   state = "Rhode Island",
   variables = "B19013_001",
+  year = 2020,
   moe_level = 99
 )
 ```
@@ -473,6 +481,7 @@ get_acs(
   geography = "county",
   state = "Rhode Island",
   variables = "B19013_001",
+  year = 2020,
   moe_level = 99
 ) %>%
   style_data(caption = "MOE at 99 percent confidence level")
@@ -506,7 +515,7 @@ salt_lake <- get_acs(
   variables = vars,
   state = "Utah",
   county = "Salt Lake",
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -571,7 +580,7 @@ The margins of error relative to their estimates are now much more reasonable th
 
 That said, [the Census Bureau issues a note of caution](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2019_Instructions_for_Stat_Testing_ACS.pdf?) [@acs_moe]:
 
-> All \[derived MOE methods\] are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate's standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
+> All derived MOE methods are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate's standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
 
 This means that your "best bet" is to first search the ACS tables to see if your data are found in aggregated form elsewhere before doing the aggregation and MOE estimation yourself. In many cases, you'll find aggregated information in the ACS combined tables, Data Profile, or Subject Tables that will include pre-computed margins of error for you.
 
