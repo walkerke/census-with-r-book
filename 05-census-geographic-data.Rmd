@@ -132,7 +132,7 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
 | Function                                | Datasets available                             | Years available       |
-|-------------------------|------------------------------|-----------------|
+|-----------------------------------------|------------------------------------------------|-----------------------|
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2020             |
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |

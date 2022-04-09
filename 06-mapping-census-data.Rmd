@@ -37,6 +37,7 @@ dc_income <- get_acs(
   geography = "tract", 
   variables = "B19013_001",
   state = "DC", 
+  year = 2020,
   geometry = TRUE
 )
 
@@ -113,7 +114,7 @@ ggplot(data = us_median_age, aes(fill = estimate)) +
 
 For **ggplot2** users, `geom_sf()` offers a familiar interface for mapping data obtained from the US Census Bureau. However, **ggplot2** is far from the only option for cartographic visualization in R. The **tmap** package [@tennekes2018] is an excellent alternative for mapping in R that includes a wide range of functionality for custom cartography. The section that follows is an overview of several cartographic techniques implemented with **tmap** for visualizing US Census data. A full treatment of best practices in cartographic design is beyond the scope of this section; recommended resources for learning more include @peterson2020 and @brewer2016.
 
-To begin, let's grab some ACS data on race and ethnicity from the American Community Survey. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
+To begin, let's grab some ACS data on race and ethnicity from the 2016-2020 American Community Survey. We'll be looking at data on non-Hispanic white, non-Hispanic Black, Asian, and Hispanic populations for Census tracts in Hennepin County, Minnesota.
 
 ```{r hennepin-race-ethnicity}
 hennepin_race <- get_acs(
@@ -126,6 +127,7 @@ hennepin_race <- get_acs(
                 Asian = "B03002_006",
                 Hispanic = "B03002_012"),
   summary_var = "B03002_001",
+  year = 2020,
   geometry = TRUE
 ) %>%
   mutate(percent = 100 * (estimate / summary_est))
@@ -166,8 +168,7 @@ hist(hennepin_black$percent)
 As the histogram illustrates, most Census tracts in Hennepin County have Black populations below 20 percent. In turn, variation within this bucket is not visible on the map given that most tracts fall into one class. The `style` argument in `tm_fill()` supports a number of other methods for classification, including quantile breaks (`"quantile"`), equal intervals (`"equal"`), and Jenks natural breaks (`"jenks"`). Let's switch to quantiles below, where each class will contain the same number of Census tracts. We can also change the color palette and add some contextual text as we did with ggplot2.
 
 ```{r update-hennepin-map, fig.cap = "tmap choropleth with options"}
-tm_shape(hennepin_black, 
-         projection = sf::st_crs(26915)) + 
+tm_shape(hennepin_black) + 
   tm_polygons(col = "percent",
           style = "quantile",
           n = 5,
@@ -178,11 +179,10 @@ tm_shape(hennepin_black,
             legend.outside = TRUE)
 ```
 
-Switching from the default classification scheme to quantiles reveals additional neighborhood-level heterogeneity in Hennepin County's Black population in suburban areas. However, it does mask some heterogeneity in Minneapolis as the top class now includes values ranging from 22 percent to 71 percent. A "compromise" solution commonly used in GIS cartography applications is the Jenks natural-breaks method, which uses an algorithm to identify meaningful breaks in the data for bin boundaries [@jenks1967]. To assist with understanding how the different classification methods work, the `legend.hist` argument in `tm_polygons()` can be set to TRUE, adding a histogram to the map with bars colored by the values used on the map.
+Switching from the default classification scheme to quantiles reveals additional neighborhood-level heterogeneity in Hennepin County's Black population in suburban areas. However, it does mask some heterogeneity in Minneapolis as the top class now includes values ranging from 22 percent to 94 percent. A "compromise" solution commonly used in GIS cartography applications is the Jenks natural-breaks method, which uses an algorithm to identify meaningful breaks in the data for bin boundaries [@jenks1967]. To assist with understanding how the different classification methods work, the `legend.hist` argument in `tm_polygons()` can be set to TRUE, adding a histogram to the map with bars colored by the values used on the map.
 
 ```{r jenks, fig.cap = "Styled tmap choropleth"}
-tm_shape(hennepin_black, 
-         projection = sf::st_crs(26915)) + 
+tm_shape(hennepin_black) + 
   tm_polygons(col = "percent",
           style = "jenks",
           n = 5,
@@ -298,8 +298,7 @@ Choropleth maps are a core part of the Census data analyst's toolkit, but they a
 An alternative commonly used to visualize count data is the **graduated symbol map**. Graduated symbol maps use shapes referenced to geographic units that are sized relative to a data attribute. The example below uses **tmap**'s `tm_bubbles()` function to create a graduated symbol map of the Black population in Hennepin County, mapping the `estimate` column.
 
 ```{r symbol-map, fig.cap = "Graduated symbols with tmap"}
-tm_shape(hennepin_black, 
-         projection = sf::st_crs(26915)) + 
+tm_shape(hennepin_black) + 
   tm_polygons() + 
   tm_bubbles(size = "estimate", alpha = 0.5, 
              col = "navy",
@@ -318,14 +317,13 @@ Given that the long-form race & ethnicity dataset returned by tidycensus include
 Faceted maps in **tmap** are created with the `tm_facets()` function. The `by` argument specifies the column to be used to identify unique groups in the data. The remaining code is familiar **tmap** code; in this example, `tm_fill()` is preferred to `tm_polygons()` to hide the Census tract borders given the smaller sizes of the maps. The legend is also moved with the `legend.position` argument in `tm_layout()` to fill the empty space in the faceted map.
 
 ```{r faceted-map, fig.cap = "Faceted map with tmap"}
-tm_shape(hennepin_race,
-         projection = sf::st_crs(26915)) + 
+tm_shape(hennepin_race) + 
   tm_facets(by = "variable", scale.factor = 4) + 
   tm_fill(col = "percent",
           style = "quantile",
           n = 6,
           palette = "Blues",
-          title = "Percent (2015-2019 ACS)",) + 
+          title = "Percent (2016-2020 ACS)",) + 
   tm_layout(bg.color = "grey", 
             legend.position = c(-0.7, 0.2),
             panel.label.bg.color = "white")
@@ -337,27 +335,17 @@ The faceted maps do a good job of showing variations in each group in comparativ
 
 Dot-density maps scatter dots within areal units relative to the size of a data attribute. This cartographic method is intended to show attribute density through the dot distributions; for a Census map, in areas where the dots are dense, more people live there, whereas sparsely positioned dots reflect sparsity of population. Dot-density maps can also incorporate categories in the data to visualize densities of different subgroups simultaneously.
 
-Generating a dot-density map in R requires some more advanced code that uses some of the programmatic skills learned in prior chapters and introduces some new techniques. The code below converts the data in the `hennepin_race` object to a new object, `hennepin_dots`, that is of geometry type `POINT` instead of `MULTIPOLYGON`. Each point in the output spatial dataset will roughly represent an estimated 100 residents of each Census tract who identified as part of a particular racial or ethnic group on the 2015-2019 ACS.
+The `as_dot_density()` function in **tidycensus** helps users get Census data ready for dot-density visualization. For an input dataset, the function requires specifying a `value` column that represents the data attribute to be visualized, and a `values_per_dot` value that determines how many data values each dot should represent. The `group` column then partitions dots by group and shuffles their visual ordering on the map so that no one group occludes other groups.
 
-**purrr**'s `map_dfr()` function will be used to accomplish this task. We'll iterate over each unique racial/ethnic group in the dataset, creating dots relative to population sizes for each group. The workhorse function here is the `st_sample()` function from the sf package, which samples points at random positions within polygons. The `size` argument within `st_sample()` can either be a fixed integer (for the same number of points in each polygon) or a vector; we'll use a newly derived column `est100`, which is the population estimate for each group divided by 100. This point sampling is computed for all five groups, then combined into a common dataset of points. The `slice_sample()` function from dplyr is critical here, as it retains all points (`prop = 1`) but shuffles them randomly. This will ensure that the different groups appear in random order visually on the dot-density map, appropriately showing heterogeneity.
-
-This code can take a few minutes to run, so be patient when reproducing. If speed of processing is an issue, consider modifying the dots to data ratio and/or setting `exact = FALSE` in `st_sample()`, which will approximate the number of dots in each tract.
+In this example, we specify `value = "estimate"` to visualize the estimated counts from the ACS; `values_per_dot = 100` for a data:dots ratio of 100 people per dot; and `group = "variables"` to partition dots by racial / ethnic group on the map.
 
 ```{r generate-dots, eval = FALSE}
-library(sf)
-
-groups <- unique(hennepin_race$variable)
-
-hennepin_dots <- map_dfr(groups, ~{
-  hennepin_race %>%
-    filter(variable == .x) %>%
-    st_transform(26915) %>%
-    mutate(est100 = as.integer(estimate / 100)) %>%
-    st_sample(size = .$est100, exact = TRUE) %>%
-    st_sf() %>%
-    mutate(group = .x)
-}) %>%
-  slice_sample(prop = 1)
+hennepin_dots <- hennepin_race %>%
+  as_dot_density(
+    value = "estimate",
+    values_per_dot = 100,
+    group = "variable"
+  )
 ```
 
 The map itself is created with the `tm_dots()` function, which in this example is combined with a background map using `tm_polygons()` to show the relative racial and ethnic heterogeneity of Census tracts in Hennepin County.
@@ -365,22 +353,22 @@ The map itself is created with the `tm_dots()` function, which in this example i
 ```{r make-dot-map, eval = FALSE}
 background_tracts <- filter(hennepin_race, variable == "White")
 
-tm_shape(background_tracts, 
-         projection = sf::st_crs(26915)) + 
+tm_shape(background_tracts) + 
   tm_polygons(col = "white", 
               border.col = "grey") + 
   tm_shape(hennepin_dots) +
-  tm_dots(col = "group", 
+  tm_dots(col = "variable", 
           palette = "Set1",
           size = 0.005, 
-          title = "Race/ethnicity")
+          title = "Race/ethnicity") + 
+  tm_layout(legend.outside = TRUE)
 ```
 
 ```{r show-hennepin-dots, echo = FALSE, fig.cap = "Dot-density map of race and ethnicity in Hennepin County, Minnesota", out.width="75%"}
 knitr::include_graphics("img/hennepin_dots.png")
 ```
 
-Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, the use of Census tract polygons to generate the dots can cause visual issues. As dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). Dot distributions will also follow tract boundaries, which can create an artificial impression of abrupt changes in population distributions along polygon boundaries (as seen on the example map). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be uninhabited then runs the dot-generation algorithm over those modified areas.
+Issues with dot-density maps can include overplotting of dots which can make legibility a problem; experiment with different dot sizes and dots to data ratios to improve this. Additionally, the use of Census tract polygons to generate the dots can cause visual issues. As dots are placed randomly within Census tract polygons, they in many cases will be placed in locations where no people live (such as lakes in Hennepin County). Dot distributions will also follow tract boundaries, which can create an artificial impression of abrupt changes in population distributions along polygon boundaries (as seen on the example map). A solution is the *dasymetric dot-density map* [@walker2018a], which first removes areas from polygons which are known to be uninhabited then runs the dot-generation algorithm over those modified areas. `as_dot_density()` includes an argument, `erase_water`, that will automatically remove water areas from the input shapes before generating dots, avoiding dot placement in large bodies of water. This technique uses the `erase_water()` function in the **tigris** package, which is covered in more detail in Section \@ref(better-cartography-with-spatial-overlay).
 
 ## Cartographic workflows with non-Census data
 
@@ -533,13 +521,13 @@ The examples addressed in this chapter thus far have all focused on *static maps
 
 With over 31,000 GitHub stars as of July 2021, the Leaflet JavaScript library [@leaflet] is one of the most popular frameworks worldwide for interactive mapping. The RStudio team brought the Leaflet to R with the **leaflet** R package [@cheng2021], which now powers several approaches to interactive mapping in R. The following examples cover how to visualize Census data on an interactive Leaflet map using approaches from **mapview**, **tmap**, and the core **leaflet** package.
 
-Let's start by getting some illustrative data on the percentage of the population aged 25 and up with a bachelor's degree or higher from the 2015-2019 ACS. We'll look at this information by Census tract in Dallas County, Texas.
+Let's start by getting some illustrative data on the percentage of the population aged 25 and up with a bachelor's degree or higher from the 2016-2020 ACS. We'll look at this information by Census tract in Dallas County, Texas.
 
 ```{r get-bachelors-data}
 dallas_bachelors <- get_acs(
   geography = "tract",
   variables = "DP02_0068P",
-  year = 2019,
+  year = 2020,
   state = "TX",
   county = "Dallas",
   geometry = TRUE
@@ -777,12 +765,13 @@ library(tidycensus)
 library(ggiraph)
 library(tidyverse)
 library(patchwork)
+library(scales)
 
 vt_income <- get_acs(
   geography = "county",
   variables = "B19013_001",
   state = "VT",
-  year = 2019,
+  year = 2020,
   geometry = TRUE
 ) %>%
   mutate(NAME = str_remove(NAME, " County, Vermont"))
@@ -796,14 +785,14 @@ vt_map <- ggplot(vt_income, aes(fill = estimate)) +
 
 vt_plot <- ggplot(vt_income, aes(x = estimate, y = reorder(NAME, estimate), 
                                  fill = estimate)) +
-  geom_errorbarh(aes(xmin = estimate - moe, xmax = estimate + moe)) +
+  geom_errorbar(aes(xmin = estimate - moe, xmax = estimate + moe)) +
   geom_point_interactive(color = "black", size = 4, shape = 21,
                          aes(data_id = GEOID)) +
   scale_fill_distiller(palette = "Greens", direction = 1,
                        labels = label_dollar()) + 
   scale_x_continuous(labels = label_dollar()) + 
   labs(title = "Household income by county in Vermont",
-       subtitle = "2015-2019 American Community Survey",
+       subtitle = "2016-2020 American Community Survey",
        y = "",
        x = "ACS estimate (bars represent margin of error)",
        fill = "ACS estimate") + 
@@ -847,7 +836,8 @@ twin_cities_race <- get_acs(
     white = "DP05_0077P",
     black = "DP05_0078P",
     native = "DP05_0079P",
-    asian = "DP05_0080P"
+    asian = "DP05_0080P",
+    year = 2019
   ),
   state = "MN",
   county = c("Hennepin", "Ramsey", "Anoka", "Washington",
@@ -933,8 +923,7 @@ Cartographers exporting maps made with **ggplot2** will likely want to use the `
 The `tmap_save()` command is the best option for exporting maps made with **tmap**. `tmap_save()` requires that a map be stored as an object first; this example will re-use a map of Hennepin County from earlier in the chapter and assign it to a variable named `hennepin_map`.
 
 ```{r reproduce-hennepin-tmap, eval = FALSE}
-hennepin_map <- tm_shape(hennepin_black, 
-         projection = sf::st_crs(26915)) + 
+hennepin_map <- tm_shape(hennepin_black) + 
   tm_polygons(col = "percent",
           style = "jenks",
           n = 5,
@@ -988,6 +977,7 @@ dc_income <- get_acs(
   geography = "tract", 
   variables = "B19013_001",
   state = "DC", 
+  year = 2020,
   geometry = TRUE
 )
 
