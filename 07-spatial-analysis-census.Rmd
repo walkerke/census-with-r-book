@@ -566,7 +566,7 @@ ny <- get_acs(
   variables = "B19013_001", 
   state = "NY", 
   county = "New York", 
-  year = 2019,
+  year = 2020,
   geometry = TRUE
 )
 
@@ -585,40 +585,28 @@ As illustrated in the graphic, the boundaries of Manhattan include water boundar
 tidycensus allows users to get TIGER/Line instead of cartographic boundary shapefiles with the keyword argument `cb = FALSE`. This argument will be familiar to users of the **tigris** package, as it is used by **tigris** to distinguish between cartographic boundary and TIGER/Line shapefiles in the package.
 
 ```{r get-tiger-manhattan}
-
-# CRS: NAD83(2011) / New York Long Island
 ny2 <- get_acs(
   geography = "tract",
   variables = "B19013_001", 
   state = "NY", 
   county = "New York", 
   geometry = TRUE, 
-  year = 2019,
+  year = 2020,
   cb = FALSE
 ) %>%
   st_transform(6538)
 ```
 
-Next, tools in the **tigris** and **sf** package can be used to remove the water area from Manhattan's Census tracts. **sf** allows users to "erase" one geometry from another, [akin to tools available in desktop GIS software](http://pro.arcgis.com/en/pro-app/tool-reference/analysis/erase.htm). The `st_erase()` function defined below is not exported by the package, but is defined in the documentation for `st_difference()`.
-
-The geometry used to "erase" water area from the tract polygons is obtained by the `area_water()` function in **tigris**.
+Next, the `erase_water()` function in the **tigris** package will be used to remove water area from the Census tracts. `erase_water()` works by auto-detecting US counties that surround an input dataset, obtaining an area water shapefile from the Census Bureau for those counties, then computing an *erase* operation to remove those water areas from the input dataset. Using TIGER/Line geometries with `cb = FALSE` is recommended as they will align with the input water areas and minimize the creation of *sliver polygons*, which are small polygons that can be created from the overlay of inconsistent spatial datasets.
 
 ```{r erase-nyc}
-library(sf)
-library(tigris)
-
-st_erase <- function(x, y) {
-  st_difference(x, st_union(y))
-}
-
-ny_water <- area_water("NY", "New York", year = 2019) %>%
-  st_transform(6538)
-
-ny_erase <- st_erase(ny2, ny_water)
+ny_erase <- erase_water(ny2)
 
 ```
 
-After performing this operation, we can map the result:
+Although it is not used here, `erase_water()` has an optional argument, `area_threshold`, that defines the area percentile threshold at which water areas are kept for the erase operation. The default of 0.75, used here, erases water areas with a size percentile of 75 percent and up (so, the top 25 percent). A lower area threshold can produce more accurate shapes, but can slow down the operation substantially.
+
+After erasing water area from Manhattan's Census tracts with `erase_water()`, we can map the result:
 
 ```{r plot-erase-manhattan, fig.cap = "Map of Manhattan with water areas erased"}
 ggplot(ny_erase) + 
@@ -645,7 +633,7 @@ library(spdep)
 options(tigris_use_cache = TRUE)
 
 # CRS: NAD83 / Texas North Central
-dfw <- core_based_statistical_areas(cb = TRUE, year = 2019) %>%
+dfw <- core_based_statistical_areas(cb = TRUE, year = 2020) %>%
   filter(str_detect(NAME, "Dallas")) %>%
   st_transform(32138)
 
@@ -653,7 +641,7 @@ dfw_tracts <- get_acs(
   geography = "tract",
   variables = "B01002_001",
   state = "TX",
-  year = 2019,
+  year = 2020,
   geometry = TRUE
 ) %>%
   st_transform(32138) %>%
@@ -683,7 +671,7 @@ neighbors <- poly2nb(dfw_tracts, queen = TRUE)
 summary(neighbors)
 ```
 
-On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.44 neighbors. The minimum number of neighbors in the dataset is 2 (there are six such tracts), and the maximum number of neighbors is 16 (the tract at row index 924). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis will be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
+On average, the Census tracts in the Dallas-Fort Worth metropolitan area have 6.43 neighbors. The minimum number of neighbors in the dataset is 2 (there are eight such tracts), and the maximum number of neighbors is 17 (the tract at row index 1635). An important caveat to keep in mind here is that tracts with few neighbors may actually have more neighbors than listed here given that we have restricted the tract dataset to those tracts within the Dallas-Fort Worth metropolitan area. In turn, our analysis will be influenced by *edge effects* as neighborhoods on the edge of the metropolitan area are artificially restricted.
 
 Neighborhood relationships can be visualized using plotting functionality in **spdep**, with blue lines connecting each polygon with its neighbors.
 
@@ -720,7 +708,7 @@ weights$weights[[1]]
 
 ```
 
-Given that the Census tract at row index 1 has eleven neighbors, each neighbor is assigned the weight 0.0909.
+Given that the Census tract at row index 1 has five neighbors, each neighbor is assigned the weight 0.2.
 
 ## Global and local spatial autocorrelation
 
@@ -754,7 +742,7 @@ ggplot(dfw_tracts, aes(x = estimate, y = lag_estimate)) +
   labs(title = "Median age by Census tract, Dallas-Fort Worth TX",
        x = "Median age",
        y = "Spatial lag, median age", 
-       caption = "Data source: 2015-2019 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
+       caption = "Data source: 2016-2020 ACS via the tidycensus R package.\nSpatial relationships based on queens-case polygon contiguity.")
 
 ```
 
@@ -772,7 +760,7 @@ Moran's $I$ is implemented in **spdep** with the `moran.test()` function, which 
 moran.test(dfw_tracts$estimate, weights)
 ```
 
-The Moran's $I$ statistic of 0.359 is positive, and the small *p*-value suggests that we reject the null hypothesis of spatial randomness in our dataset. (See Section \@ref(a-first-regression-model) for additional discussion of *p-*values). As the statistic is positive, it suggests that our data are *spatially clustered*; a negative statistic would suggest spatial uniformity. In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
+The Moran's $I$ statistic of 0.292 is positive, and the small *p*-value suggests that we reject the null hypothesis of spatial randomness in our dataset. (See Section \@ref(a-first-regression-model) for additional discussion of *p-*values). As the statistic is positive, it suggests that our data are *spatially clustered*; a negative statistic would suggest spatial uniformity. In a practical sense, this means that Census tracts with older populations tend to be located near one another, and Census tracts with younger populations also tend to be found in the same areas.
 
 ### Local spatial autocorrelation
 
@@ -928,5 +916,5 @@ Using the lasso select tool, you can click and drag on either the scatterplot or
 ## Exercises
 
 1.  Identify a different core-based statistical area of interest and use the methods introduced in this chapter to extract Census tracts or block groups for that CBSA.
-2.  Replicate the `st_erase()` cartographic workflow for a different county with significant water area; a good choice is King County, Washington. Be sure to transform your data to an appropriate projected coordinate system (selected with `suggest_crs()`) first. If the operation creates too many "holes" for water areas, try filtering down the water dataset by its `AWATER` column and retaining only the largest water areas, then re-run and see what you get.
+2.  Replicate the `erase_water()` cartographic workflow for a different county with significant water area; a good choice is King County, Washington. Be sure to transform your data to an appropriate projected coordinate system (selected with `suggest_crs()`) first. If the operation is too slow, try re-running with a higher area threshold and seeing what you get back.
 3.  Acquire a spatial dataset with **tidycensus** for a region of interest and a variable of interest to you. Follow the instructions in this chapter to generate a spatial weights matrix, then compute a hot-spot analysis with `localG()`.

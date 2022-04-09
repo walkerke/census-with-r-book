@@ -18,7 +18,7 @@ A large body of research in the social sciences is concerned with neighborhood *
 
 ### Data setup with spatial analysis
 
-Much of the segregation and diversity literature focuses on race and ethnicity, which will be explored in the example below. The data setup code uses spatial methods covered in the previous three chapters to acquire Census tract-level data on population estimates for non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic populations in California, then filters those Census tracts those that intersect the largest urbanized areas by population in the state using an inner spatial join. In turn, it is an illustrative example of how spatial analysis tools can be important parts of data setup workflows for analysis.
+Much of the segregation and diversity literature focuses on race and ethnicity, which will be explored in the example below. The data setup code uses spatial methods covered in the previous three chapters to acquire Census tract-level data on population estimates for non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic populations in California, then filters those Census tracts those that intersect the largest urbanized areas by population in the state using an inner spatial join. In turn, it is an illustrative example of how spatial analysis tools can be important parts of data setup workflows for analysis. As urbanized areas for the 2020 Census are not yet defined at the time of this writing, we'll be using urbanized areas for 2019 and data from the 2015-2019 ACS.
 
 ```{r get-race-data-ch8}
 library(tidycensus)
@@ -308,7 +308,7 @@ dfw_data <- get_acs(
   county = dfw_counties,
   geometry = TRUE,
   output = "wide",
-  year = 2019
+  year = 2020
 ) %>%
   select(-NAME) %>%
   st_transform(32138) # NAD83 / Texas North Central
@@ -358,7 +358,7 @@ mhv_histogram <- ggplot(dfw_data, aes(x = median_valueE)) +
   geom_histogram(alpha = 0.5, fill = "navy", color = "navy",
                  bins = 100) + 
   theme_minimal() + 
-  scale_x_continuous(labels = scales::label_number_si(accuracy = NULL)) + 
+  scale_x_continuous(labels = scales::label_number_si(accuracy = 0.1)) + 
   labs(x = "Median home value")
 
 mhv_map + mhv_histogram
@@ -400,7 +400,7 @@ library(units)
 
 dfw_data_for_model <- dfw_data %>%
   mutate(pop_density = as.numeric(set_units(total_populationE / st_area(.), "1/km2")),
-         median_structure_age = 2017 - median_year_builtE) %>%
+         median_structure_age = 2018 - median_year_builtE) %>%
   select(!ends_with("M")) %>% 
   rename_with(.fn = ~str_remove(.x, "E$")) %>%
   na.omit()
@@ -420,8 +420,7 @@ After inspecting the distribution of the outcome variable and completing feature
 
 $$
 \begin{align*}\operatorname{log(median\_value)} &= \alpha + \beta_{1}(\operatorname{median\_rooms}) + \beta_{2}(\operatorname{median\_income})\ + \\&\quad \beta_{3}(\operatorname{pct\_college}) + \beta_{4}(\operatorname{pct\_foreign\_born}) + \\&\quad\beta_{5}(\operatorname{pct\_white})\ + \beta_{6}(\operatorname{median\_age}) + \\&\quad\beta_{7}(\operatorname{median\_structure\_age}) + \beta_{8}(\operatorname{percent\_ooh})\ + \\&\quad \beta_{9}(\operatorname{pop\_density}) + \beta_{10}(\operatorname{total\_population}) + \epsilon\end{align*}
-$$\
-where $\alpha$ is the model intercept, $\beta_{1}$ is the change in the log of median home value with a 1-unit increase in the median number of rooms (and so forth for all the model predictors) while holding all other predictors constant, and $\epsilon$ is the error term.
+$$ where $\alpha$ is the model intercept, $\beta_{1}$ is the change in the log of median home value with a 1-unit increase in the median number of rooms (and so forth for all the model predictors) while holding all other predictors constant, and $\epsilon$ is the error term.
 
 Model formulas in R are generally written as `outcome ~ predictor_1 + predictor_2 + ... + predictor_k`, where `k` is the number of model predictors. The formula can be supplied as a character string to the model function (as shown below) or supplied unquoted in the call to the function. We use `lm()` to fit the linear model, and then check the results with `summary()`.
 
@@ -435,7 +434,7 @@ summary(model1)
 
 The printed summary gives us information about the model fit. The `Estimate` column represents the model parameters (the $\beta$ values), followed by the standard error, the t-value test statistic, and the *p*-value which helps us assess relative statistical significance. @james2013c (p. 67) provides a concise summary of how *p*-values should be interpreted:
 
-> Roughly speaking, we interpret the *p-*value as follows: a small *p*-value indicates that it is unlikely to observe such a substantial association between the predictor and the response \[outcome variable\] due to chance, in the absence of any real association between the predictor and the response. Hence, if we see a small *p*-value, then we can infer that there is an association between the predictor and the response. We *reject the null hypothesis* -- that is, we declare a relationship to exist between X and Y -- if the *p-*value is small enough.
+> Roughly speaking, we interpret the *p-*value as follows: a small *p*-value indicates that it is unlikely to observe such a substantial association between the predictor and the response (outcome variable) due to chance, in the absence of any real association between the predictor and the response. Hence, if we see a small *p*-value, then we can infer that there is an association between the predictor and the response. We *reject the null hypothesis* -- that is, we declare a relationship to exist between X and Y -- if the *p-*value is small enough.
 
 By convention, researchers will use *p*-value cutoffs of 0.05, 0.01, or 0.001, depending on the topic under study; these values are highlighted with asterisks in the model summary printout. Examining the model parameters and *p*-values suggests that median household income, bachelor's degree attainment, the percentage non-Hispanic white population, and median age are positively associated with median home values, whereas the percentage owner-occupied housing is negatively associated with median home values. The R-squared value is 0.78, suggesting that our model explains around 78 percent of the variance in `median_value`.
 
@@ -467,7 +466,7 @@ library(car)
 vif(model1)
 ```
 
-The most problematic variable is `median_income`, with a VIF value of over 8. A potential solution involves removing this variable and re-running the model; as it is highly correlated with other predictors in the model, the effect of median household income would in theory be captured by the remaining predictors.
+The most problematic variable is `median_income`, with a VIF value of over 6. A potential solution involves removing this variable and re-running the model; as it is highly correlated with other predictors in the model, the effect of median household income would in theory be captured by the remaining predictors.
 
 ```{r model-formula-2}
 formula2 <- "log(median_value) ~ median_rooms + pct_college + pct_foreign_born + pct_white + median_age + median_structure_age + percent_ooh + pop_density + total_population"
@@ -504,7 +503,7 @@ pca <- prcomp(
 summary(pca)
 ```
 
-Printing the `summary()` of the PCA model shows 10 components that collectively explain 100% of the variance in the original predictors. The first principal component explains 41.8 percent of the overall variance; the second explains 17 percent; and so forth.
+Printing the `summary()` of the PCA model shows 10 components that collectively explain 100% of the variance in the original predictors. The first principal component explains 40.8 percent of the overall variance; the second explains 14 percent; and so forth.
 
 To understand what the different principal components now mean, it is helpful to plot the variable *loadings*. This represents the relationships between the original variables in the model and the derived components. This approach is derived from Julia Silge's blog post on the topic [@silge2020].
 
@@ -532,7 +531,7 @@ pca_tibble %>%
   theme_minimal()
 ```
 
-With respect to PC1, which explains nearly 42 percent of the variance in the overall predictor set, the variables `percent_ooh`, `pct_white`, `pct_college`, `median_rooms`, `median_income`, and `median_age` load negatively, whereas `pop_density` and to a lesser extent `pct_foreign_born` load positively. We can attach these principal components to our original data with `predict()` and `cbind()`, then make a map of PC1 for further exploration:
+With respect to PC1, which explains nearly 41 percent of the variance in the overall predictor set, the variables `percent_ooh`, `pct_white`, `pct_college`, `median_rooms`, `median_income`, and `median_age` load negatively, whereas `pop_density` and `pct_foreign_born` load positively. We can attach these principal components to our original data with `predict()` and `cbind()`, then make a map of PC1 for further exploration:
 
 ```{r pca-model, fig.cap = "Map of principal component 1"}
 components <- predict(pca, dfw_estimates)
@@ -563,7 +562,7 @@ summary(pca_model)
 
 The model fit, as represented by the R-squared value, is similar to the models fit earlier in this chapter. One possible disadvantage of principal components regression, however, is the interpretation of the results as the different variables which are comprehensible on their own are now spread across the components. It can be helpful to think of the different components as *indices* in this sense.
 
-As discussed above, PC1 represents a gradient from segregated, older, wealthy, white communities on the low end to more diverse, lower-income, and younger communities on the high end; this PC is negatively associated with median home values, with tracks with expectations. Reviewing the plot above, PC3 is associated with lower population densities, incomes, and educational attainment, but higher levels of owner-occupied housing; in turn, it can be thought of as an urban (on the low end) to rural (on the high end) gradient. A negative association with median home value is then expected as home values are higher in the urban core than on the rural fringe of the metropolitan area.
+As discussed above, PC1 represents a gradient from segregated, older, wealthy, white communities on the low end to more diverse, lower-income, and younger communities on the high end; this PC is negatively associated with median home values, with tracks with expectations. Reviewing the plot above, PC3 is associated with lower population densities, incomes, and foreign-born populations, but proportionally older and white populations; in turn, it can be thought of as an urban (on the low end) to rural (on the high end) gradient. A negative association with median home value is then expected as home values are higher in the urban core than on the rural fringe of the metropolitan area.
 
 ## Spatial regression
 
@@ -699,7 +698,7 @@ lm.LMtests(
 )
 ```
 
-All test statistics are large and statistically significant; in this case, the robust versions of the statistics should be compared. While both the lag and error models would be appropriate for this data, the test statistic for the robust version of the error model is larger, suggesting that the spatial error model should be preferred over the spatial lag model in this example.
+All test statistics are large and statistically significant; in this case, the robust versions of the statistics should be compared. While both the lag and error models would be appropriate for this data, the test statistic for the robust version of the lag model is larger, suggesting that the spatial lag model should be preferred over the spatial error model in this example.
 
 ## Geographically weighted regression
 
@@ -736,7 +735,7 @@ bw <- bw.gwr(
 )
 ```
 
-`bw.gwr()` chose 131 as the number of nearest neighbors based on cross-validation. This means that for each Census tract, the nearest 131 of the total 1253 Census tracts in the Dallas-Fort Worth region will be used to estimate the local model, with weights calculated using the bisquare distance-decay function as follows:
+`bw.gwr()` chose 187 as the number of nearest neighbors based on cross-validation. This means that for each Census tract, the nearest 187 of the total 1559 Census tracts in the Dallas-Fort Worth region will be used to estimate the local model, with weights calculated using the bisquare distance-decay function as follows:
 
 $$
 w_{ij} = 1-(\frac{d_{ij}^2}{h^2})^2
@@ -784,7 +783,7 @@ ggplot(gw_model_results, aes(fill = Local_R2)) +
   theme_void()
 ```
 
-The map suggests that the model performs very well in Fort Worth, Collin County, and the eastern edge of the metropolitan area, with local R-squared values exceeding 0.9. It performs worse in northwestern Denton County and in the areas near the Dallas-Fort Worth airport (the large missing area in the center of the map).
+The map suggests that the model performs very well in Fort Worth, Collin County, and the eastern edge of the metropolitan area, with local R-squared values exceeding 0.9. It performs worse in northwestern Denton County and in other more rural areas to the west of Fort Worth.
 
 We can examine locally varying parameter estimates in much the same way. The first map below visualizes the local relationships between the percentage owner-occupied housing and median home values. Recall from the global model that this coefficient was negative and statistically significant.
 
@@ -801,7 +800,7 @@ The dark purple areas on the map are those areas where the global relationship i
 We can also explore local variations for a predictor that was not statistically significant in the global model, median structure age:
 
 ```{r map-structure-age-betas, fig.cap = "Local parameter estimates for median structure age"}
-ggplot(gw_model_results, aes(fill = median_structure_age)) + 
+ggplot(gw_model_results, aes(fill = pop_density)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c() + 
   theme_void() + 
@@ -863,7 +862,7 @@ dfw_kmeans <- dfw_pca %>%
 table(dfw_kmeans$cluster)
 ```
 
-The algorithm has partitioned the data into six clusters; the smallest (Cluster 1) has 65 Census tracts, whereas the largest (Cluster 3) has 380 Census tracts. At this stage, it is useful to explore the data in both *geographic space* and *variable space* to understand how the clusters differ from one another. We can assign the cluster ID to the original dataset as a new column and map it with `geom_sf()`.
+The algorithm has partitioned the data into six clusters; the smallest (Cluster 4) has 83 Census tracts, whereas the largest (Cluster 3) has 456 Census tracts. At this stage, it is useful to explore the data in both *geographic space* and *variable space* to understand how the clusters differ from one another. We can assign the cluster ID to the original dataset as a new column and map it with `geom_sf()`.
 
 ```{r map-clusters, fig.cap = "Map of geodemographic clusters in Dallas-Fort Worth"}
 dfw_clusters <- dfw_pca %>%
@@ -876,7 +875,7 @@ ggplot(dfw_clusters, aes(fill = cluster)) +
   labs(fill = "Cluster ")
 ```
 
-Some notable geographic patterns in the clusters are evident from the map, even if the viewer does not have local knowledge of the Dallas-Fort Worth region. Cluster 6 represents more rural communities on the edges of the metropolitan area, whereas Cluster 3 tends to be located in the core counties of Tarrant and Dallas as well as higher-density tracts in outer counties. Cluster 5 covers both big-city downtowns of Fort Worth and Dallas along with a scattering of suburban tracts.
+Some notable geographic patterns in the clusters are evident from the map, even if the viewer does not have local knowledge of the Dallas-Fort Worth region. Cluster 1 represents more rural communities on the edges of the metropolitan area, whereas Cluster 6 tends to be located in the core counties of Tarrant and Dallas as well as higher-density tracts in outer counties. Cluster 2 covers both big-city downtowns of Fort Worth and Dallas along with a scattering of suburban tracts.
 
 A useful companion visualization to the map is a color-coded scatterplot using two of the principal components in the PCA dataset. We will use the two components discussed as "indices" in Section \@ref(dimension-reduction-with-principal-components-analysis): PC1, which is a gradient from affluent/older/white to lower-income/younger/nonwhite, and PC3, which is an urban-to-rural gradient. Given the data density, `ggplotly()` from the **plotly** package will convert the scatterplot to a graphic with an interactive legend, allowing the analyst to turn cluster groups on and off.
 
@@ -894,7 +893,7 @@ ggplotly(cluster_plot) %>%
                        x = 0.2, title = "Cluster"))
 ```
 
-While Cluster 1 overlaps with several other clusters in the feature space shown on the plot (double-click it in the legend to isolate it), the other five clusters show distinctive differences with respect to the two principal components. Cluster 4 represents affluent, homogeneous, urban communities; the Dallas enclave of Highland Park falls within this cluster. Cluster 5, which includes the two downtowns, also scores lower on the "rurality" index PC3 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.
+While all clusters overlap one another to some degree, each occupies distinct feature space. Double-click any cluster in the legend to isolate it. Cluster 3 represents affluent, homogeneous, urban communities; the Dallas enclave of Highland Park falls within this cluster. Cluster 5, which includes the two downtowns, also scores lower on the "rurality" index PC3 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.
 
 ### Spatial clustering & regionalization
 
