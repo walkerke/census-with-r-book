@@ -797,14 +797,14 @@ ggplot(gw_model_results, aes(fill = percent_ooh)) +
 
 The dark purple areas on the map are those areas where the global relationship in the model reflects the local relationship, as local parameter estimates are negative. The areas that stick out include the high-density area of uptown Dallas, where renter-occupied housing is common and median home values are very high. However, in rural areas on the fringe of the metropolitan area this relationship reverses, returning in some cases positive parameter estimates (the yellow parts of the map). This means that for those local areas, a greater percentage of owner-occupied housing is associated with higher home values.
 
-We can also explore local variations for a predictor that was not statistically significant in the global model, median structure age:
+We can explore this further by investigating the local parameter estimates for population density, which was not significant in the global model:
 
 ```{r map-structure-age-betas, fig.cap = "Local parameter estimates for median structure age"}
 ggplot(gw_model_results, aes(fill = pop_density)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c() + 
   theme_void() + 
-  labs(fill = "Local β for \nmedian_structure_age")
+  labs(fill = "Local β for \npopulation density")
 ```
 
 For large portions of the metropolitan area, the relationship between median age of structures and median home values is negligible, which is what drives the global relationship. However, in the areas around the airport, we see a positive relationship between the variables, suggesting that neighborhoods with older homes have higher home values. Conversely, on the rural fringe, we observe the opposite relationship. In rural areas with new suburban developments, this makes intuitive sense; new suburban subdivisions will attract a different buyer than existing older rural housing stock, and will likely be more expensive.
