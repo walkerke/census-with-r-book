@@ -40,7 +40,7 @@ American Community Survey microdata are available in **tidycensus** by using the
 
 ### Basic usage of `get_pums()`
 
-`get_pums()` requires specifying one or more variables and the state for which you'd like to request data. For national-level analyses, `state = 'all'` *can* get data for the entire USA by iterating over all US states, but the data can take some time to download depending on the user's internet connection. The `get_pums()` function defaults to the 5-year ACS with `survey = "acs5"`; 1-year ACS data is available with `survey = "acs1"`. At the time of this writing, the default year is 2019; data are available back to 2006 for the 1-year ACS and 2005-2009 for the 5-year ACS.
+`get_pums()` requires specifying one or more variables and the state for which you'd like to request data. For national-level analyses, `state = 'all'` *can* get data for the entire USA by iterating over all US states, but the data can take some time to download depending on the user's internet connection. The `get_pums()` function defaults to the 5-year ACS with `survey = "acs5"`; 1-year ACS data is available with `survey = "acs1"`. At the time of this writing, data are available from 2006 through 2019 for the 1-year ACS and 2005-2009 through 2016-2020 for the 5-year ACS.
 
 Let's take a look at a first example using `get_pums()` to request microdata for Wyoming from the 1-year 2019 ACS with information on sex, age (`AGEP`), and household type (`HHT`).
 
@@ -107,6 +107,25 @@ wy_households <- filter(wy_pums, SPORDER == 1)
 
 sum(wy_households$WGTP)
 ```
+
+*Housing unit* rather than simply household-level analyses introduce an additional level of complexity, as housing units can be both occupied and vacant. Vacant housing units are returned in a different format from the Census API which makes them a special case in **tidycensus**. To return vacant housing units along with person and household records, use the argument `return_vacant = TRUE`.
+
+```{r return-vacant}
+wy_with_vacant <- get_pums(
+  variables = c("SEX", "AGEP", "HHT"),
+  state = "WY",
+  survey = "acs1",
+  year = 2019,
+  return_vacant = TRUE
+) %>%
+  arrange(VACS)
+```
+
+```{r return-vacant-show, echo = FALSE}
+style_data(wy_with_vacant, caption = "1-year ACS PUMS data with vacant housing units")
+```
+
+Vacant housing units are included in the dataset, but as they do not have person-level characteristics (due to their lack of occupancy) all person-level variables like age and sex have values of `NA`.
 
 ## Working with PUMS variables
 
@@ -193,7 +212,7 @@ PUMA geographies can be obtained and reviewed with the `pumas()` function in the
 library(tigris)
 options(tigris_use_cache = TRUE)
 
-wy_pumas <- pumas(state = "WY", cb = TRUE)
+wy_pumas <- pumas(state = "WY", cb = TRUE, year = 2019)
 
 ggplot(wy_pumas) + 
   geom_sf() + 
@@ -231,7 +250,8 @@ PUMA information is available with the variable code `PUMA` in `get_pums()`. Use
 wy_age_by_puma <- get_pums(
   variables = c("PUMA", "AGEP"),
   state = "WY",
-  survey = "acs5"
+  survey = "acs5",
+  year = 2019
 )
 ```
 
@@ -248,7 +268,8 @@ wy_puma_subset <- get_pums(
   variables = "AGEP",
   state = "WY",
   survey = "acs5",
-  puma = "00500"
+  puma = "00500",
+  year = 2019
 )
 ```
 
@@ -263,7 +284,8 @@ twostate_puma_subset <- get_pums(
   variables = "AGEP",
   state = "multiple",
   survey = "acs5",
-  puma = c("WY" = "00500", "UT" = "05001")
+  puma = c("WY" = "00500", "UT" = "05001"),
+  year = 2019
 )
 
 ```
