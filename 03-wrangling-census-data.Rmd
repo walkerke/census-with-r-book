@@ -356,9 +356,29 @@ The values are completely different, and clearly not percentages! This is becaus
 
 ### Preparing time-series ACS estimates
 
-**New content: comparison profile tables**
+The safest option for time-series analysis in the ACS is to use the Comparison Profile Tables. These tables are available for both the 1-year and 5-year ACS, and allow for comparison of demographic indicators over the past five years for a given year. Using the Comparison Profile tables also brings the benefit of additional variable harmonization, such as inflation-adjusted income estimates.
 
-The safest option for time-series analysis in the ACS is to use the Comparison Profile Tables. These tables are available for both the
+Data from the Comparison Profile are accessed just like other ACS variables using `get_acs()`. The example below illustrates how to get data from the ACS Comparison Profile on inflation-adjusted median household income for counties and county-equivalents in Alaska.
+
+```{r alaska-cp-data}
+ak_income_compare <- get_acs(
+  geography = "county",
+  variables = c(
+    income15 = "CP03_2015_062",
+    income20 = "CP03_2020_062"
+  ),
+  state = "AK",
+  year = 2020
+)
+```
+
+For the 2016-2020 ACS, the "comparison year" is 2015, representing the closest non-overlapping 5-year dataset, which in this case is 2011-2015. We can examine the results, which are inflation-adjusted for appropriate comparison:
+
+```{r alaska-cp-data-show, echo = FALSE}
+style_data(ak_income_compare, n_rows = 8, caption = "Comparative income data from the ACS CP tables")
+```
+
+#### Iterating over ACS years with tidyverse tools
 
 Using the Detailed Tables also represents a safer option than the Data Profile, as it ensures that variable IDs will remain consistent across years allowing for consistent and correct analysis. That said, there still are some potential pitfalls to account for when using the Detailed Tables. The Census Bureau will add and remove variables from survey to survey depending on data needs and data availability. For example, questions are sometimes added and removed from the ACS survey meaning that you won't always be able to get every data point for every year and geography combination. In turn, it is still important to check on data availability using `load_variables()` for the years you plan to analyze before carrying out your time-series analysis.
 

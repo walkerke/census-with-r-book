@@ -562,7 +562,7 @@ summary(pca_model)
 
 The model fit, as represented by the R-squared value, is similar to the models fit earlier in this chapter. One possible disadvantage of principal components regression, however, is the interpretation of the results as the different variables which are comprehensible on their own are now spread across the components. It can be helpful to think of the different components as *indices* in this sense.
 
-As discussed above, PC1 represents a gradient from segregated, older, wealthy, white communities on the low end to more diverse, lower-income, and younger communities on the high end; this PC is negatively associated with median home values, with tracks with expectations. Reviewing the plot above, PC3 is associated with lower population densities, incomes, and foreign-born populations, but proportionally older and white populations; in turn, it can be thought of as an urban (on the low end) to rural (on the high end) gradient. A negative association with median home value is then expected as home values are higher in the urban core than on the rural fringe of the metropolitan area.
+As discussed above, PC1 represents a gradient from segregated, older, wealthy, white communities on the low end to more diverse, lower-income, and younger communities on the high end; this PC is negatively associated with median home values, with tracks with expectations. Reviewing the plot above, PC2 is associated with lower population densities and levels of educational attainment; in turn, it can be thought of as an urban (on the low end) to rural (on the high end) gradient. A negative association with median home value is then expected as home values are higher in the urban core than on the rural fringe of the metropolitan area.
 
 ## Spatial regression
 
@@ -807,7 +807,7 @@ ggplot(gw_model_results, aes(fill = pop_density)) +
   labs(fill = "Local β for \npopulation density")
 ```
 
-For large portions of the metropolitan area, the relationship between median age of structures and median home values is negligible, which is what drives the global relationship. However, in the areas around the airport, we see a positive relationship between the variables, suggesting that neighborhoods with older homes have higher home values. Conversely, on the rural fringe, we observe the opposite relationship. In rural areas with new suburban developments, this makes intuitive sense; new suburban subdivisions will attract a different buyer than existing older rural housing stock, and will likely be more expensive.
+For large portions of the metropolitan area, the relationship between population density and median home values is negligible, which is what drives the global relationship. However, we do observe variations in different parts of the metropolitan area. Bright yellow locations are those where high population densities are associated with higher home values. Conversely, the darker blue and purple areas represent several affluent enclaves or suburbs of Dallas and Fort Worth where lower densities are associated with higher home values.
 
 ### Limitations of GWR
 
@@ -877,13 +877,13 @@ ggplot(dfw_clusters, aes(fill = cluster)) +
 
 Some notable geographic patterns in the clusters are evident from the map, even if the viewer does not have local knowledge of the Dallas-Fort Worth region. Cluster 1 represents more rural communities on the edges of the metropolitan area, whereas Cluster 6 tends to be located in the core counties of Tarrant and Dallas as well as higher-density tracts in outer counties. Cluster 2 covers both big-city downtowns of Fort Worth and Dallas along with a scattering of suburban tracts.
 
-A useful companion visualization to the map is a color-coded scatterplot using two of the principal components in the PCA dataset. We will use the two components discussed as "indices" in Section \@ref(dimension-reduction-with-principal-components-analysis): PC1, which is a gradient from affluent/older/white to lower-income/younger/nonwhite, and PC3, which is an urban-to-rural gradient. Given the data density, `ggplotly()` from the **plotly** package will convert the scatterplot to a graphic with an interactive legend, allowing the analyst to turn cluster groups on and off.
+A useful companion visualization to the map is a color-coded scatterplot using two of the principal components in the PCA dataset. We will use the two components discussed as "indices" in Section \@ref(dimension-reduction-with-principal-components-analysis): PC1, which is a gradient from affluent/older/white to lower-income/younger/nonwhite, and PC2, which represents areas with high population densities and educational attainment on the low end to lower-density, less educated areas on the high end. Given the data density, `ggplotly()` from the **plotly** package will convert the scatterplot to a graphic with an interactive legend, allowing the analyst to turn cluster groups on and off.
 
 ```{r cluster-scatterplot, fig.cap = "Interactive scatterplot of PC1 and PC3 colored by cluster"}
 library(plotly)
 
 cluster_plot <- ggplot(dfw_clusters, 
-                       aes(x = PC1, y = PC3, color = cluster)) + 
+                       aes(x = PC1, y = PC2, color = cluster)) + 
   geom_point() + 
   scale_color_brewer(palette = "Set1") + 
   theme_minimal()
@@ -893,7 +893,7 @@ ggplotly(cluster_plot) %>%
                        x = 0.2, title = "Cluster"))
 ```
 
-While all clusters overlap one another to some degree, each occupies distinct feature space. Double-click any cluster in the legend to isolate it. Cluster 3 represents affluent, homogeneous, urban communities; the Dallas enclave of Highland Park falls within this cluster. Cluster 5, which includes the two downtowns, also scores lower on the "rurality" index PC3 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.
+While all clusters overlap one another to some degree, each occupies distinct feature space. Double-click any cluster in the legend to isolate it. Cluster 1, which covers much of the rural fringe of Dallas-Fort Worth, scores very high on the "rurality" index PC2 (low density / educational attainment) and modestly negative on the "diversity" index PC1. Cluster 2, which includes the two downtowns, scores lower on the "rurality" index PC2 but scores higher on the "diversity" index PC1. A geodemographic analyst may adopt these visualization approaches to explore the proposed typology in greater depth, and aim to produce informative "labels" for each cluster.
 
 ### Spatial clustering & regionalization
 
@@ -946,7 +946,7 @@ ggplot(dfw_clusters, aes(fill = region)) +
   theme_void()
 ```
 
-The algorithm has partitioned the data into eight contiguous regions. These regions are largely geographic in nature (regions 1, 2, and 8 cover the western, eastern, and southern portions of the metro respectively), but they also incorporate demographic variations in the data. For example, the very affluent Highland Park area, which is demographically distinct from the rest of the region in both socioeconomic status and age (it is much older), is given its own cluster. Additionally, Cluster 6 represents the "northeast Tarrant County" suburban community, which is a socially meaningful designation in north Texas.
+The algorithm has partitioned the data into eight contiguous regions. These regions are largely geographic in nature (region 5 covers the northwestern portion of the metropolitan area, whereas region 2 covers the east and south), but they also incorporate demographic variations in the data. For example, region 6 covers downtown and uptown Dallas along with the Bishop Arts neighborhood; these represent the highest-density and most traditionally "urban" parts of the metropolitan area. Additionally, region 4 represents the "northeast Tarrant County" suburban community along with similar suburbs in Denton County, which is a socially meaningful sub-region in north Texas.
 
 ## Exercises
 
