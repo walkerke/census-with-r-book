@@ -132,7 +132,7 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
 | Function                                | Datasets available                             | Years available       |
-|-----------------------------------------|------------------------------------------------|-----------------------|
+|-------------------------|------------------------------|-----------------|
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-2020             |
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-2020             |
@@ -325,31 +325,37 @@ Tarrant County added 180 new Census tracts between 1990 and 2020. As the plot sh
 
 The default year of shapefiles in **tigris** is typically updated when cartographic boundary shapefiles for that year become fully available. At the time of this writing, the default year is 2020. This will be changed to 2021 pending full data availability of the cartographic boundary shapefiles for that year later in 2022. If users need the 2021 boundaries in their projects and do not want to type `year = 2021` for each dataset, the command `options(tigris_year = 2021)` can be used. This will direct **tigris** to download the 2021 shapefiles when available without having to specify the year explicitly.
 
-### Combining tigris datasets (need to update)
+### Combining tigris datasets 
 
-For smaller geographies like Census tracts, block groups, and blocks, the Census Bureau stores shapefiles by state and does not provide a national file. For some geographic features, datasets are further subdivided by county. In these instances, **tigris** users must specify a state and/or county to appropriately make a request to the Census Bureau website for data.
+For years 2019 and later, the US Census Bureau has started releasing national small-area cartographic boundary files, including commonly-requested geographies like block groups, Census tracts, and places. In **tigris**, a user only needs to specify `cb = TRUE` and leave the state blank to get a national dataset. One line of code in **tigris** is all you need to get 242,303 US block groups for 2020:
 
-That said, a common request from **tigris** users is to obtain *all shapes* for the United States. For example, a national demographic study may require all 241,900 block groups in the United States. While this option is not directly available in **tigris**, national datasets are straightforward to create with **tidyverse** tools. As covered in several examples thus far in this book, the `purrr::map()` family of functions iterate over a sequence of values and combine function results as directed by a user. For tigris users, the `map_dfr()` function will prove especially useful as it row-binds datasets to create its output. The built-in `state.abb` vector in R gives us postal codes of all 50 US states; if Washington, DC or Puerto Rico are required in your analysis, add these to the vector with `c()` as shown below.
+```{r get-2020-bgs}
+us_bgs_2020 <- block_groups(cb = TRUE, year = 2020)
 
-Once the vector of state codes is prepared, a user can iterate over those codes with `map_dfr()` and produce a national block group dataset, shown for 2020 below.
+nrow(us_bgs_2020)
+```
+
+However, this is not an option for years 2018 and earlier, which means that **tigris** users must turn to alternative methods to generate national datasets. Such datasets are straightforward to create with **tidyverse** tools. As covered in several examples thus far in this book, the `purrr::map()` family of functions iterate over a sequence of values and combine function results as directed by a user. For tigris users, the `map_dfr()` function will prove especially useful as it row-binds datasets to create its output. The built-in `state.abb` vector in R gives us postal codes of all 50 US states; if Washington, DC or Puerto Rico are required in your analysis, add these to the vector with `c()` as shown below.
+
+Once the vector of state codes is prepared, a user can iterate over those codes with `map_dfr()` and produce a national block group dataset, shown for 2018 below.
 
 ```{r all-block-groups}
 
 state_codes <- c(state.abb, "DC", "PR")
 
-us_bgs <- map_dfr(
+us_bgs_2018 <- map_dfr(
   state_codes, 
   ~block_groups(
     state = .x, 
     cb = TRUE, 
-    year = 2020
+    year = 2018
   )
 )
 
-nrow(us_bgs)
+nrow(us_bgs_2018)
 ```
 
-If you are not using shapefile caching, this process will be slowed by the time it takes to download each block group shapefile from the Census Bureau website. However, if you have a local cache of block group shapefiles as illustrated in this section, loading and combining all 241,900 block groups for use in your analysis should only take a few seconds.
+If you are not using shapefile caching, this process will be slowed by the time it takes to download each block group shapefile from the Census Bureau website. However, if you have a local cache of block group shapefiles as illustrated in this section, loading and combining all 220,016 block groups for use in your analysis should only take a few seconds.
 
 ## Coordinate reference systems
 
