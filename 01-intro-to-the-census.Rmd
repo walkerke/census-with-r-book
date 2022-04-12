@@ -67,7 +67,7 @@ The plot illustrates how Census tracts in Benton County neatly nest within its p
 Reviewing the diagram shows that some Census geographies, like congressional districts, only nest within states, and that some other geographies do not nest within any parent geography at all. A good example of this is the Zip Code Tabulation Area (ZCTA), which is used by the Census Bureau to represent postal code geographies in the US. A more in-depth discussion of ZCTAs (and some of their pitfalls) is found in Section \@ref(understanding-and-working-with-zctas); a brief illustration is represented by the graphic below.
 
 ```{r benton-zctas, echo = FALSE, fig.cap = "Benton County, OR ZCTAs in relationship to the county boundary"}
-all_zctas <- zctas(cb = TRUE)
+all_zctas <- zctas(cb = TRUE, year = 2019)
 
 benton_centers <- all_zctas %>%
   sf::st_centroid() %>%

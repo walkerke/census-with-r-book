@@ -20,7 +20,7 @@ As discussed in Chapter \@ref(introduction-to-census-microdata), `get_pums()` au
 
 ### Basic tabulation of weights with tidyverse tools
 
-Let's get some basic sample PUMS data from the 2015-2019 ACS for Mississippi with information on sex and age.
+Let's get some basic sample PUMS data from the 2016-2020 ACS for Mississippi with information on sex and age.
 
 ```{r ms-pums, results = 'hide'}
 library(tidycensus)
@@ -30,7 +30,7 @@ ms_pums <- get_pums(
   variables = c("SEX", "AGEP"),
   state = "MS",
   survey = "acs5",
-  year = 2019,
+  year = 2020,
   recode = TRUE
 )
 ```
@@ -73,7 +73,8 @@ We can then use `get_acs()` to check our answer:
 ```{r check-answer-get-acs}
 get_acs(geography = "state",
         state = "MS",
-        variables = c("DP05_0030", "DP05_0031"))
+        variables = c("DP05_0030", "DP05_0031"),
+        year = 2020)
 ```
 
 We notice that our tabulations are very close to the ACS estimates available in `get_acs()`, and well within the margin of error. When we are doing tabulations with microdata, it is important to remember that we are tabulating data based on a smaller subsample of information than is available to the aggregate ACS estimates. In turn, as the US Census Bureau reminds us [@pums_readme]:
@@ -95,6 +96,7 @@ hh_variables <- c("PUMA", "GRPIP", "RAC1P",
 ms_hh_data <- get_pums(
   variables = hh_variables, 
   state = "MS",
+  year = 2020,
   variables_filter = list(
     SPORDER = 1,
     TEN = 3
@@ -144,7 +146,7 @@ We can now check our result:
 style_data(ms_hh_summary, caption = "Tabulated PUMS data for Mississippi")
 ```
 
-The demographic group in this example with the largest rent burden is Black, Not married; nearly 42 percent of households in this group pay over 40 percent of their incomes in gross rent. The least rent-burdened group is White, Married, with a value under 14 percent. For each of the three racial/ethnic groups, there is a distinctive financial advantage for married-couple households over non-married households; this is particularly pronounced for Black householders.
+The demographic group in this example with the largest rent burden is Black, Not married; nearly 41 percent of households in this group pay over 40 percent of their incomes in gross rent. The least rent-burdened group is White, Married, with a value under 13 percent. For each of the three racial/ethnic groups, there is a distinctive financial advantage for married-couple households over non-married households; this is particularly pronounced for Black householders.
 
 ## Mapping PUMS data
 
@@ -155,7 +157,7 @@ library(tigris)
 library(tmap)
 options(tigris_use_cache = TRUE)
 
-ms_pumas <- pumas("MS", cb = TRUE)
+ms_pumas <- pumas("MS", year = 2020)
 
 plot(ms_pumas$geometry)
 ```
@@ -217,6 +219,7 @@ ms_hh_replicate <- get_pums(
   variables = c("TEN", hh_variables), 
   state = "MS",
   recode = TRUE,
+  year = 2020,
   variables_filter = list(
     SPORDER = 1
   ),
@@ -321,11 +324,11 @@ ms_svy_summary_moe <- ms_svy_summary %>%
 ggplot(ms_svy_summary_moe, aes(x = prop_above_40, 
                                y = reorder(label, 
                                            prop_above_40))) +
-  geom_errorbarh(aes(xmin = prop_above_40 - prop_above_40_moe, 
+  geom_errorbar(aes(xmin = prop_above_40 - prop_above_40_moe, 
                      xmax = prop_above_40 + prop_above_40_moe)) +
   geom_point(size = 3, color = "navy") +
   labs(title = "Rent burdened-households in Mississippi",
-       x = "2015-2019 ACS estimate (from PUMS data)",
+       x = "2016-2020 ACS estimate (from PUMS data)",
        y = "",
        caption = "Rent-burdened defined when gross rent is 40 percent or more\nof household income. Error bars represent a 90 percent confidence level.") +
   scale_x_continuous(labels = scales::percent) + 
@@ -347,7 +350,7 @@ ri_pums_to_model <- get_pums(
                 "COW", "ESR", "MAR", "NOC"),
   state = "RI",
   survey = "acs5",
-  year = 2019,
+  year = 2020,
   rep_weights = "person"
 )
 ```
@@ -431,7 +434,7 @@ Once fit, we can examine the results:
 summary(migration_model)
 ```
 
-The model identifies some notable differences in recent migrants relative to non-migrants, controlling for other demographic factors. Males are more likely to have moved than females, as are younger people relative to older people in the subpopulation. Married individuals are more stationary, whereas college-educated individuals in the sample are much more likely to have moved. The PUMAs are included as a categorical predictor largely to control for geographic differences in the state; however the model suggests that current residents in the Newport PUMA are slightly more likely to have moved than residents of northwest Rhode Island, the reference PUMA.
+The model identifies some notable differences in recent migrants relative to non-migrants, controlling for other demographic factors. Males are more likely to have moved than females, as are younger people relative to older people in the subpopulation. Individuals with children are slightly more stationary, whereas college-educated individuals in the sample are more likely to have moved. The PUMAs are included as a categorical predictor largely to control for geographic differences in the state; the model does not identify any substantive differences among Rhode Island PUMAs in this analysis.
 
 ## Exercises
 

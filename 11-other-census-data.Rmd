@@ -144,19 +144,16 @@ ggplot(nyc_pctfb, aes(fill = pct_fb)) +
 
 Manhattan's Lower East Side stands out as the part of the city with the largest proportion of foreign-born residents in 1910, with percentages exceeding 60%.
 
-An alternative view could focus on one of the specific groups represented in the columns in the dataset. For example, the number of Italy-born residents by Census tract is represented in the column `A6G014`; this type of information could be represented by either a graduated symbol map or a dot-density map. Using techniques learned in Section \@ref(dot-density-maps), `st_sample()` in the code below generates one dot for approximately every 100 Italian immigrants. Next, the Census tracts are dissolved with the `st_union()` function to generate a base layer on top of which the dots will be plotted.
+An alternative view could focus on one of the specific groups represented in the columns in the dataset. For example, the number of Italy-born residents by Census tract is represented in the column `A6G014`; this type of information could be represented by either a graduated symbol map or a dot-density map. Using techniques learned in Section \@ref(dot-density-maps), we can use the `as_dot_density()` function in the **tidycensus** package to generate one dot for approximately every 100 Italian immigrants. Next, the Census tracts are dissolved with the `st_union()` function to generate a base layer on top of which the dots will be plotted.
 
-```{r generate-italy-dots, eval = FALSE}
+```{r generate-italy-dots}
+library(tidycensus)
+
 italy_dots <- nyc_1910_proj %>%
-  st_sample(size = as.integer(.$A6G014 / 100)) %>%
-  st_sf()
-
-nyc_base <- nyc_1910_proj %>%
-  st_union()
-```
-
-```{r generate-italy-dots2, echo = FALSE}
-italy_dots <- read_rds("data/italy_dots.rds")
+  as_dot_density(
+    value = "A6G014",
+    values_per_dot = 100
+  )
 
 nyc_base <- nyc_1910_proj %>%
   st_union()
@@ -186,7 +183,7 @@ A core focus of Chapter 10 was the use of sampling weights to appropriately anal
 
 This means that decennial Census records that reflect periods 72 years ago or older can be made available to researchers by the IPUMS team. In fact, complete-count Census microdata can be downloaded from IPUMS at the person-level for the Census years 1850-1940, and at the household level for years earlier than 1850.
 
-The availability of complete-count Census records offers a tremendous analytic opportunity for researchers, but also comes with some challenges. The largest ACS microdata sample - the 2015-2019 5-year ACS - has around 16 million records, which can be read into memory on a standard desktop computer with 16GB RAM. Complete-count Census data can have records exceeding 100 million, which will not be possible to read into memory in R on a standard computer. This chapter covers R-based workflows for handling massive Census microdata without needing to upgrade one's computer or set up a cloud computing instance. The solution presented involves setting up a local database with PostgreSQL and the DBeaver platform, then interacting with microdata in that database using R's tidyverse and database interface tooling.
+The availability of complete-count Census records offers a tremendous analytic opportunity for researchers, but also comes with some challenges. The largest ACS microdata sample - the 2016-2020 5-year ACS - has around 16 million records, which can be read into memory on a standard desktop computer with 16GB RAM. Complete-count Census data can have records exceeding 100 million, which will not be possible to read into memory in R on a standard computer. This chapter covers R-based workflows for handling massive Census microdata without needing to upgrade one's computer or set up a cloud computing instance. The solution presented involves setting up a local database with PostgreSQL and the DBeaver platform, then interacting with microdata in that database using R's tidyverse and database interface tooling.
 
 ### Getting microdata from IPUMS
 
@@ -432,21 +429,22 @@ As these are *modeled* estimates, state-level influences on the county-level est
 
 Another very useful package for working with Census Bureau data is the **lehdr** R package [@green2021], which access the Longitudinal and Employer-Household Dynamics (LEHD) Origin-Destination Employment Statistics (LODES) data. LODES is not available from the Census API, meriting an alternative package and approach. LODES includes synthetic estimates of residential, workplace, and residential-workplace links at the Census block level, allowing for highly detailed geographic analysis of jobs and commuter patterns over time.
 
-The core function implemented in **lehdr** is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state.
+The core function implemented in **lehdr** is `grab_lodes()`, which downloads a LODES file of a specified `lodes_type` (either `"rac"` for residential, `"wac"` for workplace, or `"od"` for origin-destination) for a given state and year. While the raw LODES data are available at the Census block level, the `agg_geo` parameter offers a convenient way to roll up estimates to higher levels of aggregation. For origin-destination data, the `state_part = "main"` argument below captures within-state commuters; use `state_part = "aux"` to get commuters from out-of-state. The optional argument `use_cache = TRUE` stores downloaded LODES data in a cache directory on the user's computer; this is recommended to avoid having to re-download data for future analyses.
 
 ```{r lehdr}
-# remotes::install_github("jamgreen/lehdr")
 library(lehdr)
 library(tidycensus)
 library(sf)
 library(tidyverse)
+library(tigris)
 
 wa_lodes_od <- grab_lodes(
   state = "wa",
   year = 2018,
   lodes_type = "od",
   agg_geo = "tract",
-  state_part = "main"
+  state_part = "main",
+  use_cache = TRUE
 )
 ```
 
@@ -474,10 +472,11 @@ microsoft <- filter(wa_lodes_od, w_tract == "53033022803")
 ms_commuters <- seattle_adults %>%
   left_join(microsoft, by = c("GEOID" = "h_tract")) %>%
   mutate(ms_per_1000 = 1000 * (S000 / estimate)) %>%
-  st_transform(6596)
+  st_transform(6596) %>%
+  erase_water(area_threshold = 0.99)
 ```
 
-The result can be visualized on a map with **ggplot2**, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r).
+The result can be visualized on a map with **ggplot2**, or alternatively with any of the mapping tools introduced in Chapter \@ref(mapping-census-data-with-r). Note the use of the `erase_water()` function from the **tigris** package introduced in Section \@ref(better-cartography-with-spatial-overlay) with a high area threshold to remove large bodies of water like Lake Washington from the Census tract shapes.
 
 ```{r ms-commuters-map, fig.cap = "Map of commuter origins to the Microsoft Campus area, Seattle-area counties"}
 ggplot(ms_commuters, aes(fill = ms_per_1000)) + 

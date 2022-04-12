@@ -17,7 +17,7 @@ This chapter includes several examples of how R users can visualize data from th
 
 A critical part of the Census data analysis process is *data visualization*, where an analyst examines patterns and trends found in their data graphically. In many cases, the exploratory analyses outlined in the previous two chapters would be augmented significantly with accompanying graphics. This first section illustrates some examples for getting started with exploratory Census data visualization with **ggplot2**.
 
-To get started, we'll return to a dataset used in Section \@ref(renaming-variable-ids), which includes data on median household income and median age by county in the state of Georgia from the 2015-2019 ACS. We are requesting the data in wide format, which will spread the estimate and margin of error information across the columns.
+To get started, we'll return to a dataset used in Section \@ref(renaming-variable-ids), which includes data on median household income and median age by county in the state of Georgia from the 2016-2020 ACS. We are requesting the data in wide format, which will spread the estimate and margin of error information across the columns.
 
 ```{r get-ga-data-ch4}
 library(tidycensus)
@@ -28,7 +28,7 @@ ga_wide <- get_acs(
   variables = c(medinc = "B19013_001",
                 medage = "B01002_001"),
   output = "wide",
-  year = 2019
+  year = 2020
 )
 ```
 
@@ -216,23 +216,23 @@ In the above example visualization of public transportation mode share by metrop
 
 ### Data setup
 
-In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2015-2019 ACS. Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population. We can retrieve this information with **tidycensus**.
+In the example below, we will compare the median household incomes of counties in the US state of Maine from the 2016-2020 ACS. Before doing so, it is helpful to understand some basic information about counties in Maine, such as the number of counties and their total population. We can retrieve this information with **tidycensus** and 2020 decennial Census data.
 
 ```{r maine-info}
-maine <- get_acs(
+maine <- get_decennial(
   state = "Maine",
   geography = "county",
-  variables = c(totalpop = "B01003_001"),
-  year = 2019
+  variables = c(totalpop = "P1_001N"),
+  year = 2020
 ) %>%
-  arrange(desc(estimate))
+  arrange(desc(value))
 ```
 
 ```{r style-maine-info, echo = FALSE}
 style_data(maine, n_rows = 16, caption = "Population sizes of counties in Maine")
 ```
 
-There are sixteen counties in Maine, ranging in population from a maximum of 292,307 to a minimum of 16,836. In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.
+There are sixteen counties in Maine, ranging in population from a maximum of 303,069 to a minimum of 16,800. In turn, estimates for the counties with smaller population sizes are likely to be subject to a larger margin of error than those with larger baseline populations.
 
 Comparing median household incomes of these sixteen counties illustrates this point. Let's first obtain this data with **tidycensus** then clean up the `NAME` column with `str_remove()` to remove redundant information.
 
@@ -241,7 +241,7 @@ maine_income <- get_acs(
   state = "Maine",
   geography = "county",
   variables = c(hhincome = "B19013_001"),
-  year = 2019
+  year = 2020
 ) %>%
   mutate(NAME = str_remove(NAME, " County, Maine"))
 ```
@@ -276,9 +276,9 @@ maine_income %>%
   style_data(n_rows = 16, caption = "Margins of error in Maine")
 ```
 
-Specifically, margins of error around the estimated median household incomes vary from a low of \$1326 (Penobscot County) to a high of \$3240 (Sagadahoc County). In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.
+Specifically, margins of error around the estimated median household incomes vary from a low of \$1563 (Cumberland County) to a high of \$4616 (Sagadahoc County). In many cases, the margins of error around estimated county household income exceed the differences between counties of neighboring ranks, suggesting uncertainty in the ranks themselves.
 
-In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading. However, using visualization tools in **ggplot2**, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking. This is accomplished with the `geom_errorbarh()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate. In this instance, we will use the `moe` column to determine the lengths of the error bars.
+In turn, a dot plot like the one above intended to visualize a ranking of county household incomes in Maine may be misleading. However, using visualization tools in **ggplot2**, we can visualize the uncertainty around each estimate, giving chart readers a sense of the uncertainty in the ranking. This is accomplished with the `geom_errorbar()` function, which will plot horizontal error bars around each dot that stretch to a given value around each estimate. In this instance, we will use the `moe` column to determine the lengths of the error bars.
 
 ```{r visualize-error-bars, fig.cap = "Median household income by county in Maine with error bars shown"}
 ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) + 
@@ -287,18 +287,18 @@ ggplot(maine_income, aes(x = estimate, y = reorder(NAME, estimate))) +
   theme_minimal(base_size = 12.5) + 
   labs(title = "Median household income", 
        subtitle = "Counties in Maine", 
-       x = "2015-2019 ACS estimate", 
+       x = "2016-2020 ACS estimate", 
        y = "") + 
   scale_x_continuous(labels = label_dollar())
 ```
 
-Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income. For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties *could* conceivably have lower median household incomes. Additionally, while Waldo County has a higher estimated median household income than Androscoggin and Kennebec Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.
+Adding the horizontal error bars around each point gives us critical information to help us understand how our ranking of Maine counties by median household income. For example, while the ACS estimate suggests that Piscataquis County has the lowest median household income in Maine, the large margin of error around the estimate for Piscataquis County suggests that either Aroostook or Washington Counties *could* conceivably have lower median household incomes. Additionally, while Hancock County has a higher estimated median household income than Lincoln, Waldo, and Knox Counties, the margin of error plot shows us that this ranking is subject to considerable uncertainty.
 
 ## Visualizing ACS estimates over time
 
 Section \@ref(preparing-time-series-acs-estimates) covered how to obtain a time series of ACS estimates to explore temporal demographic shifts. While the output table usefully represented the time series of educational attainment in Colorado counties, data visualization is also commonly used to illustrate change over time. Arguably the most common chart type chosen for time-series visualization is the line chart, which **ggplot2** handles capably with the `geom_line()` function.
 
-For an illustrative example, we'll obtain 1-year ACS data back to 2005 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005, and we use the formula specification for anonymous functions so that `~ .x` translates to `function(x) x`.
+For an illustrative example, we'll obtain 1-year ACS data from 2005 through 2019 on median home value for Deschutes County, Oregon, home to the city of Bend and large numbers of in-migrants in recent years from the Bay Area in California. As in Chapter 3, `map_dfr()` is used to iterate over a named vector of years, creating a time-series dataset of median home value in Deschutes County since 2005, and we use the formula specification for anonymous functions so that `~ .x` translates to `function(x) x`.
 
 ```{r get-deschutes-value}
 years <- 2005:2019
@@ -432,12 +432,13 @@ housing_val <- get_acs(
     "Yamhill", 
     "Marion", 
     "Columbia"
-  )
+  ),
+  year = 2020
 )
 ```
 
 ```{r show-housing-val, echo = FALSE}
-style_data(housing_val, n_rows = 5, caption = "Median home values by Census tract in the Portland, OR area")
+style_data(housing_val, n_rows = 5, caption = "Median home values by Census tract in the Portland, OR area, 2016-2020 ACS")
 ```
 
 As with other datasets obtained with **tidycensus**, the `NAME` column contains descriptive information that can be parsed to make comparisons. In this case, Census tract ID, county, and state are separated with commas; in turn the tidyverse `separate()` function can split this column into three columns accordingly.
@@ -496,9 +497,11 @@ Alternatively, adding the `facet_wrap()` function, and specifying `county` as th
 ggplot(housing_val2, aes(x = estimate)) +
   geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
   facet_wrap(~county) + 
-  scale_x_continuous(labels = function(x) paste0("$", x / 1000, "k")) + 
+  scale_x_continuous(labels = dollar_format(scale = 0.000001, 
+                                            suffix = "m")) + 
   theme_minimal(base_size = 14) + 
-  theme(axis.text.y = element_blank()) + 
+  theme(axis.text.y = element_blank(), 
+        axis.text.x = element_text(angle = 45)) + 
   labs(x = "ACS estimate",
        y = "",
        title = "Median home values by Census tract, 2015-2019 ACS")
@@ -520,9 +523,11 @@ library(ggridges)
 ggplot(housing_val2, aes(x = estimate, y = county)) + 
   geom_density_ridges() + 
   theme_ridges() + 
-  labs(x = "Median home value: 2015-2019 ACS estimate", 
+  labs(x = "Median home value: 2016-2020 ACS estimate", 
        y = "") + 
-  scale_x_continuous(labels = label_dollar(scale = .001, suffix = "k"))
+  scale_x_continuous(labels = label_dollar(scale = .000001, suffix = "m"),
+                     breaks = c(0, 500000, 1000000)) + 
+  theme(axis.text.x = element_text(angle = 45))
 ```
 
 The overlapping density "ridges" offer both a pleasing aesthetic but also a practical way to compare the different data distributions. As **ggridges** extends **ggplot2**, analysts can style the different chart components to their liking using the methods introduced earlier in this chapter.
@@ -542,7 +547,8 @@ ny_race_income <- get_acs(
                 Black = "B03002_004", 
                 Asian = "B03002_006",
                 Hispanic = "B03002_012"), 
-  summary_var = "B19013_001"
+  summary_var = "B19013_001",
+  year = 2020
 ) %>%
   group_by(GEOID) %>%
   filter(estimate == max(estimate, na.rm = TRUE)) %>%
@@ -553,13 +559,13 @@ ggplot(ny_race_income, aes(x = variable, y = summary_est, color = summary_est)) 
   geom_quasirandom(alpha = 0.5) + 
   coord_flip() + 
   theme_minimal(base_size = 13) + 
-  scale_color_viridis_c(guide = FALSE) + 
+  scale_color_viridis_c(guide = "none") + 
   scale_y_continuous(labels = label_dollar()) + 
   labs(x = "Largest group in Census tract", 
        y = "Median household income", 
        title = "Household income distribution by largest racial/ethnic group", 
        subtitle = "Census tracts, New York City", 
-       caption = "Data source: 2015-2019 ACS")
+       caption = "Data source: 2016-2020 ACS")
 ```
 
 The plot shows that the wealthiest neighborhoods in New York City - those with median household incomes exceeding \$150,000 - are all plurality or majority non-Hispanic white. However, the chart also illustrates that there are a range of values among neighborhoods with pluralities of the different racial and ethnic groups, suggesting a nuanced portrait of the intersections between race and income inequality in the city.
