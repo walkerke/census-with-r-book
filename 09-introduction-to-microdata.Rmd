@@ -228,7 +228,7 @@ wy_pumas$NAME10
 In a denser urban area, PUMAs will reflect subsections of major cities and are drawn in attempts to reflect meaningful local areas. In New York City, for example, PUMAs are drawn to align with recognized community districts in the city.
 
 ```{r nyc-pumas, fig.cap = "Map of PUMAs in New York City"}
-nyc_pumas <- pumas(state = "NY", cb = TRUE) %>%
+nyc_pumas <- pumas(state = "NY", cb = TRUE, year = 2019) %>%
   filter(str_detect(NAME10, "NYC"))
 
 ggplot(nyc_pumas) + 

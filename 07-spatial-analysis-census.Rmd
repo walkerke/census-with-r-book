@@ -466,7 +466,7 @@ wfh_interpolate_pw <- interpolate_pw(
 
 `interpolate_pw()` uses a *weighted centroid* approach to interpolation, where the input Census blocks are first converted to centroids, then joined to the origin/destination intersections to produce population weights. An illustration of this process is found below; the map on the left-hand side shows the block centroid weights, and the map on the right-hand side shows the population weights used for each 2020 Census tract.
 
-```{r gilbert-pop-weights, echo = FALSE, "Illustration of block centroids and population weights"}
+```{r gilbert-pop-weights, echo = FALSE, fig.cap="Illustration of block centroids and population weights"}
 gilbert_blocks <- maricopa_blocks %>%
   st_transform(26949) %>%
   st_centroid() %>%

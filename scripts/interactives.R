@@ -3,14 +3,15 @@ library(tigris)
 library(mapview)
 library(sf)
 library(tidyverse)
+options(tigris_use_cache = TRUE)
 
-la_tracts <- tracts("NM", "Los Alamos")
+la_tracts <- tracts("NM", "Los Alamos", year = 2020)
 
 l1 <- mapview(la_tracts)
 
 htmlwidgets::saveWidget(l1@map, "img/leaflet/la_tracts.html")
 
-fl_counties <- counties("FL", cb = TRUE)
+fl_counties <- counties("FL", cb = TRUE, year = 2020)
 
 fl_projected <- sf::st_transform(fl_counties, crs = 3087)
 
@@ -38,54 +39,54 @@ library(mapview)
 library(htmlwidgets)
 library(tmap)
 library(sf)
-
-hennepin_race <- get_acs(
-  geography = "tract",
-  state = "MN",
-  county = "Hennepin",
-  variables = c(White = "B03002_003",
-                Black = "B03002_004",
-                Native = "B03002_005",
-                Asian = "B03002_006",
-                Hispanic = "B03002_012"),
-  summary_var = "B03002_001",
-  geometry = TRUE
-) %>%
-  mutate(percent = 100 * (estimate / summary_est))
-
-groups <- unique(hennepin_race$variable)
-
-hennepin_dots <- map_dfr(groups, ~{
-  hennepin_race %>%
-    filter(variable == .x) %>%
-    st_transform(26915) %>%
-    mutate(est100 = as.integer(estimate / 100)) %>%
-    st_sample(size = .$est100, exact = TRUE) %>%
-    st_sf() %>%
-    mutate(group = .x)
-}) %>%
-  slice_sample(prop = 1)
-
-background_tracts <- filter(hennepin_race, variable == "White")
-
-td1 <- tm_shape(background_tracts, 
-                projection = sf::st_crs(26915)) + 
-  tm_polygons(col = "white", 
-              border.col = "grey") + 
-  tm_shape(hennepin_dots) +
-  tm_dots(col = "group", 
-          palette = "Set1",
-          size = 0.005, 
-          title = "Race/ethnicity")
-
-tmap_save(td1, "img/hennepin_dots.png")
+# Dot-density now computed on the fly
+# hennepin_race <- get_acs(
+#   geography = "tract",
+#   state = "MN",
+#   county = "Hennepin",
+#   variables = c(White = "B03002_003",
+#                 Black = "B03002_004",
+#                 Native = "B03002_005",
+#                 Asian = "B03002_006",
+#                 Hispanic = "B03002_012"),
+#   summary_var = "B03002_001",
+#   geometry = TRUE
+# ) %>%
+#   mutate(percent = 100 * (estimate / summary_est))
+# 
+# groups <- unique(hennepin_race$variable)
+# 
+# hennepin_dots <- map_dfr(groups, ~{
+#   hennepin_race %>%
+#     filter(variable == .x) %>%
+#     st_transform(26915) %>%
+#     mutate(est100 = as.integer(estimate / 100)) %>%
+#     st_sample(size = .$est100, exact = TRUE) %>%
+#     st_sf() %>%
+#     mutate(group = .x)
+# }) %>%
+#   slice_sample(prop = 1)
+# 
+# background_tracts <- filter(hennepin_race, variable == "White")
+# 
+# td1 <- tm_shape(background_tracts, 
+#                 projection = sf::st_crs(26915)) + 
+#   tm_polygons(col = "white", 
+#               border.col = "grey") + 
+#   tm_shape(hennepin_dots) +
+#   tm_dots(col = "group", 
+#           palette = "Set1",
+#           size = 0.005, 
+#           title = "Race/ethnicity")
+# 
+# tmap_save(td1, "img/hennepin_dots.png")
 
 
 
 dallas_bachelors <- get_acs(
   geography = "tract",
   variables = "DP02_0068P",
-  year = 2019,
+  year = 2020,
   state = "TX",
   county = "Dallas",
   geometry = TRUE
