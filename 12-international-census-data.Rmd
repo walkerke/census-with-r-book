@@ -451,6 +451,8 @@ The three country-specific examples shown above - Canada, Kenya, and Mexico - il
 The **geobr** [@pereira2021] package from [IPEA](https://www.ipea.gov.br/portal/) helps you load spatial datasets for many Brazilian geographies, including Census boundaries. These datasets are generously hosted by IPEA and downloaded into a user's R session when the corresponding function is called. The `code_tract` parameter can accept a 7-digit municipality code; below, the code for Rio de Janeiro is used. Municipality codes can be looked up with the corresponding `read_municipality()` function.
 
 ```{r geobr, results = "hide"}
+# Install first from GitHub:
+# remotes::install_github("ipeaGIT/geobr", subdir = "r-package")
 library(geobr)
 
 rj_tracts <- read_census_tract(code_tract = 3304557)
