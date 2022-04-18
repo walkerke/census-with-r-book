@@ -464,12 +464,12 @@ wfh_interpolate_pw <- interpolate_pw(
 )
 ```
 
-`interpolate_pw()` uses a *weighted centroid* approach to interpolation, where the input Census blocks are first converted to centroids, then joined to the origin/destination intersections to produce population weights. An illustration of this process is found below; the map on the left-hand side shows the block centroid weights, and the map on the right-hand side shows the population weights used for each 2020 Census tract.
+`interpolate_pw()` as implemented here uses a *weighted block point* approach to interpolation, where the input Census blocks are first converted to points using the `st_point_on_surface()` function from the **sf** package, then joined to the origin/destination intersections to produce population weights. An illustration of this process is found below; the map on the left-hand side shows the block weights as points, and the map on the right-hand side shows the population weights used for each 2020 Census tract.
 
-```{r gilbert-pop-weights, echo = FALSE, fig.cap="Illustration of block centroids and population weights"}
+```{r gilbert-pop-weights, echo = FALSE, fig.cap="Illustration of block points and population weights"}
 gilbert_blocks <- maricopa_blocks %>%
   st_transform(26949) %>%
-  st_centroid() %>%
+  st_point_on_surface() %>%
   select(POP20) %>%
   st_join(st_transform(gilbert_2020, 26949), left = FALSE)
 
@@ -485,20 +485,20 @@ tract_totals <- gilbert_blocks %>%
 gilbert_weight_geo <- gilbert_2020 %>%
   left_join(tract_totals, by = "GEOID")
 
-# First map: block centroids
+# First map: block points
 gb1 <- ggplot() + 
   gilbert_basemap + 
   geom_sf(data = gilbert_2020, color = "red", fill = NA) + 
   geom_sf(data = gilbert_blocks, color = "navy") + 
   theme_void() + 
-  labs(title = "Illustration of block centroids")
+  labs(title = "Illustration of block points")
 
 gb2 <- ggplot() + 
   gilbert_basemap + 
   geom_sf(data = gilbert_weight_geo, color = "red", fill = NA) + 
   geom_sf_label(data = gilbert_weight_geo, aes(label = pop_weights), 
                 fun.geometry = sf::st_centroid) + 
-  labs(title = "Illustration of area weights") + 
+  labs(title = "Illustration of population weights") + 
   theme_void()
 
 gb1 + gb2

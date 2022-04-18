@@ -110,7 +110,7 @@ sum(wy_households$WGTP)
 
 *Housing unit* rather than simply household-level analyses introduce an additional level of complexity, as housing units can be both occupied and vacant. Vacant housing units are returned in a different format from the Census API which makes them a special case in **tidycensus**. To return vacant housing units along with person and household records, use the argument `return_vacant = TRUE`.
 
-```{r return-vacant}
+```{r return-vacant, results = 'hide'}
 wy_with_vacant <- get_pums(
   variables = c("SEX", "AGEP", "HHT"),
   state = "WY",
