@@ -25,17 +25,17 @@ source("R/book-functions.R")
 
 # Preface {.unnumbered}
 
-This is the online home of *Analyzing US Census Data: Methods, Maps, and Models in R*, a forthcoming book published with [CRC Press](https://www.routledge.com/our-products/books).
+This is the online home of *Analyzing US Census Data: Methods, Maps, and Models in R*, a forthcoming book published with CRC Press. [Pre-order a hard copy of the book from this link!](https://www.routledge.com/Analyzing-US-Census-Data-Methods-Maps-and-Models-in-R/Walker/p/book/9781032366449)
 
-```{r crc-logo, echo = FALSE, out.width="20%"}
-knitr::include_graphics("img/crc.png")
+```{r crc-logo, echo = FALSE, out.width="30%"}
+knitr::include_graphics("img/book_cover.png")
 ```
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/2.0/"><img src="https://i.creativecommons.org/l/by-nc-nd/2.0/88x31.png" alt="Creative Commons License" style="border-width:0"/></a><br/> The online version of the book is published with the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0) license](https://creativecommons.org/licenses/by-nc-nd/4.0/).
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img src="https://i.creativecommons.org/l/by-nc-nd/2.0/88x31.png" alt="Creative Commons License" style="border-width:0"/></a><br/> The online version of the book is published with the [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0) license](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
 To support the development of the book and help me maintain this free online version, please consider one of the following:
 
--   Purchasing a hard copy of the book from CRC Press (expected publication 2022);
+-   [Purchasing a hard copy of the book from CRC Press](https://www.routledge.com/Analyzing-US-Census-Data-Methods-Maps-and-Models-in-R/Walker/p/book/9781032366449) (available now for pre-order; expected publication October 2022);
 
 -   Contributing to the book by filing an issue or making a pull request at [the book's GitHub repository](https://github.com/walkerke/census-with-r-book);
 

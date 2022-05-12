@@ -68,7 +68,7 @@ nyc_1910 <- read_nhgis_sf(
   shape_file = "data/NHGIS/nhgis0099_shape/nhgis0099_shapefile_tl2000_us_tract_1910.zip",
   shape_layer = starts_with("US_tract_1910")
 ) %>%
-  filter(!is.na(TRACTA))
+  filter(str_detect(GISJOIN, "G36"))
 ```
 
 `read_nhgis_sf()` has read in the tracts shapefile as a simple features object then joined the corresponding CSV file to it *and* imported data labels from the data codebook. Note that if you are reproducing this example with data downloaded yourself, you will have a unique zipped folder & file name based on your unique download ID. The "99" in the example above reflects the 99th extract from NHGIS for a given user, not a unique dataset name.
@@ -134,7 +134,7 @@ The result can be visualized with any of the mapping packages covered in Chapter
 ```{r map-nyc-fb, fig.cap = "Percent foreign-born by Census tract in NYC in 1910, mapped with ggplot2"}
 ggplot(nyc_pctfb, aes(fill = pct_fb)) + 
   geom_sf(color = NA) + 
-  scale_fill_viridis_c(option = "magma", labels = scales::percent) + 
+  scale_fill_viridis_c(option = "rocket", labels = scales::percent, direction = -1) + 
   theme_void(base_family = "Verdana") + 
   labs(title = "Percent foreign-born by Census tract, 1910",
        subtitle = "New York City",
