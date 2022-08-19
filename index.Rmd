@@ -151,9 +151,12 @@ pkgs <- c(
 pkgs <- sessioninfo::package_info(pkgs, dependencies = FALSE)
 df <- tibble::tibble(
   package = pkgs$package,
-  version = pkgs$ondiskversion,
-  source = gsub("@", "\\\\@", pkgs$source)
+  version = pkgs$ondiskversion
 )
 
 style_data(df, nrow(df), "Packages used in this book")
 ```
+
+## Funding acknowledgment {.unnumbered}
+
+Funding for this book comes in part from [National Science Foundation grant BCS-1739662, "Demographic Inversion In US Metropolitan Areas."](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1739662)

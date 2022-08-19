@@ -7,7 +7,7 @@ library(shiny)
 library(ggiraph)
 options(tigris_use_cache = TRUE)
 
-census_api_key("YOUR KEY HERE")
+# census_api_key("YOUR KEY HERE")
 
 dfw <- core_based_statistical_areas(cb = TRUE, year = 2019) %>%
   filter(str_detect(NAME, "Dallas"))
@@ -35,7 +35,8 @@ dfw_tracts$scaled_estimate <- as.numeric(scale(dfw_tracts$estimate))
 dfw_lisa <- localmoran_perm(dfw_tracts$scaled_estimate, weights, nsim = 999L, 
                             alternative = "two.sided") %>%
   as_tibble() %>%
-  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i"))
+  set_names(c("local_i", "exp_i", "var_i", "z_i", "p_i",
+              "p_i_sim", "pi_sim_folded", "skewness", "kurtosis"))
 
 dfw_lisa_df <- dfw_tracts %>%
   select(GEOID, scaled_estimate) %>%
@@ -61,7 +62,7 @@ library(patchwork)
 
 lisa_plot <- ggplot(dfw_lisa_clusters, aes(x = scaled_estimate, y = lagged_estimate,
                                            fill = lisa_cluster)) + 
-  geom_point_interactive(aes(data_id = GEOID), color = "black", shape = 21, size = 2) + 
+  geom_point_interactive(aes(data_id = GEOID, tooltip = lisa_cluster), color = "black", shape = 21, size = 2) + 
   theme_minimal() + 
   geom_hline(yintercept = 0, linetype = "dashed") + 
   geom_vline(xintercept = 0, linetype = "dashed") + 

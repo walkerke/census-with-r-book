@@ -249,7 +249,7 @@ The first step requires making a database connection from R. [The DBI infrastruc
 
 The `dbConnect()` function is used to make a database connection, which will be assigned to the object `conn`. Arguments include the database driver `Postgres()` and the username, password, database name, host, and port, which are all familiar from the database setup process.
 
-```{r connect-to-db}
+```{r connect-to-db, eval = FALSE}
 library(tidyverse)
 library(RPostgres)
 library(dbplyr)
@@ -260,6 +260,21 @@ conn <- dbConnect(
   password = "postgres",
   host = "localhost",
   port = "5432",
+  dbname = "postgres"
+)
+```
+
+```{r connect-to-db-2, echo = FALSE, eval = TRUE}
+library(tidyverse)
+library(RPostgres)
+library(dbplyr)
+
+conn <- dbConnect(
+  drv = Postgres(),
+  user = "postgres",
+  password = "postgres",
+  host = "localhost",
+  port = "5433",
   dbname = "postgres"
 )
 ```

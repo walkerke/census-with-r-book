@@ -195,7 +195,7 @@ style_data(la_local_seg)
 The results can be mapped by joining the data to a dataset of Census tracts from **tigris**; the `inner_join()` function is used to retain tracts for the Los Angeles area only.
 
 ```{r local-seg-map, fig.cap = "Map of local multi-group segregation scores in Los Angeles"}
-la_tracts_seg <- tracts("CA", cb = TRUE) %>%
+la_tracts_seg <- tracts("CA", cb = TRUE, year = 2019) %>%
   inner_join(la_local_seg, by = "GEOID") 
 
 la_tracts_seg %>%
