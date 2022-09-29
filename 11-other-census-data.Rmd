@@ -517,7 +517,7 @@ set_bls_key("YOUR KEY HERE")
 **blscrapeR** includes a number of helper functions to assist users with some of the most commonly requested statistics. For example, the `get_bls_county()` function fetches employment data for all counties in the US for a given month.
 
 ```{r get-bls-county}
-latest_employment <- get_bls_county("May 2021")
+latest_employment <- get_bls_county("May 2022")
 ```
 
 ```{r show-bls-county, echo = FALSE}
@@ -569,8 +569,8 @@ maui_accom %>%
   geom_line(color = "darkgreen") + 
   theme_minimal() + 
   scale_y_continuous(limits = c(0, max(maui_accom$value) + 1)) + 
-  scale_x_continuous(breaks = seq(1, 42, 12),
-                     labels = paste("Jan", 2018:2021)) + 
+  scale_x_continuous(breaks = seq(1, 54, 12),
+                     labels = paste("Jan", 2018:2022)) + 
   labs(x = "",
        y = "Number of jobs (in 1000s)",
        title = "Accommodation employment in Maui, Hawaii",

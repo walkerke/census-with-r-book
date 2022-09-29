@@ -132,7 +132,7 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
 | Function                                | Datasets available                             | Years available   |
-|-----------------------------------------|------------------------------------------------|-------------------|
+|--------------------------|------------------------------|-----------------|
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-             |
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-             |
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-             |
@@ -183,7 +183,7 @@ As of **ggplot2** version 3.0, the package released support for plotting simple 
 
 At a basic level, a couple lines of **ggplot2** code are all that are needed to plot Census shapes obtained with **tigris**. For example, taking a look at our Los Alamos County Census tracts:
 
-```{r los-alamos-ggplot-1, fig.caption = "Census tracts in Los Alamos County plotted with ggplot2"}
+```{r los-alamos-ggplot-1, fig.cap = "Census tracts in Los Alamos County plotted with ggplot2"}
 library(ggplot2)
 
 ggplot(la_tracts) + 

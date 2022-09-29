@@ -799,7 +799,7 @@ The dark purple areas on the map are those areas where the global relationship i
 
 We can explore this further by investigating the local parameter estimates for population density, which was not significant in the global model:
 
-```{r map-structure-age-betas, fig.cap = "Local parameter estimates for median structure age"}
+```{r map-structure-age-betas, fig.cap = "Local parameter estimates for population density"}
 ggplot(gw_model_results, aes(fill = pop_density)) + 
   geom_sf(color = NA) + 
   scale_fill_viridis_c() + 
