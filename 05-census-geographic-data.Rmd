@@ -34,7 +34,7 @@ library(tigris)
 st <- states()
 ```
 
-We get a message letting us know that data for the year 2020 are returned; **tigris** typically defaults to the most recent year for which a complete set of Census shapefiles are available, which at the time of this writing is 2020.
+We get a message letting us know that data for the year 2021 are returned; **tigris** typically defaults to the most recent year for which a complete set of Census shapefiles are available, which at the time of this writing is 2021.
 
 Let's take a look at what we got back:
 
@@ -132,7 +132,7 @@ These three core geometries (point, line, and polygon) can be encoded in more co
 The above examples have provided a sampling of some of the datasets available in **tigris**; a full enumeration of available datasets and the functions to access them are found in the guide below.
 
 | Function                                | Datasets available                             | Years available   |
-|--------------------------|------------------------------|-----------------|
+|-------------------------|-----------------------------|------------------|
 | `nation()`                              | cartographic (1:5m; 1:20m)                     | 2013-             |
 | `divisions()`                           | cartographic (1:500k; 1:5m; 1:20m)             | 2013-             |
 | `regions()`                             | cartographic (1:500k; 1:5m; 1:20m)             | 2013-             |
