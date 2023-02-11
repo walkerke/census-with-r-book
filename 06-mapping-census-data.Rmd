@@ -352,7 +352,7 @@ hennepin_dots <- hennepin_race %>%
 
 The map itself is created with the `tm_dots()` function, which in this example is combined with a background map using `tm_polygons()` to show the relative racial and ethnic heterogeneity of Census tracts in Hennepin County.
 
-```{r make-dot-map}
+```{r make-dot-map, fig.cap = "Dot-density map with tmap"}
 background_tracts <- filter(hennepin_race, variable == "White")
 
 tm_shape(background_tracts) + 

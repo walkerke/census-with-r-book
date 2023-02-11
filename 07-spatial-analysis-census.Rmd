@@ -444,7 +444,7 @@ wfh_interpolate_aw <- st_interpolate_aw(
 
 When a user computes area-weighted areal interpolation with `st_interpolate_aw()`, the function prints the following warning: `st_interpolate_aw assumes attributes are constant or uniform over areas of x`. This assumption that proportionally larger *areas* also have proportionally more *people* is often incorrect with respect to the geography of human settlements, and can be a source of error when using this method. An alternative method, *population-weighted areal interpolation*, can represent an improvement. As opposed to using area-based weights, population-weighted techniques estimate the populations of the intersections between origin and destination from a third dataset, then use those values for interpolation weights.
 
-This method is implemented in **tidycensus** with the `interpolate_pw()` function. This function is specified in a similar way to `st_interpolate_aw()`, but also requires a third dataset to be used as weights, and optionally a weight column to determine the relative influence of each feature in the weights dataset. For many purposes, **tidycensus** users will want to use Census blocks as the weights dataset, though users can bring alternative datasets as well. 2020 Census blocks acquired with the **tigris** package have the added benefit of `POP20` and `HU20` columns in the dataset that represent population and housing unit counts, respectively, either one of which could be used to weight each block.
+This method is implemented in **tidycensus** with the `interpolate_pw()` function. This function is specified in a similar way to `st_interpolate_aw()`, but also requires a third dataset to be used as weights, and optionally a weight column to determine the relative influence of each feature in the weights dataset. For many purposes, **tidycensus** users will want to use Census blocks as the weights dataset, though users can bring alternative datasets as well. 2020 Census blocks acquired with the **tigris** package have the added benefit of `POP20` and `HOUSING20` columns in the dataset that represent population and housing unit counts, respectively, either one of which could be used to weight each block.
 
 ```{r az-interpolate-pw}
 maricopa_blocks <- blocks(
@@ -596,7 +596,7 @@ options(tigris_use_cache = TRUE)
 ia_tracts <- tracts("IA", cb = TRUE, year = 2019) %>%
   st_transform(26975)
 
-hospital_url <- "https://opendata.arcgis.com/api/v3/datasets/6ac5e325468c4cb9b905f1728d6fbf0f_0/downloads/data?format=geojson&spatialRefId=4326"
+hospital_url <- "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Hospital/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
 
 trauma <- st_read(hospital_url) %>%
   filter(str_detect(TRAUMA, "LEVEL I\\b|LEVEL II\\b|RTH|RTC")) %>%
@@ -708,7 +708,7 @@ As with the matrix-based accessibility approach outlined above, catchment area-b
 The example below illustrates the distance-based approach using a *buffer*, implemented with the `st_buffer()` function in **sf**. A buffer is a common GIS operation that represents the area within a given distance of a location. The code below creates a 5km buffer around Iowa Methodist Medical Center by using the argument `dist = 5000`.
 
 ```{r get-buffer}
-iowa_methodist <- filter(ia_trauma, NAME == "IOWA METHODIST MEDICAL CENTER")
+iowa_methodist <- filter(ia_trauma, ID == "0009850308")
 
 buf5km <- st_buffer(iowa_methodist, dist = 5000) 
 

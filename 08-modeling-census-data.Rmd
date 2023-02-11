@@ -566,7 +566,7 @@ As discussed above, PC1 represents a gradient from segregated, older, wealthy, w
 
 ## Spatial regression
 
-A core assumption of the linear model is that the errors are independent of one another and normally distributed. Log-transforming the right-skewed outcome variable, median home values, was indented to resolve the latter; we can check this by adding the residuals for `model2` to our dataset and drawing a histogram to check its distribution.
+A core assumption of the linear model is that the errors are independent of one another and normally distributed. Log-transforming the right-skewed outcome variable, median home values, was intended to resolve the latter; we can check this by adding the residuals for `model2` to our dataset and drawing a histogram to check its distribution.
 
 ```{r residuals, fig.cap = "Distribution of model residuals with a ggplot2 histogram"}
 dfw_data_for_model$residuals <- residuals(model2)

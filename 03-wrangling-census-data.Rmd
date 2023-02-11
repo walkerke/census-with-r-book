@@ -459,7 +459,7 @@ This particular format is suitable for data display or writing to an Excel sprea
 
 ## Handling margins of error in the American Community Survey with tidycensus
 
-A topic of critical importance when working with data from the American Community Survey is the *margin of error*. As opposed to the decennial US Census, which is based on a complete enumeration of the US population, the ACS is based on a sample with estimates characterized by margins of error. By default, MOEs are returned at a 90 percent confidence level. This can be translated roughtly as "we are 90 percent sure that the true value falls within a range defined by the estimate plus or minus the margin of error."
+A topic of critical importance when working with data from the American Community Survey is the *margin of error*. As opposed to the decennial US Census, which is based on a complete enumeration of the US population, the ACS is based on a sample with estimates characterized by margins of error. By default, MOEs are returned at a 90 percent confidence level. This can be translated roughly as "we are 90 percent sure that the true value falls within a range defined by the estimate plus or minus the margin of error."
 
 As discussed in Chapter 2, **tidycensus** takes an opinionated approach to margins of error. When applicable, **tidycensus** will always return the margin of error associated with an estimate, and does not have an option available to return estimates only. For "tidy" or long-form data, these margins of error will be found in the `moe` column; for wide-form data, margins of error will be found in columns with an `M` suffix.
 
