@@ -312,7 +312,7 @@ To convert standard errors to *margins of error* around the derived PUMS estimat
 
 -   95 percent confidence level: 1.96
 
--   99 percent confidence level: 2.56
+-   99 percent confidence level: 2.576
 
 Computing margins of error around derived ACS estimates from PUMS data allows for familiar visualization of uncertainty in the ACS as shown earlier in this book. The example below calculates margins of error at a 90 percent confidence level for the rent burden estimates for Mississippi, then draws a margin of error plot as illustrated in Section \@ref(visualizing-margins-of-error).
 

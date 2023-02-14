@@ -11,3 +11,4 @@ This page enumerates errors in the print version. The online version is kept up-
     -   On p. 193, the name of Iowa Methodist Medical Center has changed. Use `ID == "0009850308"` in the `filter()` expression instead.
 -   Chapter 8, p. 234: "indented" should be "intended" (typo).
 -   Chapter 8, p. 244 and 246: beta symbol renders in the print version as a question mark; renders correctly in the HTML version
+-   Chapter 10, p. 280: "2.56" changed to "2.576" (typo).

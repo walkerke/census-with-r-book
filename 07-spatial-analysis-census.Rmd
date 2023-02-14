@@ -1068,8 +1068,8 @@ Given that the returned results are z-scores, an analyst can choose hot spot thr
 ```{r local-g-z-scores, fig.cap = "Map of local Gi* scores with significant clusters highlighted"}
 dfw_tracts <- dfw_tracts %>%
   mutate(hotspot = case_when(
-    localG >= 2.56 ~ "High cluster",
-    localG <= -2.56 ~ "Low cluster",
+    localG >= 2.576 ~ "High cluster",
+    localG <= -2.576 ~ "Low cluster",
     TRUE ~ "Not significant"
   ))
 
